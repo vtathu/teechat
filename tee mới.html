@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Teechat - Roleplay Platform</title>
+  
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRlZWNoYXQgLSBDb25uZWN0ICYgQ2hhdCIsCiAgInNob3J0X25hbWUiIjogIlRlZWNoYXQiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNlN2Y1ZWUiLAogICJ0aGVtZV9jb2xvciI6ICIjZTdmNWVlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmltZ3VyLmNvbS9ZZ3E4TVdJLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgotICAgIH0KICBdCn0=">
+  <meta name="theme-color" content="#e7f5ee">
+
+  <style>
+    @font-face {
+      font-family: 'MJSacrifice';
+      src: url('https://fonts.cdnfonts.com/s/96236/MJSacrifice.woff') format('woff');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: 'CeCe';
+      src: url('https://fonts.cdnfonts.com/s/85421/CeCe.woff') format('woff');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+  </style>
+
+  <style>
+    :root {
+      --bg-color: #e7f5ee;
+      --app-green: #90d4b8;
+      --app-dark-green: #5ca185;
+      --app-pink: #ff8fa3;
+      --ai-bubble-bg: #ffffff;
+      --ai-text-color: #333333;
+      --user-bubble-bg: #c1ebd9;
+      --user-text-color: #1b4332;
+      --font-heading: 'MJSacrifice', cursive, sans-serif;
+      --font-body: 'CeCe', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); }
+    body { background-color: var(--bg-color); background-size: cover; background-position: center; color: #2d3748; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    h1, h2, h3 { font-family: var(--font-heading); font-weight: normal; }
+
+    .btn { background: var(--app-green); color: #fff; border: none; padding: 8px 14px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.85rem; }
+    .btn:active { transform: scale(0.95); }
+    .btn-pink { background: var(--app-pink); }
+    .btn-outline { background: transparent; border: 2px solid var(--app-green); color: var(--app-dark-green); }
+
+    .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
+    .page.active { display: flex; }
+
+    .navbar { background: rgba(255, 255, 255, 0.85); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; }
+    .app-logo-title { display: flex; align-items: center; gap: 10px; }
+    .app-logo-title img { width: 36px; height: 36px; border-radius: 50%; }
+    .app-logo-title h1 { font-size: 1.5rem; color: var(--app-dark-green); }
+
+    .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
+    .scenario-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
+    .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .chat-header { background: rgba(255,255,255,0.9); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d0ebd8; }
+    .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    
+    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 4px 8px; font-size: 0.95rem; }
+    .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
+    .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-message.ai { align-self: flex-start; }
+    
+    .msg-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; }
+    .msg-bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .msg-sender { font-size: 0.75rem; color: #718096; padding: 0 4px; }
+    .user .msg-sender { text-align: right; }
+    
+    .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+    .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-bottom-left-radius: 4px; }
+    .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-bottom-right-radius: 4px; }
+
+    .msg-action-bar { display: flex; gap: 6px; margin-top: 4px; }
+    .ai .msg-action-bar { justify-content: flex-start; }
+    .user .msg-action-bar { justify-content: flex-end; }
+    
+    .action-text-btn { 
+      background: var(--ai-bubble-bg); 
+      color: var(--app-dark-green); 
+      border: 1px solid var(--app-green); 
+      padding: 3px 10px; 
+      border-radius: 12px; 
+      font-size: 0.75rem; 
+      cursor: pointer; 
+      font-weight: bold;
+      transition: 0.1s;
+    }
+    .user .action-text-btn {
+      background: var(--user-bubble-bg);
+      color: var(--user-text-color);
+      border: 1px solid var(--app-dark-green);
+    }
+    .action-text-btn:hover { filter: brightness(0.95); }
+
+    .chat-controls { display: flex; gap: 8px; padding: 6px 16px; background: rgba(255,255,255,0.6); }
+    .input-bar { padding: 10px 16px; background: #fff; display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; }
+    .input-bar input { flex: 1; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    .modal.active { display: flex; }
+    .modal-content { background: #fff; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 20px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.85rem; font-weight: bold; color: #4a5568; }
+    .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 8px; outline: none; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1: SCENARIO HUB -->
+  <div id="page-home" class="page active">
+    <div class="navbar">
+      <div class="app-logo-title">
+        <img src="https://i.imgur.com/Ygq8MWI.png" alt="Teechat Logo">
+        <h1>Teechat</h1>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
+        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
+        <button class="btn" onclick="openModal('modal-settings')">⚙️ Cài Đặt</button>
+      </div>
+    </div>
+
+    <div style="padding: 16px 16px 0 16px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 1.3rem; color: var(--app-dark-green);">Danh Sách Cốt Truyện</h2>
+      <button class="btn btn-pink" onclick="openModal('modal-scenario')">+ Tạo Mới</button>
+    </div>
+
+    <div class="scenarios-container" id="scenario-list"></div>
+  </div>
+
+  <!-- PAGE 2: CHAT ROOM -->
+  <div id="page-chat" class="page">
+    <div class="chat-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="btn btn-outline" style="padding: 4px 10px;" onclick="switchPage('page-home')">⬅</button>
+        <img id="chat-ai-avatar" class="scenario-avatar" src="" alt="AI Avatar">
+        <div>
+          <h3 id="chat-ai-name" style="font-size: 1.1rem;">Character Name</h3>
+          <span style="font-size: 0.75rem; color: #6b7280;">Online • Teechat AI</span>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="openModal('modal-settings')">⚙️</button>
+    </div>
+
+    <div class="chat-history" id="chat-history"></div>
+
+    <div class="chat-controls">
+      <button class="btn btn-outline" style="font-size: 0.8rem;" onclick="sendStickerPrompt()">🌸 Sticker</button>
+      <button class="btn btn-outline" style="font-size: 0.8rem;" onclick="triggerAutoPlay()">✨ AI Tự Chạy Tiếp</button>
+      <button class="btn btn-outline" style="font-size: 0.8rem;" onclick="clearHistory()">🗑️ Xóa Chat</button>
+    </div>
+
+    <div class="input-bar">
+      <input type="text" id="user-input" placeholder="Nhập tin nhắn..." onkeypress="handleKeyPress(event)">
+      <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
+    </div>
+  </div>
+
+  <!-- MODAL: ACCOUNT & JSONBIN CLOUD SYNC -->
+  <div id="modal-auth" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>☁️️ Đồng Bộ Đám Mây (JSONBin)</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>JSONBin Master Key:</label>
+        <input type="password" id="auth-jsonbin-key" placeholder="$2a$10$...">
+      </div>
+      <div class="form-group">
+        <label>Mã Bin ID (Nếu chuyển sang máy mới):</label>
+        <input type="text" id="auth-bin-id" placeholder="65a1b2c3d4e5f...">
+      </div>
+      <p style="font-size: 0.75rem; color: #718096;">
+        👉 Bấm <b>Tải Lên Cloud</b> để lấy Mã Bin ID. Dùng mã này để <b>Tải Về</b> trên thiết bị khác.
+      </p>
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <button class="btn" style="flex:1;" onclick="syncCloud('upload')">☁️ Tải Lên Cloud</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="syncCloud('download')">📥 Tải Về Máy Này</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SETTINGS -->
+  <div id="modal-settings" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚙️ Cài Đặt Ứng Dụng</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-settings')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Danh Sách Gemini API Keys (Mỗi dòng 1 Key):</label>
+        <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tên Model AI (Mặc định: gemini-3.5-flash-lite):</label>
+        <input type="text" id="cfg-model-select" list="model-suggestions" placeholder="Nhập hoặc chọn tên model...">
+        <datalist id="model-suggestions">
+          <option value="gemini-3.5-flash-lite"></option>
+          <option value="gemini-3.5-flash"></option>
+          <option value="gemini-3.5-pro"></option>
+          <option value="gemini-2.5-flash-lite"></option>
+          <option value="gemini-2.5-flash"></option>
+        </datalist>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label>Màu Bong Bóng AI:</label>
+          <input type="color" id="cfg-ai-bubble" value="#ffffff" onchange="updateThemeColors()">
+        </div>
+        <div class="form-group">
+          <label>Màu Bong Bóng User:</label>
+          <input type="color" id="cfg-user-bubble" value="#c1ebd9" onchange="updateThemeColors()">
+        </div>
+      </div>
+      <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
+    </div>
+  </div>
+
+  <!-- MODAL: USER PERSONA -->
+  <div id="modal-persona" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>👤 Hồ Sơ Người Dùng</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-persona')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Tên Của Bạn:</label>
+        <input type="text" id="per-name" value="Thư">
+      </div>
+      <div class="form-group">
+        <label>Ngày Tháng Năm Sinh:</label>
+        <input type="text" id="per-dob" placeholder="15/08/2002">
+      </div>
+      <div class="form-group">
+        <label>Sở Thích & Điều Bắt Buộc AI Phải Nhớ:</label>
+        <textarea id="per-memories" rows="3" placeholder="Ví dụ: Ghét ăn hành, thích màu xanh..."></textarea>
+      </div>
+      <button class="btn" onclick="savePersona()">Lưu Hồ Sơ</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE SCENARIO -->
+  <div id="modal-scenario" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🎭 Tạo Kịch Bản Roleplay</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-scenario')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Tên Kịch Bản / Nhân Vật:</label>
+        <input type="text" id="scen-title" placeholder="VD: Trần Hạo Nam">
+      </div>
+      <div class="form-group">
+        <label>Avatar Nhân Vật (URL):</label>
+        <input type="text" id="scen-avatar" placeholder="https://i.imgur.com/...">
+      </div>
+      <div class="form-group">
+        <label>Tính Cách & Cài Đặt Tuyệt Đối:</label>
+        <textarea id="scen-prompt" rows="3" placeholder="Thiết lập tính cách, xưng hô, bí mật..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Lời Mở Đầu Khi Bắt Đầu Chat:</label>
+        <textarea id="scen-first-msg" rows="2" placeholder="Trần Hạo Nam: 'Cô có vẻ... biết chọn món.'"></textarea>
+      </div>
+      <button class="btn btn-pink" onclick="saveScenario()">Tạo Kịch Bản</button>
+    </div>
+  </div>
+
+  <script>
+    let state = {
+      jsonbinMasterKey: '',
+      binId: '',
+      apiKeys: [],
+      currentModel: 'gemini-3.5-flash-lite',
+      activeScenarioId: null,
+      scenarios: [],
+      persona: { name: 'User', dob: '', avatar: 'https://i.imgur.com/6VBx3io.png', memories: '' },
+      chatHistories: {},
+      chatSummaries: {}
+    };
+
+    window.onload = function() {
+      loadStorage();
+      renderScenarios();
+    };
+
+    function loadStorage() {
+      const savedState = localStorage.getItem('teechat_state_v5');
+      if (savedState) {
+        state = JSON.parse(savedState);
+      } else {
+        state.scenarios.push({
+          id: 'scen-1',
+          title: 'Trần Hạo Nam',
+          avatar: 'https://i.imgur.com/6VBx3io.png',
+          prompt: 'Bạn là Trần Hạo Nam, trầm tính, lạnh lùng nhưng rất quan tâm đến Thư. Xưng hô: Anh - Cô/Thư.',
+          firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."'
+        });
+        saveStorage();
+      }
+      document.getElementById('cfg-api-keys').value = (state.apiKeys || []).join('\n');
+      document.getElementById('cfg-model-select').value = state.currentModel || 'gemini-3.5-flash-lite';
+      document.getElementById('auth-jsonbin-key').value = state.jsonbinMasterKey || '';
+      document.getElementById('auth-bin-id').value = state.binId || '';
+    }
+
+    function saveStorage() {
+      localStorage.setItem('teechat_state_v5', JSON.stringify(state));
+    }
+
+    function switchPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function renderScenarios() {
+      const container = document.getElementById('scenario-list');
+      container.innerHTML = '';
+      state.scenarios.forEach(scen => {
+        const card = document.createElement('div');
+        card.className = 'scenario-card';
+        card.innerHTML = `
+          <div>
+            <div class="scenario-header">
+              <img src="${scen.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="scenario-avatar">
+              <h3>${scen.title}</h3>
+            </div>
+            <p class="scenario-desc">${scen.prompt}</p>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="btn" style="flex:1;" onclick="openChat('${scen.id}')">Trò Chuyện</button>
+            <button class="btn btn-outline" onclick="deleteScenario('${scen.id}')">Xóa</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openChat(scenId) {
+      state.activeScenarioId = scenId;
+      const scen = state.scenarios.find(s => s.id === scenId);
+      document.getElementById('chat-ai-name').innerText = scen.title;
+      document.getElementById('chat-ai-avatar').src = scen.avatar || 'https://i.imgur.com/6VBx3io.png';
+
+      if (!state.chatHistories[scenId] || state.chatHistories[scenId].length === 0) {
+        state.chatHistories[scenId] = [];
+        if (scen.firstMsg) {
+          state.chatHistories[scenId].push({ sender: 'ai', text: scen.firstMsg });
+        }
+      }
+      renderChatHistory();
+      switchPage('page-chat');
+    }
+
+    function renderChatHistory() {
+      const container = document.getElementById('chat-history');
+      container.innerHTML = '';
+      const history = state.chatHistories[state.activeScenarioId] || [];
+      const currentScen = state.scenarios.find(s => s.id === state.activeScenarioId);
+
+      history.forEach((msg, idx) => {
+        if (msg.sender === 'user') {
+          const div = document.createElement('div');
+          div.className = 'chat-message user';
+          div.innerHTML = `
+            <img src="${state.persona.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="msg-avatar">
+            <div class="msg-bubble-wrap">
+              <div class="msg-sender">${state.persona.name || 'Bạn'}</div>
+              <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+              <div class="msg-action-bar">
+                <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
+                <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        } else {
+          parseAndRenderAiMessage(msg.text, currentScen, container, idx);
+        }
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function parseAndRenderAiMessage(fullText, scen, container, msgIndex) {
+      const paragraphs = fullText.split('\n').filter(p => p.trim() !== '');
+
+      paragraphs.forEach(p => {
+        const dialogueMatch = p.match(/^(?:([A-Za-z0-9\sĐđÀ-ỹ]+):)?\s*["“]([^"”]+)["”]/) || p.match(/^([A-Za-z0-9\sĐđÀ-ỹ]+):\s*(.+)/);
+
+        if (dialogueMatch) {
+          const speakerName = dialogueMatch[1] ? dialogueMatch[1].trim() : scen.title;
+          const dialogueContent = dialogueMatch[2] ? dialogueMatch[2].trim() : p;
+
+          const div = document.createElement('div');
+          div.className = 'chat-message ai';
+          div.innerHTML = `
+            <img src="${scen.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="msg-avatar">
+            <div class="msg-bubble-wrap">
+              <div class="msg-sender">${escapeHtml(speakerName)}</div>
+              <div class="msg-bubble">${escapeHtml(dialogueContent)}</div>
+              <div class="msg-action-bar">
+                <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'narrative-block';
+          div.innerText = p;
+          container.appendChild(div);
+        }
+      });
+    }
+
+    function editMessage(idx) {
+      const history = state.chatHistories[state.activeScenarioId];
+      const newText = prompt('Chỉnh sửa tin nhắn:', history[idx].text);
+      if (newText !== null) {
+        history[idx].text = newText;
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function deleteMessage(idx) {
+      if (confirm('Xóa tin nhắn này?')) {
+        state.chatHistories[state.activeScenarioId].splice(idx, 1);
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function regenerateAiResponse(idx) {
+      state.chatHistories[state.activeScenarioId].splice(idx);
+      sendMessage(null, true);
+    }
+
+    async function sendMessage(overrideText = null, isRegen = false) {
+      const inputEl = document.getElementById('user-input');
+      const text = overrideText || (inputEl ? inputEl.value.trim() : '');
+      if (!text && !isRegen) return;
+
+      if (!overrideText && !isRegen) inputEl.value = '';
+
+      const scenId = state.activeScenarioId;
+      const scen = state.scenarios.find(s => s.id === scenId);
+
+      if (!overrideText && !isRegen) {
+        state.chatHistories[scenId].push({ sender: 'user', text });
+        renderChatHistory();
+      }
+
+      if (!state.apiKeys || state.apiKeys.length === 0) {
+        alert('Vui lòng nhập ít nhất 1 API Key trong Cài Đặt!');
+        return openModal('modal-settings');
+      }
+
+      if (state.chatHistories[scenId].length > 15) {
+        const oldMsgs = state.chatHistories[scenId].slice(0, -10).map(m => `${m.sender}: ${m.text}`).join('; ');
+        state.chatSummaries[scenId] = (state.chatSummaries[scenId] || '') + " Diễn biến trước đó: " + oldMsgs.substring(0, 300);
+      }
+
+      const pastSummary = state.chatSummaries[scenId] ? `\n[TÓM TẮT DIỄN BIẾN TRƯỚC ĐÓ]: ${state.chatSummaries[scenId]}` : '';
+
+      const systemInstruction = `
+[QUY TẮC NHẬP VAI TUYỆT ĐỐI]
+- Bạn đang đóng vai nhân vật: "${scen.title}".
+- Thiết lập nhân vật: ${scen.prompt}.
+- Người dùng: "${state.persona.name}". Ngày sinh: "${state.persona.dob}".
+- Sở thích/Core Memories của User: ${state.persona.memories}.${pastSummary}
+- KHÔNG TỰ VIẾT THOẠI/HÀNH ĐỘNG CHO USER. Bắt buộc bọc lời thoại trong ngoặc kép. Ví dụ: ${scen.title}: "Lời thoại".
+      `;
+
+      const recentHistory = state.chatHistories[scenId].slice(-10).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+
+      const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: recentHistory
+      };
+
+      let responseText = null;
+      const selectedModel = state.currentModel || 'gemini-3.5-flash-lite';
+
+      for (const key of state.apiKeys) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            responseText = data.candidates[0].content.parts[0].text;
+            break;
+          }
+        } catch (e) { console.error(e); }
+      }
+
+      if (responseText) {
+        state.chatHistories[scenId].push({ sender: 'ai', text: responseText });
+        saveStorage();
+        renderChatHistory();
+      } else {
+        alert(`Lỗi kết nối với Model "${selectedModel}"! Vui lòng kiểm tra lại tên Model hoặc API Key.`);
+      }
+    }
+
+    function triggerAutoPlay() { sendMessage("(Hãy tự nhiên tiếp tục diễn biến câu chuyện hoặc tạo ra biến cố bất ngờ)"); }
+    function sendStickerPrompt() { sendMessage("(Gửi một sticker biểu cảm)"); }
+    function clearHistory() {
+      if (confirm('Xóa lịch sử chat kịch bản này?')) {
+        state.chatHistories[state.activeScenarioId] = [];
+        delete state.chatSummaries[state.activeScenarioId];
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+    async function syncCloud(type) {
+      const masterKey = document.getElementById('auth-jsonbin-key').value.trim();
+      let binId = document.getElementById('auth-bin-id').value.trim();
+
+      if (!masterKey) {
+        return alert('Vui lòng nhập JSONBin Master Key!');
+      }
+
+      state.jsonbinMasterKey = masterKey;
+
+      if (type === 'upload') {
+        try {
+          let url = 'https://api.jsonbin.io/v3/b';
+          let method = 'POST';
+
+          if (binId || state.binId) {
+            url = `https://api.jsonbin.io/v3/b/${binId || state.binId}`;
+            method = 'PUT';
+          }
+
+          const res = await fetch(url, {
+            method: method,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': masterKey,
+              'X-Bin-Name': 'teechat_backup'
+            },
+            body: JSON.stringify(state)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const savedBinId = data.metadata.id || binId || state.binId;
+            state.binId = savedBinId;
+            document.getElementById('auth-bin-id').value = savedBinId;
+            saveStorage();
+            alert(`✅ Tải lên thành công!\n🔑 MÃ BIN ID CỦA BẠN LÀ:\n${savedBinId}\n\nHãy lưu mã này để tải dữ liệu về máy khác!`);
+          } else {
+            alert('❌ Lỗi khi tải lên! Kiểm tra lại Master Key.');
+          }
+        } catch (e) {
+          alert('❌ Lỗi kết nối: ' + e.message);
+        }
+      } else {
+        if (!binId) return alert('Vui lòng nhập Mã Bin ID để tải dữ liệu về!');
+
+        try {
+          const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+            headers: { 'X-Master-Key': masterKey }
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            state = data.record;
+            state.jsonbinMasterKey = masterKey;
+            state.binId = binId;
+            saveStorage();
+            loadStorage();
+            renderScenarios();
+            alert('🎉 Tải dữ liệu về máy thành công!');
+            closeModal('modal-auth');
+          } else {
+            alert('❌ Không tìm thấy Bin ID hoặc Sai Master Key!');
+          }
+        } catch (e) {
+          alert('❌ Lỗi kết nối: ' + e.message);
+        }
+      }
+    }
+
+    function saveAppSettings() {
+      state.apiKeys = document.getElementById('cfg-api-keys').value.split('\n').map(k => k.trim()).filter(k => k);
+      state.currentModel = document.getElementById('cfg-model-select').value.trim() || 'gemini-3.5-flash-lite';
+      saveStorage();
+      closeModal('modal-settings');
+      alert('Đã lưu cài đặt!');
+    }
+
+    function savePersona() {
+      state.persona.name = document.getElementById('per-name').value;
+      state.persona.dob = document.getElementById('per-dob').value;
+      state.persona.memories = document.getElementById('per-memories').value;
+      saveStorage();
+      closeModal('modal-persona');
+      alert('Đã lưu hồ sơ!');
+    }
+
+    function saveScenario() {
+      const title = document.getElementById('scen-title').value.trim();
+      if (!title) return alert('Vui lòng nhập tên kịch bản!');
+      state.scenarios.push({
+        id: 'scen-' + Date.now(),
+        title,
+        avatar: document.getElementById('scen-avatar').value.trim(),
+        prompt: document.getElementById('scen-prompt').value.trim(),
+        firstMsg: document.getElementById('scen-first-msg').value.trim()
+      });
+      saveStorage();
+      renderScenarios();
+      closeModal('modal-scenario');
+    }
+
+    function deleteScenario(id) {
+      if (confirm('Xóa kịch bản này?')) {
+        state.scenarios = state.scenarios.filter(s => s.id !== id);
+        saveStorage();
+        renderScenarios();
+      }
+    }
+
+    function updateThemeColors() {
+      document.documentElement.style.setProperty('--ai-bubble-bg', document.getElementById('cfg-ai-bubble').value);
+      document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
