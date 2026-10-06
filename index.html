@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Teechat - Roleplay Platform</title>
   
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRlZWNoYXQgLSBDb25uZWN0ICYgQ2hhdCIsCiAgInNob3J0X25hbWUiIjogIlRlZWNoYXQiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNlN2Y1ZWUiLAogICJ0aGVtZV9jb2xvciI6ICIjZTdmNWVlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmltZ3VyLmNvbS9pblg0ZzdkLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgotICAgIH0KICBdCn0=">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRlZWNoYXQgLSBDb25uZWN0ICYgQ2hhdCIsCiAgInNob3J0X25hbWUiIjogIlRlZWNoYXQiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNlN2Y1ZWUiLAogICJ0aGVtZV9jb2xvciI6ICIjZTdmNWVlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLnBvc3RpbWcuY2MvQ3o1d2J3UTIvVGVlY2hhdC5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKLCAgICB9CiAgXQp9">
   <meta name="theme-color" content="#e7f5ee">
 
   <style>
@@ -56,7 +56,7 @@
     .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
     .scenario-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
+    .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); flex-shrink: 0; }
     .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     .chat-header { background: rgba(255,255,255,0.9); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d0ebd8; }
@@ -118,13 +118,13 @@
   <div id="page-home" class="page active">
     <div class="navbar">
       <div class="app-logo-title">
-        <img src="https://i.imgur.com/inX4g7d.png" alt="Teechat Logo">
+        <img src="https://i.postimg.cc/Cz5wbWQ2/Teechat.png" alt="Teechat Logo" onerror="this.src='https://i.postimg.cc/Cz5wbWQ2/Teechat.png'">
         <h1>Teechat</h1>
       </div>
       <div style="display: flex; gap: 6px;">
         <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
         <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
-        <button class="btn" onclick="openModal('modal-settings')">⚙️️ Cài Đặt</button>
+        <button class="btn" onclick="openModal('modal-settings')">⚙ Cài Đặt</button>
       </div>
     </div>
 
@@ -172,7 +172,6 @@
         <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
       </div>
       
-      <!-- PHẦN BACKUP FILE CỤ THỂ -->
       <div style="background: #f0fdf4; padding: 12px; border-radius: 12px; border: 1px solid #bbf7d0;">
         <h4 style="font-size: 0.9rem; color: var(--app-dark-green); margin-bottom: 6px;">📂 Sao Lưu / Khôi Phục Bằng File JSON:</h4>
         <p style="font-size: 0.75rem; color: #4b5563; margin-bottom: 8px;">Tải file lịch sử đoạn chat cũ lên để tiếp tục nhắn tin không bị mất dữ liệu.</p>
@@ -185,7 +184,6 @@
 
       <hr style="border: 0; border-top: 1px solid #eee;">
 
-      <!-- PHẦN JSONBIN CLOUD -->
       <div class="form-group">
         <label>JSONBin Master Key (Đồng bộ đám mây):</label>
         <input type="password" id="auth-jsonbin-key" placeholder="$2a$10$...">
@@ -253,6 +251,14 @@
         <input type="text" id="per-dob" placeholder="15/08/2002">
       </div>
       <div class="form-group">
+        <label>Avatar Của Bạn:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="per-avatar" placeholder="Dán URL hoặc tải từ máy..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('per-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'per-avatar')">
+      </div>
+      <div class="form-group">
         <label>Sở Thích & Điều Bắt Buộc AI Phải Nhớ:</label>
         <textarea id="per-memories" rows="3" placeholder="Ví dụ: Ghét ăn hành, thích màu xanh..."></textarea>
       </div>
@@ -272,8 +278,12 @@
         <input type="text" id="scen-title" placeholder="VD: Trần Hạo Nam">
       </div>
       <div class="form-group">
-        <label>Avatar Nhân Vật (URL):</label>
-        <input type="text" id="scen-avatar" placeholder="https://i.imgur.com/...">
+        <label>Avatar Nhân Vật:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="scen-avatar" placeholder="Dán URL hoặc tải từ máy..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('scen-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="scen-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'scen-avatar')">
       </div>
       <div class="form-group">
         <label>Tính Cách & Cài Đặt Tuyệt Đối:</label>
@@ -288,6 +298,8 @@
   </div>
 
   <script>
+    const DEFAULT_LOGO = 'https://i.postimg.cc/Cz5wbWQ2/Teechat.png';
+
     let state = {
       jsonbinMasterKey: '',
       binId: '',
@@ -295,7 +307,7 @@
       currentModel: 'gemini-3.5-flash-lite',
       activeScenarioId: null,
       scenarios: [],
-      persona: { name: 'User', dob: '', avatar: 'https://i.imgur.com/inX4g7d.png', memories: '' },
+      persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
       chatSummaries: {},
       aiBubbleBg: '#ffffff',
@@ -315,7 +327,7 @@
         state.scenarios.push({
           id: 'scen-1',
           title: 'Trần Hạo Nam',
-          avatar: 'https://i.imgur.com/inX4g7d.png',
+          avatar: DEFAULT_LOGO,
           prompt: 'Bạn là Trần Hạo Nam, trầm tính, lạnh lùng nhưng rất quan tâm đến Thư. Xưng hô: Anh - Cô/Thư.',
           firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."'
         });
@@ -329,6 +341,7 @@
       if (state.persona) {
         document.getElementById('per-name').value = state.persona.name || '';
         document.getElementById('per-dob').value = state.persona.dob || '';
+        document.getElementById('per-avatar').value = state.persona.avatar || '';
         document.getElementById('per-memories').value = state.persona.memories || '';
       }
 
@@ -353,6 +366,18 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+    /* HÀM XỬ LÝ UPLOAD ẢNH TỪ MÁY TÍNH / ĐIỆN THOẠI */
+    function handleImageUpload(event, targetInputId) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById(targetInputId).value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
     function renderScenarios() {
       const container = document.getElementById('scenario-list');
       container.innerHTML = '';
@@ -362,7 +387,7 @@
         card.innerHTML = `
           <div>
             <div class="scenario-header">
-              <img src="${scen.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="scenario-avatar">
+              <img src="${scen.avatar || DEFAULT_LOGO}" class="scenario-avatar" onerror="this.src='${DEFAULT_LOGO}'">
               <h3>${escapeHtml(scen.title)}</h3>
             </div>
             <p class="scenario-desc">${escapeHtml(scen.prompt)}</p>
@@ -380,7 +405,10 @@
       state.activeScenarioId = scenId;
       const scen = state.scenarios.find(s => s.id === scenId);
       document.getElementById('chat-ai-name').innerText = scen.title;
-      document.getElementById('chat-ai-avatar').src = scen.avatar || 'https://i.imgur.com/inX4g7d.png';
+      
+      const aiAvatarImg = document.getElementById('chat-ai-avatar');
+      aiAvatarImg.src = scen.avatar || DEFAULT_LOGO;
+      aiAvatarImg.onerror = function() { this.src = DEFAULT_LOGO; };
 
       if (!state.chatHistories[scenId] || state.chatHistories[scenId].length === 0) {
         state.chatHistories[scenId] = [];
@@ -403,7 +431,7 @@
           const div = document.createElement('div');
           div.className = 'chat-message user';
           div.innerHTML = `
-            <img src="${state.persona.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="msg-avatar">
+            <img src="${state.persona.avatar || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="msg-bubble-wrap">
               <div class="msg-sender">${escapeHtml(state.persona.name || 'Bạn')}</div>
               <div class="msg-bubble">${escapeHtml(msg.text)}</div>
@@ -434,7 +462,7 @@
           const div = document.createElement('div');
           div.className = 'chat-message ai';
           div.innerHTML = `
-            <img src="${scen.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="msg-avatar">
+            <img src="${scen.avatar || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="msg-bubble-wrap">
               <div class="msg-sender">${escapeHtml(speakerName)}</div>
               <div class="msg-bubble">${escapeHtml(dialogueContent)}</div>
@@ -565,7 +593,6 @@
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
-    /* LƯU CÀI ĐẶT */
     function saveAppSettings() {
       const keysRaw = document.getElementById('cfg-api-keys').value;
       state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
@@ -583,17 +610,16 @@
       document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
     }
 
-    /* LƯU HỒ SƠ */
     function savePersona() {
       state.persona.name = document.getElementById('per-name').value;
       state.persona.dob = document.getElementById('per-dob').value;
+      state.persona.avatar = document.getElementById('per-avatar').value;
       state.persona.memories = document.getElementById('per-memories').value;
       saveStorage();
       closeModal('modal-persona');
       alert('Đã lưu hồ sơ người dùng!');
     }
 
-    /* TẠO KỊCH BẢN */
     function saveScenario() {
       const title = document.getElementById('scen-title').value.trim();
       const avatar = document.getElementById('scen-avatar').value.trim();
@@ -605,7 +631,7 @@
       const newScen = {
         id: 'scen-' + Date.now(),
         title,
-        avatar: avatar || 'https://i.imgur.com/inX4g7d.png',
+        avatar: avatar || DEFAULT_LOGO,
         prompt: promptText,
         firstMsg
       };
@@ -615,7 +641,6 @@
       renderScenarios();
       closeModal('modal-scenario');
 
-      // Reset form
       document.getElementById('scen-title').value = '';
       document.getElementById('scen-avatar').value = '';
       document.getElementById('scen-prompt').value = '';
@@ -632,7 +657,6 @@
       }
     }
 
-    /* BACKUP / RECOVER JSON FILE */
     function exportToFile() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -665,7 +689,6 @@
       reader.readAsText(file);
     }
 
-    /* JSONBIN CLOUD SYNC */
     async function syncCloud(action) {
       const masterKey = document.getElementById('auth-jsonbin-key').value.trim();
       let binId = document.getElementById('auth-bin-id').value.trim();
