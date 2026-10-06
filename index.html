@@ -124,7 +124,7 @@
       <div style="display: flex; gap: 6px;">
         <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
         <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
-        <button class="btn" onclick="openModal('modal-settings')">⚙️ Cài Đặt</button>
+        <button class="btn" onclick="openModal('modal-settings')">⚙️️ Cài Đặt</button>
       </div>
     </div>
 
@@ -297,7 +297,9 @@
       scenarios: [],
       persona: { name: 'User', dob: '', avatar: 'https://i.imgur.com/inX4g7d.png', memories: '' },
       chatHistories: {},
-      chatSummaries: {}
+      chatSummaries: {},
+      aiBubbleBg: '#ffffff',
+      userBubbleBg: '#c1ebd9'
     };
 
     window.onload = function() {
@@ -323,10 +325,24 @@
       document.getElementById('cfg-model-select').value = state.currentModel || 'gemini-3.5-flash-lite';
       document.getElementById('auth-jsonbin-key').value = state.jsonbinMasterKey || '';
       document.getElementById('auth-bin-id').value = state.binId || '';
+      
+      if (state.persona) {
+        document.getElementById('per-name').value = state.persona.name || '';
+        document.getElementById('per-dob').value = state.persona.dob || '';
+        document.getElementById('per-memories').value = state.persona.memories || '';
+      }
+
+      if (state.aiBubbleBg) document.getElementById('cfg-ai-bubble').value = state.aiBubbleBg;
+      if (state.userBubbleBg) document.getElementById('cfg-user-bubble').value = state.userBubbleBg;
+      updateThemeColors();
     }
 
     function saveStorage() {
       localStorage.setItem('teechat_state_v5', JSON.stringify(state));
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function switchPage(pageId) {
@@ -347,9 +363,9 @@
           <div>
             <div class="scenario-header">
               <img src="${scen.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="scenario-avatar">
-              <h3>${scen.title}</h3>
+              <h3>${escapeHtml(scen.title)}</h3>
             </div>
-            <p class="scenario-desc">${scen.prompt}</p>
+            <p class="scenario-desc">${escapeHtml(scen.prompt)}</p>
           </div>
           <div style="display: flex; gap: 8px; margin-top: 10px;">
             <button class="btn" style="flex:1;" onclick="openChat('${scen.id}')">Trò Chuyện</button>
@@ -389,7 +405,7 @@
           div.innerHTML = `
             <img src="${state.persona.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="msg-avatar">
             <div class="msg-bubble-wrap">
-              <div class="msg-sender">${state.persona.name || 'Bạn'}</div>
+              <div class="msg-sender">${escapeHtml(state.persona.name || 'Bạn')}</div>
               <div class="msg-bubble">${escapeHtml(msg.text)}</div>
               <div class="msg-action-bar">
                 <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
@@ -549,6 +565,173 @@
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
-    /* HÀM XUẤT FILE BACKUP JSON */
+    /* LƯU CÀI ĐẶT */
+    function saveAppSettings() {
+      const keysRaw = document.getElementById('cfg-api-keys').value;
+      state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
+      state.currentModel = document.getElementById('cfg-model-select').value || 'gemini-3.5-flash-lite';
+      state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
+      state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
+      updateThemeColors();
+      saveStorage();
+      closeModal('modal-settings');
+      alert('Đã lưu cài đặt!');
+    }
+
+    function updateThemeColors() {
+      document.documentElement.style.setProperty('--ai-bubble-bg', document.getElementById('cfg-ai-bubble').value);
+      document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
+    }
+
+    /* LƯU HỒ SƠ */
+    function savePersona() {
+      state.persona.name = document.getElementById('per-name').value;
+      state.persona.dob = document.getElementById('per-dob').value;
+      state.persona.memories = document.getElementById('per-memories').value;
+      saveStorage();
+      closeModal('modal-persona');
+      alert('Đã lưu hồ sơ người dùng!');
+    }
+
+    /* TẠO KỊCH BẢN */
+    function saveScenario() {
+      const title = document.getElementById('scen-title').value.trim();
+      const avatar = document.getElementById('scen-avatar').value.trim();
+      const promptText = document.getElementById('scen-prompt').value.trim();
+      const firstMsg = document.getElementById('scen-first-msg').value.trim();
+
+      if (!title) return alert('Vui lòng nhập tên kịch bản!');
+
+      const newScen = {
+        id: 'scen-' + Date.now(),
+        title,
+        avatar: avatar || 'https://i.imgur.com/inX4g7d.png',
+        prompt: promptText,
+        firstMsg
+      };
+
+      state.scenarios.push(newScen);
+      saveStorage();
+      renderScenarios();
+      closeModal('modal-scenario');
+
+      // Reset form
+      document.getElementById('scen-title').value = '';
+      document.getElementById('scen-avatar').value = '';
+      document.getElementById('scen-prompt').value = '';
+      document.getElementById('scen-first-msg').value = '';
+    }
+
+    function deleteScenario(id) {
+      if (confirm('Bạn có chắc muốn xóa kịch bản này?')) {
+        state.scenarios = state.scenarios.filter(s => s.id !== id);
+        delete state.chatHistories[id];
+        delete state.chatSummaries[id];
+        saveStorage();
+        renderScenarios();
+      }
+    }
+
+    /* BACKUP / RECOVER JSON FILE */
     function exportToFile() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `teechat_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importFromFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const importedData = JSON.parse(evt.target.result);
+          if (importedData && typeof importedData === 'object') {
+            state = importedData;
+            saveStorage();
+            loadStorage();
+            renderScenarios();
+            alert('Khôi phục dữ liệu thành công!');
+            closeModal('modal-auth');
+          }
+        } catch (err) {
+          alert('File JSON không hợp lệ!');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* JSONBIN CLOUD SYNC */
+    async function syncCloud(action) {
+      const masterKey = document.getElementById('auth-jsonbin-key').value.trim();
+      let binId = document.getElementById('auth-bin-id').value.trim();
+
+      if (!masterKey) return alert('Vui lòng nhập JSONBin Master Key!');
+
+      state.jsonbinMasterKey = masterKey;
+
+      if (action === 'upload') {
+        try {
+          let url = 'https://api.jsonbin.io/v3/b';
+          let method = 'POST';
+
+          if (binId) {
+            url = `https://api.jsonbin.io/v3/b/${binId}`;
+            method = 'PUT';
+          }
+
+          const res = await fetch(url, {
+            method: method,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': masterKey
+            },
+            body: JSON.stringify(state)
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            if (!binId && data.metadata && data.metadata.id) {
+              state.binId = data.metadata.id;
+              document.getElementById('auth-bin-id').value = state.binId;
+            }
+            saveStorage();
+            alert('Đã tải dữ liệu lên Cloud thành công! Mã Bin ID của bạn là: ' + (state.binId || binId));
+          } else {
+            alert('Lỗi Cloud: ' + (data.message || 'Không thể đồng bộ'));
+          }
+        } catch (err) {
+          alert('Lỗi kết nối tới JSONBin!');
+        }
+      } else if (action === 'download') {
+        if (!binId) return alert('Vui lòng nhập Mã Bin ID để tải dữ liệu về!');
+        try {
+          const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+            method: 'GET',
+            headers: { 'X-Master-Key': masterKey }
+          });
+          const data = await res.json();
+          if (res.ok && data.record) {
+            state = data.record;
+            state.binId = binId;
+            state.jsonbinMasterKey = masterKey;
+            saveStorage();
+            loadStorage();
+            renderScenarios();
+            alert('Đã tải dữ liệu từ Cloud về thành công!');
+            closeModal('modal-auth');
+          } else {
+            alert('Lỗi Cloud: ' + (data.message || 'Không thể tải dữ liệu'));
+          }
+        } catch (err) {
+          alert('Lỗi kết nối tới JSONBin!');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
