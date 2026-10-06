@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Teechat - Roleplay Platform</title>
   
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRlZWNoYXQgLSBDb25uZWN0ICYgQ2hhdCIsCiAgInNob3J0X25hbWUiIjogIlRlZWNoYXQiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNlN2Y1ZWUiLAogICJ0aGVtZV9jb2xvciI6ICIjZTdmNWVlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmltZ3VyLmNvbS9ZZ3E4TVdJLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgotICAgIH0KICBdCn0=">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRlZWNoYXQgLSBDb25uZWN0ICYgQ2hhdCIsCiAgInNob3J0X25hbWUiIjogIlRlZWNoYXQiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNlN2Y1ZWUiLAogICJ0aGVtZV9jb2xvciI6ICIjZTdmNWVlIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmltZ3VyLmNvbS9pblg0ZzdkLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgotICAgIH0KICBdCn0=">
   <meta name="theme-color" content="#e7f5ee">
 
   <style>
@@ -50,7 +50,7 @@
 
     .navbar { background: rgba(255, 255, 255, 0.85); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; }
     .app-logo-title { display: flex; align-items: center; gap: 10px; }
-    .app-logo-title img { width: 36px; height: 36px; border-radius: 50%; }
+    .app-logo-title img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
     .app-logo-title h1 { font-size: 1.5rem; color: var(--app-dark-green); }
 
     .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
@@ -118,7 +118,7 @@
   <div id="page-home" class="page active">
     <div class="navbar">
       <div class="app-logo-title">
-        <img src="https://i.imgur.com/Ygq8MWI.png" alt="Teechat Logo">
+        <img src="https://i.imgur.com/inX4g7d.png" alt="Teechat Logo">
         <h1>Teechat</h1>
       </div>
       <div style="display: flex; gap: 6px;">
@@ -164,27 +164,39 @@
     </div>
   </div>
 
-  <!-- MODAL: ACCOUNT & JSONBIN CLOUD SYNC -->
+  <!-- MODAL: ACCOUNT & CLOUD / FILE BACKUP SYNC -->
   <div id="modal-auth" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>☁️️ Đồng Bộ Đám Mây (JSONBin)</h3>
+        <h3>☁️ Quản Lý Dữ Liệu & Đồng Bộ</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
       </div>
+      
+      <!-- PHẦN BACKUP FILE CỤ THỂ -->
+      <div style="background: #f0fdf4; padding: 12px; border-radius: 12px; border: 1px solid #bbf7d0;">
+        <h4 style="font-size: 0.9rem; color: var(--app-dark-green); margin-bottom: 6px;">📂 Sao Lưu / Khôi Phục Bằng File JSON:</h4>
+        <p style="font-size: 0.75rem; color: #4b5563; margin-bottom: 8px;">Tải file lịch sử đoạn chat cũ lên để tiếp tục nhắn tin không bị mất dữ liệu.</p>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" style="flex:1;" onclick="exportToFile()">📤 Xuất File Backup</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 Nhập File Backup</button>
+          <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importFromFile(event)">
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #eee;">
+
+      <!-- PHẦN JSONBIN CLOUD -->
       <div class="form-group">
-        <label>JSONBin Master Key:</label>
+        <label>JSONBin Master Key (Đồng bộ đám mây):</label>
         <input type="password" id="auth-jsonbin-key" placeholder="$2a$10$...">
       </div>
       <div class="form-group">
-        <label>Mã Bin ID (Nếu chuyển sang máy mới):</label>
+        <label>Mã Bin ID (Dùng khi sang thiết bị mới):</label>
         <input type="text" id="auth-bin-id" placeholder="65a1b2c3d4e5f...">
       </div>
-      <p style="font-size: 0.75rem; color: #718096;">
-        👉 Bấm <b>Tải Lên Cloud</b> để lấy Mã Bin ID. Dùng mã này để <b>Tải Về</b> trên thiết bị khác.
-      </p>
       <div style="display: flex; gap: 10px; margin-top: 6px;">
         <button class="btn" style="flex:1;" onclick="syncCloud('upload')">☁️ Tải Lên Cloud</button>
-        <button class="btn btn-pink" style="flex:1;" onclick="syncCloud('download')">📥 Tải Về Máy Này</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="syncCloud('download')">📥 Tải Từ Cloud Về</button>
       </div>
     </div>
   </div>
@@ -283,7 +295,7 @@
       currentModel: 'gemini-3.5-flash-lite',
       activeScenarioId: null,
       scenarios: [],
-      persona: { name: 'User', dob: '', avatar: 'https://i.imgur.com/6VBx3io.png', memories: '' },
+      persona: { name: 'User', dob: '', avatar: 'https://i.imgur.com/inX4g7d.png', memories: '' },
       chatHistories: {},
       chatSummaries: {}
     };
@@ -301,7 +313,7 @@
         state.scenarios.push({
           id: 'scen-1',
           title: 'Trần Hạo Nam',
-          avatar: 'https://i.imgur.com/6VBx3io.png',
+          avatar: 'https://i.imgur.com/inX4g7d.png',
           prompt: 'Bạn là Trần Hạo Nam, trầm tính, lạnh lùng nhưng rất quan tâm đến Thư. Xưng hô: Anh - Cô/Thư.',
           firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."'
         });
@@ -334,7 +346,7 @@
         card.innerHTML = `
           <div>
             <div class="scenario-header">
-              <img src="${scen.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="scenario-avatar">
+              <img src="${scen.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="scenario-avatar">
               <h3>${scen.title}</h3>
             </div>
             <p class="scenario-desc">${scen.prompt}</p>
@@ -352,7 +364,7 @@
       state.activeScenarioId = scenId;
       const scen = state.scenarios.find(s => s.id === scenId);
       document.getElementById('chat-ai-name').innerText = scen.title;
-      document.getElementById('chat-ai-avatar').src = scen.avatar || 'https://i.imgur.com/6VBx3io.png';
+      document.getElementById('chat-ai-avatar').src = scen.avatar || 'https://i.imgur.com/inX4g7d.png';
 
       if (!state.chatHistories[scenId] || state.chatHistories[scenId].length === 0) {
         state.chatHistories[scenId] = [];
@@ -375,7 +387,7 @@
           const div = document.createElement('div');
           div.className = 'chat-message user';
           div.innerHTML = `
-            <img src="${state.persona.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="msg-avatar">
+            <img src="${state.persona.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="msg-avatar">
             <div class="msg-bubble-wrap">
               <div class="msg-sender">${state.persona.name || 'Bạn'}</div>
               <div class="msg-bubble">${escapeHtml(msg.text)}</div>
@@ -406,7 +418,7 @@
           const div = document.createElement('div');
           div.className = 'chat-message ai';
           div.innerHTML = `
-            <img src="${scen.avatar || 'https://i.imgur.com/6VBx3io.png'}" class="msg-avatar">
+            <img src="${scen.avatar || 'https://i.imgur.com/inX4g7d.png'}" class="msg-avatar">
             <div class="msg-bubble-wrap">
               <div class="msg-sender">${escapeHtml(speakerName)}</div>
               <div class="msg-bubble">${escapeHtml(dialogueContent)}</div>
@@ -537,124 +549,6 @@
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
-    async function syncCloud(type) {
-      const masterKey = document.getElementById('auth-jsonbin-key').value.trim();
-      let binId = document.getElementById('auth-bin-id').value.trim();
-
-      if (!masterKey) {
-        return alert('Vui lòng nhập JSONBin Master Key!');
-      }
-
-      state.jsonbinMasterKey = masterKey;
-
-      if (type === 'upload') {
-        try {
-          let url = 'https://api.jsonbin.io/v3/b';
-          let method = 'POST';
-
-          if (binId || state.binId) {
-            url = `https://api.jsonbin.io/v3/b/${binId || state.binId}`;
-            method = 'PUT';
-          }
-
-          const res = await fetch(url, {
-            method: method,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Master-Key': masterKey,
-              'X-Bin-Name': 'teechat_backup'
-            },
-            body: JSON.stringify(state)
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const savedBinId = data.metadata.id || binId || state.binId;
-            state.binId = savedBinId;
-            document.getElementById('auth-bin-id').value = savedBinId;
-            saveStorage();
-            alert(`✅ Tải lên thành công!\n🔑 MÃ BIN ID CỦA BẠN LÀ:\n${savedBinId}\n\nHãy lưu mã này để tải dữ liệu về máy khác!`);
-          } else {
-            alert('❌ Lỗi khi tải lên! Kiểm tra lại Master Key.');
-          }
-        } catch (e) {
-          alert('❌ Lỗi kết nối: ' + e.message);
-        }
-      } else {
-        if (!binId) return alert('Vui lòng nhập Mã Bin ID để tải dữ liệu về!');
-
-        try {
-          const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-            headers: { 'X-Master-Key': masterKey }
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            state = data.record;
-            state.jsonbinMasterKey = masterKey;
-            state.binId = binId;
-            saveStorage();
-            loadStorage();
-            renderScenarios();
-            alert('🎉 Tải dữ liệu về máy thành công!');
-            closeModal('modal-auth');
-          } else {
-            alert('❌ Không tìm thấy Bin ID hoặc Sai Master Key!');
-          }
-        } catch (e) {
-          alert('❌ Lỗi kết nối: ' + e.message);
-        }
-      }
-    }
-
-    function saveAppSettings() {
-      state.apiKeys = document.getElementById('cfg-api-keys').value.split('\n').map(k => k.trim()).filter(k => k);
-      state.currentModel = document.getElementById('cfg-model-select').value.trim() || 'gemini-3.5-flash-lite';
-      saveStorage();
-      closeModal('modal-settings');
-      alert('Đã lưu cài đặt!');
-    }
-
-    function savePersona() {
-      state.persona.name = document.getElementById('per-name').value;
-      state.persona.dob = document.getElementById('per-dob').value;
-      state.persona.memories = document.getElementById('per-memories').value;
-      saveStorage();
-      closeModal('modal-persona');
-      alert('Đã lưu hồ sơ!');
-    }
-
-    function saveScenario() {
-      const title = document.getElementById('scen-title').value.trim();
-      if (!title) return alert('Vui lòng nhập tên kịch bản!');
-      state.scenarios.push({
-        id: 'scen-' + Date.now(),
-        title,
-        avatar: document.getElementById('scen-avatar').value.trim(),
-        prompt: document.getElementById('scen-prompt').value.trim(),
-        firstMsg: document.getElementById('scen-first-msg').value.trim()
-      });
-      saveStorage();
-      renderScenarios();
-      closeModal('modal-scenario');
-    }
-
-    function deleteScenario(id) {
-      if (confirm('Xóa kịch bản này?')) {
-        state.scenarios = state.scenarios.filter(s => s.id !== id);
-        saveStorage();
-        renderScenarios();
-      }
-    }
-
-    function updateThemeColors() {
-      document.documentElement.style.setProperty('--ai-bubble-bg', document.getElementById('cfg-ai-bubble').value);
-      document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-  </script>
-</body>
-</html>
+    /* HÀM XUẤT FILE BACKUP JSON */
+    function exportToFile() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent
