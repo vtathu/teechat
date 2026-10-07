@@ -1018,8 +1018,20 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: recentHistory
+        contents: recentHistory,
+        generationConfig: { thinkingConfig: { thinkingLevel: 'low' } }
       };
+
+      // Hiện chỉ báo "đang trả lời" để biết app vẫn đang chạy
+      const chatBox = document.getElementById('chat-history');
+      let loadingEl = null;
+      if (chatBox) {
+        loadingEl = document.createElement('div');
+        loadingEl.className = 'narrative-block system-action';
+        loadingEl.innerText = '⏳ AI đang trả lời...';
+        chatBox.appendChild(loadingEl);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
       let responseText = null;
       const selectedModel = (window.state.currentModel || 'gemini-3.8-flash').trim().replace(/^models\//,'');
@@ -1031,12 +1043,25 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
           let res, data;
           // Tự thử lại khi model quá tải tạm thời (503/500/429)
           for (let attempt = 0; attempt < 4; attempt++) {
-            res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-              body: JSON.stringify(payload)
-            });
-            data = await res.json().catch(() => ({}));
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 60000);
+            try {
+              res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                body: JSON.stringify(payload),
+                signal: ctrl.signal
+              });
+              data = await res.json().catch(() => ({}));
+            } catch (fe) {
+              clearTimeout(timer);
+              if (fe.name === 'AbortError') throw new Error('Quá thời gian chờ (60 giây), model không phản hồi');
+              // Lỗi mạng thoáng qua (iOS Safari hay báo "Load failed"): chờ rồi thử lại
+              if (attempt < 3) { await new Promise(r => setTimeout(r, 1500 * (attempt + 1))); continue; }
+              throw fe;
+            } finally { clearTimeout(timer); }
+            // Nếu model không hỗ trợ cấu hình suy nghĩ thì bỏ đi và gọi lại
+            if (res.status === 400 && payload.generationConfig) { delete payload.generationConfig; continue; }
             if (res.ok || ![429, 500, 503].includes(res.status) || attempt === 3) break;
             await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
           }
@@ -1050,6 +1075,8 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
           }
         } catch (e) { console.error(e); lastError = 'Không kết nối được mạng/API: ' + e.message; }
       }
+
+      if (loadingEl && loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
 
       if (responseText) {
         window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
