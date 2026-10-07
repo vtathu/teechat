@@ -566,7 +566,7 @@
       return (text || '').replace(/^["'“«]+|["'”»]+$/g, '').trim();
     }
 
-    /* Làm sạch ký tự đặc biệt cho hành động - GIỮ NGUYÊN NỘI DUNG GỐC CỦA HÀNH ĐỘNG */
+    /* Làm sạch ký tự đặc biệt cho hành động */
     function formatActionTextWithSubject(actionText) {
       if (!actionText) return '';
       return actionText.replace(/\*/g, '').trim();
@@ -878,35 +878,27 @@
       container.appendChild(div);
     }
 
-    /* HÀM XỬ LÝ TÁCH NỘI DUNG VÀ HIỂN THỊ THEO THỨ TỰ THUẦN TÚY (KHÔNG TỰ TẠO THÊM TÊN TRONG HÀNH ĐỘNG) */
+    /* ĐÃ SỬA HÀM XỬ LÝ: TỰ ĐỘNG BẮT TÊN NHÂN VẬT ĐÚNG MỖI KHI XUẤT HIỆN MỚI */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
         line = line.trim();
-        let speakerName = '';
-        let content = line;
+        let currentSpeaker = '';
 
-        // Tách Tên Nhân Vật ở đầu câu (Ví dụ: "Trần Hạo Nam: ...")
+        // Tách ở đầu câu nếu có cấu trúc: "Tên Nhân Vật: ..."
         const nameColonMatch = line.match(/^([A-Za-z0-9\sĐđÀ-ỹ]+):\s*(.*)/);
+        let contentToParse = line;
         if (nameColonMatch) {
-          speakerName = nameColonMatch[1].trim();
-          content = nameColonMatch[2].trim();
+          currentSpeaker = nameColonMatch[1].trim();
+          contentToParse = nameColonMatch[2].trim();
         }
 
-        // Tìm Avatar của nhân vật
-        let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-        if (speakerName && story && story.characters) {
-          const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
-          if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
-        }
-
-        // BẮT CHUỖI THEO THỨ TỰ XUẤT HIỆN TRONG CÂU
         const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
         let match;
         let items = [];
 
-        while ((match = seqRegex.exec(content)) !== null) {
+        while ((match = seqRegex.exec(contentToParse)) !== null) {
           if (match[1] !== undefined) {
             items.push({ type: 'dialogue', content: match[1] });
           } else if (match[2] !== undefined) {
@@ -914,24 +906,46 @@
           }
         }
 
-        if (items.length === 0 && content) {
-          items.push({ type: 'dialogue', content: content });
+        if (items.length === 0 && contentToParse) {
+          items.push({ type: 'dialogue', content: contentToParse });
         }
 
-        // VẼ TỪNG THÀNH PHẦN NỐI TIẾP VÀ NGUYÊN BẢN HÀNH ĐỘNG
         items.forEach(item => {
           if (item.type === 'action') {
+            const rawAction = item.content.trim();
+            // Tự kiểm tra xem trong câu hành động có chứa Tên Nhân Vật trong danh sách không
+            if (story && story.characters) {
+              story.characters.forEach(c => {
+                if (rawAction.toLowerCase().includes(c.name.toLowerCase())) {
+                  currentSpeaker = c.name; // Cập nhật lại tên nhân vật đang hành động/nói
+                }
+              });
+            }
+
             const actionBlock = document.createElement('div');
             actionBlock.className = 'scene-action-inline ai';
-            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(item.content));
+            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(rawAction));
             container.appendChild(actionBlock);
+
           } else if (item.type === 'dialogue') {
+            // Xác định Avatar và Tên hiển thị chuẩn theo currentSpeaker vừa tìm được
+            let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+            let displayName = currentSpeaker || 'AI';
+
+            if (currentSpeaker && story && story.characters) {
+              const foundChar = story.characters.find(c => c.name.toLowerCase() === currentSpeaker.toLowerCase());
+              if (foundChar) {
+                displayName = foundChar.name;
+                if (foundChar.avatar) matchedAvatar = foundChar.avatar;
+              }
+            }
+
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
               <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
               <div class="msg-bubble-wrap">
-                <div class="msg-sender">${escapeHtml(speakerName || 'AI')}</div>
+                <div class="msg-sender">${escapeHtml(displayName)}</div>
                 <div class="msg-bubble">
                   <span class="dialogue-text">${escapeHtml(cleanDialogueText(item.content))}</span>
                 </div>
@@ -1009,9 +1023,9 @@ ${charsPrompt}
 
 [QUY TẮC PHẢN HỒI BẮT BUỘC]
 1. Định dạng xuất dòng:
-   Mỗi nhân vật khi phản hồi PHẢI ghi rõ tên nhân vật ở ĐẦU MỖI DÒNG: "Tên Nhân Vật: *Hành động 1* "Lời thoại" *Hành động 2*".
+   Mỗi nhân vật khi phản hồi PHẢI ghi rõ tên nhân vật ở ĐẦU MỖI ĐOẠN HOẶC HÀNH ĐỘNG: "Tên Nhân Vật: *Tên Nhân Vật + Hành động* "Lời thoại"".
 2. Quy tắc định danh chống cướp lời / gán nhầm nhân vật:
-   - CÂU ĐẦU TIÊN trong đoạn mô tả hành động (*) của bất kỳ nhân vật nào BẮT BUỘC phải viết rõ TÊN RIÊNG của nhân vật đó (Ví dụ: "Trần Hạo Nam tựa lưng vào tường...", "Sào Bì gật đầu mạnh..."). KHÔNG ĐƯỢC dùng các đại từ chung chung như "Anh", "Cậu", "Hắn" ở câu mở đầu đoạn hành động.
+   - CÂU ĐẦU TIÊN trong đoạn mô tả hành động (*) của bất kỳ nhân vật nào BẮT BUỘC phải viết rõ TÊN RIÊNG của nhân vật đó (Ví dụ: "Trần Hạo Nam tựa lưng vào tường...", "Sào Bì gật đầu mạnh...", "Đại Thiên Nhị bước tới..."). KHÔNG ĐƯỢC dùng các đại từ chung chung như "Anh", "Cậu", "Hắn" ở câu mở đầu đoạn hành động.
    - TỪ CÂU THỨ HAI TRỞ ĐI trong cùng đoạn mô tả hành động đó: Được phép linh hoạt dùng đại từ nhân xưng (anh ấy, cậu ấy, cô ấy,...) để câu văn tự nhiên hơn.
 3. Phân biệt rõ ràng giữa các nhân vật:
    - Mỗi hành động và lời thoại phải thuộc về đúng một nhân vật duy nhất tại một thời điểm. Tuyệt đối KHÔNG gộp hành động của nhân vật A nhưng lại gán bong bóng thoại cho nhân vật B.
