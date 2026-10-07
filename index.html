@@ -1008,10 +1008,16 @@ Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truy�
 ${charsPrompt}
 
 [QUY TẮC PHẢN HỒI BẮT BUỘC]
-1. Mỗi nhân vật khi phản hồi PHẢI ghi rõ tên nhân vật ở ĐẦU MỖI DÒNG: "Tên Nhân Vật: *Hành động 1* "Lời thoại" *Hành động 2*".
-2. KHÔNG ĐƯỢC gán ghép hành động/thoại của nhân vật này vào tên của nhân vật khác.
-3. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...*.
-4. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "...".
+1. Định dạng xuất dòng:
+   Mỗi nhân vật khi phản hồi PHẢI ghi rõ tên nhân vật ở ĐẦU MỖI DÒNG: "Tên Nhân Vật: *Hành động 1* "Lời thoại" *Hành động 2*".
+2. Quy tắc định danh chống cướp lời / gán nhầm nhân vật:
+   - CÂU ĐẦU TIÊN trong đoạn mô tả hành động (*) của bất kỳ nhân vật nào BẮT BUỘC phải viết rõ TÊN RIÊNG của nhân vật đó (Ví dụ: "Trần Hạo Nam tựa lưng vào tường...", "Sào Bì gật đầu mạnh..."). KHÔNG ĐƯỢC dùng các đại từ chung chung như "Anh", "Cậu", "Hắn" ở câu mở đầu đoạn hành động.
+   - TỪ CÂU THỨ HAI TRỞ ĐI trong cùng đoạn mô tả hành động đó: Được phép linh hoạt dùng đại từ nhân xưng (anh ấy, cậu ấy, cô ấy,...) để câu văn tự nhiên hơn.
+3. Phân biệt rõ ràng giữa các nhân vật:
+   - Mỗi hành động và lời thoại phải thuộc về đúng một nhân vật duy nhất tại một thời điểm. Tuyệt đối KHÔNG gộp hành động của nhân vật A nhưng lại gán bong bóng thoại cho nhân vật B.
+4. Định dạng ký tự:
+   - Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...*.
+   - Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "...".
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
