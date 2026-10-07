@@ -631,6 +631,15 @@
 
       renderChatHistory();
       switchPage('page-story-detail');
+
+      // Tự cuộn xuống tin nhắn cuối khi mở truyện (trang chat vừa hiện nên cuộn lại sau khi layout xong và ảnh tải xong)
+      const scrollChatBottom = () => {
+        const box = document.getElementById('chat-history');
+        if (box) box.scrollTop = box.scrollHeight;
+      };
+      scrollChatBottom();
+      requestAnimationFrame(scrollChatBottom);
+      [100, 300, 700].forEach(t => setTimeout(scrollChatBottom, t));
     }
 
     /* POPUP CÀI ĐẶT RIÊNG CHO TRUYỆN */
@@ -897,7 +906,7 @@
             if (seg.type === 'action') {
               const actDiv = document.createElement('div');
               actDiv.className = 'narrative-block ai-action';
-              actDiv.innerText = `${speakerName}: ${seg.text}`;
+              actDiv.innerText = seg.text;
               container.appendChild(actDiv);
             } else {
               const div = document.createElement('div');
@@ -1035,7 +1044,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       if (chatBox) {
         loadingEl = document.createElement('div');
         loadingEl.className = 'narrative-block system-action';
-        loadingEl.innerText = '⏳ AI đang trả lời...';
+        loadingEl.innerText = 'Đang trả lời...';
         chatBox.appendChild(loadingEl);
         chatBox.scrollTop = chatBox.scrollHeight;
       }
