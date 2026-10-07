@@ -521,17 +521,17 @@
           characters: [
             {
               id: 'char-1',
-              name: 'Sào Bì',
+              name: 'Gà Rừng',
               avatar: DEFAULT_LOGO,
-              personality: 'Tinh nghịch, hoạt bát, dễ thương.',
-              firstMsg: 'Sào Bì: * Nhảy khỏi thùng rượu, chạy tới chỗ Thư, mắt sáng rỡ. * "Chào chị Thư! Em là Sào Bì. Chị ngầu quá đi!"'
+              personality: 'Tinh nghịch, hoạt bát, bốc đồng.',
+              firstMsg: 'Gà Rừng: * Nhảy khỏi thùng rượu, chạy tới * "Chào chị Thư! Em là Gà Rừng."'
             },
             {
               id: 'char-2',
-              name: 'Đại Thiên Nhị',
+              name: 'Trần Hạo Nam',
               avatar: DEFAULT_LOGO,
-              personality: 'Trầm tính, điềm đạm.',
-              firstMsg: 'Đại Thiên Nhị: "Chào cô. Tôi là Đại Thiên Nhị."'
+              personality: 'Trầm tính, uy nghiêm, thủ lĩnh.',
+              firstMsg: 'Trần Hạo Nam: "Chào cô."'
             }
           ]
         });
@@ -572,23 +572,26 @@
       return text.replace(/\*/g, '').trim();
     }
 
-    /* HÀM HỖ TRỢ HIỂN THỊ TÊN Ở CÂU ĐẦU TIÊN CỦA ĐOẠN HÀNH ĐỘNG */
+    /* HÀM XỬ LÝ CHÈN TÊN THÔNG MINH - TRÁNH LỖI XƯNG HÔ LẶP LẠI (Gà Rừng Anh...) */
     function formatActionTextWithSubject(actionText, subjectName) {
       let cleaned = cleanActionText(actionText);
       if (!cleaned) return '';
       if (!subjectName || subjectName === 'AI') return cleaned;
 
-      // Chia đoạn thành các câu theo dấu chấm, hỏi, cảm
       let sentences = cleaned.split(/(?<=[.!?])\s+/);
       if (sentences.length === 0) return cleaned;
 
       let firstSentence = sentences[0];
-      // Nếu câu đầu chưa có tên nhân vật ở đầu câu thì gắn tên vào
-      if (!firstSentence.toLowerCase().startsWith(subjectName.toLowerCase())) {
+
+      // Tự động thay thế đại từ xưng hô ở đầu câu nếu có thay vì ghép đè tên vào trước đại từ
+      const pronounRegex = /^(Anh|Hắn|Y|Cô|Cậu|Chị|Em|Ông|Bà)\b/i;
+      if (pronounRegex.test(firstSentence)) {
+        firstSentence = firstSentence.replace(pronounRegex, subjectName);
+      } else if (!firstSentence.toLowerCase().includes(subjectName.toLowerCase())) {
         firstSentence = subjectName + ' ' + firstSentence;
       }
+      
       sentences[0] = firstSentence;
-
       return sentences.join(' ');
     }
 
@@ -849,7 +852,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* KHUNG HOẠT ĐỘNG CỦA USER (Đã cập nhật quy tắc tên ở câu đầu hành động) */
+    /* HIỂN THỊ TIN NHẮN CỦA USER */
     function renderUserFormattedMessage(rawText, container, idx) {
       const userName = (window.state.persona && window.state.persona.name) || 'Anh Thư';
       const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
@@ -911,75 +914,85 @@
       container.appendChild(div);
     }
 
-    /* ĐÃ SỬA LỖI: Cập nhật hàm parseAndRenderAiMessage đúng quy tắc chèn tên ở câu đầu của khối hành động */
+    /* ĐÃ SỬA TRIỆT ĐỂ: Phân tích từng dòng của AI chính xác, không bị gán nhầm sang 1 nhân vật */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
-        const charMatch = line.match(/^(?:([A-Za-z0-9\sĐđÀ-ỹ]+):)?\s*(.*)/);
+        line = line.trim();
+        let speakerName = '';
+        let content = line;
 
-        if (charMatch) {
-          let speakerName = charMatch[1] ? charMatch[1].trim() : 'AI';
-          let content = charMatch[2] ? charMatch[2].trim() : line;
+        // Tách Tên Nhân Vật nếu dòng bắt đầu theo cú pháp "Tên: ..."
+        const nameColonMatch = line.match(/^([A-Za-z0-9\sĐđÀ-ỹ]+):\s*(.*)/);
+        if (nameColonMatch) {
+          speakerName = nameColonMatch[1].trim();
+          content = nameColonMatch[2].trim();
+        }
 
-          let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-          if (story && story.characters) {
-            const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
-            if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
-          }
+        // Tìm Avatar khớp với Tên Nhân Vật
+        let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+        if (speakerName && story && story.characters) {
+          const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
+          if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
+        }
 
-          const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
-          let seqMatch;
-          let items = [];
+        const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
+        let seqMatch;
+        let items = [];
 
-          while ((seqMatch = seqRegex.exec(content)) !== null) {
-            if (seqMatch[2]) items.push({ type: 'action', content: seqMatch[2] });
-            else if (seqMatch[1]) items.push({ type: 'dialogue', content: seqMatch[1] });
-          }
+        while ((seqMatch = seqRegex.exec(content)) !== null) {
+          if (seqMatch[2]) items.push({ type: 'action', content: seqMatch[2] });
+          else if (seqMatch[1]) items.push({ type: 'dialogue', content: seqMatch[1] });
+        }
 
-          if (items.length === 0 && content) {
+        if (items.length === 0 && content) {
+          if (content.startsWith('*') && content.endsWith('*')) {
+            items.push({ type: 'action', content: content });
+          } else {
             items.push({ type: 'dialogue', content: content });
           }
+        }
 
-          let pendingAction = [];
+        let pendingAction = [];
 
-          items.forEach(item => {
-            if (item.type === 'action') {
-              pendingAction.push(cleanActionText(item.content));
-            } else {
-              if (pendingAction.length > 0) {
-                const actionBlock = document.createElement('div');
-                actionBlock.className = 'scene-action-inline ai';
-                actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
-                container.appendChild(actionBlock);
-                pendingAction = [];
-              }
-              const div = document.createElement('div');
-              div.className = 'chat-message ai';
-              div.innerHTML = `
-                <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-                <div class="msg-bubble-wrap">
-                  <div class="msg-sender">${escapeHtml(speakerName)}</div>
-                  <div class="msg-bubble">
-                    <span class="dialogue-text">${escapeHtml(cleanDialogueText(item.content))}</span>
-                  </div>
-                  <div class="msg-action-bar">
-                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                  </div>
-                </div>
-              `;
-              container.appendChild(div);
+        items.forEach(item => {
+          if (item.type === 'action') {
+            pendingAction.push(cleanActionText(item.content));
+          } else {
+            if (pendingAction.length > 0) {
+              const actionBlock = document.createElement('div');
+              actionBlock.className = 'scene-action-inline ai';
+              actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
+              container.appendChild(actionBlock);
+              pendingAction = [];
             }
-          });
 
-          if (pendingAction.length > 0) {
-            const actionBlock = document.createElement('div');
-            actionBlock.className = 'scene-action-inline ai';
-            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
-            container.appendChild(actionBlock);
+            const div = document.createElement('div');
+            div.className = 'chat-message ai';
+            div.innerHTML = `
+              <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+              <div class="msg-bubble-wrap">
+                <div class="msg-sender">${escapeHtml(speakerName || 'AI')}</div>
+                <div class="msg-bubble">
+                  <span class="dialogue-text">${escapeHtml(cleanDialogueText(item.content))}</span>
+                </div>
+                <div class="msg-action-bar">
+                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                </div>
+              </div>
+            `;
+            container.appendChild(div);
           }
+        });
+
+        if (pendingAction.length > 0) {
+          const actionBlock = document.createElement('div');
+          actionBlock.className = 'scene-action-inline ai';
+          actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
+          container.appendChild(actionBlock);
         }
       });
     }
@@ -1044,9 +1057,10 @@ Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truy�
 ${charsPrompt}
 
 [QUY TẮC PHẢN HỒI BẮT BUỘC]
-1. Mỗi nhân vật khi có hành động hoặc lời thoại PHẢI viết thành một dòng riêng biệt, bắt đầu bằng tên nhân vật và dấu hai chấm. (Ví dụ: "Sào Bì: ..." hoặc "Trần Hạo Nam: ...").
-2. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...*. Tuyệt đối không nhầm lẫn hành động của nhân vật này sang cho nhân vật khác.
-3. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "...".
+1. Mỗi nhân vật khi phản hồi PHẢI ghi rõ tên nhân vật ở ĐẦU MỖI DÒNG: "Tên Nhân Vật: *Hành động* "Lời thoại"".
+2. KHÔNG ĐƯỢC gán ghép hành động/thoại của nhân vật này vào tên của nhân vật khác.
+3. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...*.
+4. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "...".
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
