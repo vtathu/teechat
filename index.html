@@ -67,24 +67,22 @@
     .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; position: relative; }
     .char-avatar-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
 
-    /* CHAT CONTAINER - VÀO LÀ CHAT NGAY */
-    .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    /* CHAT CONTAINER */
+    .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
     
-    /* HÀNH ĐỘNG CỦA CÂU CHUYỆN / BỐI CẢNH NẰM NGOÀI BONG BÓNG CHAT (NỀN RIÊNG) */
-    .scene-action-block {
-      background: rgba(144, 212, 184, 0.22);
-      border-left: 4px solid var(--app-dark-green);
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin: 4px 0;
+    /* HÀNH ĐỘNG / TÂM LÝ TRÔI NẰM NGUYÊN TRÊN NỀN - KHÔNG DÙNG Ô KHUNG */
+    .scene-action-inline {
       font-style: italic;
-      color: #333333;
-      font-size: 0.9rem;
-      width: 100%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      color: #4a5568;
+      font-size: 0.92rem;
+      padding: 6px 12px;
+      margin: 4px 0;
+      text-align: center;
+      line-height: 1.4;
+      word-break: break-word;
     }
 
-    .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-start; }
+    .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-start; margin-bottom: 2px; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
     .chat-message.ai { align-self: flex-start; }
     
@@ -93,7 +91,7 @@
     .msg-sender { font-size: 0.8rem; font-weight: bold; color: #5a6b5c; padding: 0 4px; }
     .user .msg-sender { text-align: right; }
     
-    /* BONG BÓNG CHAT CHỈ CHỨA LỜI THOẠI */
+    /* BONG BÓNG CHAT CHỈ CHỨA LỜI THOẠI CỦA TỪNG LƯỢT */
     .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
     .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-top-left-radius: 4px; }
     .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-top-right-radius: 4px; }
@@ -147,18 +145,16 @@
     <div class="scenarios-container" id="story-list"></div>
   </div>
 
-  <!-- PAGE 2: GIAO DIỆN CHÁT TRỰC TIẾP (VÀO TRUYỆN LÀ CHÁT LUÔN) -->
+  <!-- PAGE 2: TRÒ CHUYỆN KỊCH BẢN TƯƠNG TÁC -->
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
         <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
         <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">Tên Truyện</h3>
       </div>
-      <!-- NÚT CÀI ĐẶT CỐT TRUYỆN VÀ NHÂN VẬT RIÊNG CỦA TRUYỆN NÀY -->
       <button class="btn btn-pink" style="padding: 5px 10px; font-size: 0.78rem;" onclick="openStoryConfigModal()">⚙️ Cấu Hình Truyện</button>
     </div>
 
-    <!-- NỘI DUNG TRÒ CHUYỆN HIỂN THỊ TRỰC TIẾP -->
     <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: transparent;">
       <div class="chat-history" id="chat-history"></div>
 
@@ -176,7 +172,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN & NHÂN VẬT (NẰM TRONG NÚT TẠI MỖI TRUYỆN) -->
+  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN & NHÂN VẬT -->
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -228,7 +224,7 @@
         <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
       </div>
       <div class="form-group">
-        <label>Bối Cảnh Mở Đầu (Nằm ở nền câu chuyện):</label>
+        <label>Bối Cảnh Mở Đầu:</label>
         <textarea id="new-story-opening" rows="2" placeholder="Ví dụ: Thư vừa bước vào quán cafe thì gặp Trần Hạo Nam..."></textarea>
       </div>
       <button class="btn btn-pink" onclick="createNewStory()">Tạo Truyện</button>
@@ -260,7 +256,7 @@
         <textarea id="char-personality" rows="3" placeholder="Lạnh lùng, trung thành với anh em..."></textarea>
       </div>
       <div class="form-group">
-        <label>Lời Mở Đầu (Nếu không có bối cảnh mở đầu):</label>
+        <label>Lời Mở Đầu (Nếu có):</label>
         <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: * Đứng dậy đỡ ly rượu * "Cô có vẻ... biết chọn món."'></textarea>
       </div>
       <button class="btn btn-pink" onclick="saveCharacter()">Lưu Nhân Vật</button>
@@ -495,7 +491,7 @@
       currentModel: 'gemini-2.5-flash',
       activeStoryId: null,
       stories: [],
-      persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
+      persona: { name: 'Anh Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
       chatSummaries: {},
       aiBubbleBg: '#ffffff',
@@ -508,7 +504,7 @@
     };
 
     function loadStorage() {
-      const savedState = localStorage.getItem('teechat_state_v7');
+      const savedState = localStorage.getItem('teechat_state_v8');
       if (savedState) {
         try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
       }
@@ -520,7 +516,7 @@
       if (window.state.stories.length === 0) {
         window.state.stories.push({
           id: 'story-1',
-          title: 'Trần Hạo Nam & Băng Đảng',
+          title: 'Người trong giang hồ',
           avatar: DEFAULT_LOGO,
           setting: 'Cuộc chiến địa bàn gay cấn tại Chợ Mới giữa các băng nhóm.',
           openingScene: 'Đêm muộn tại quán rượu Chợ Mới, Trần Hạo Nam lặng lẽ ngồi rót rượu. Thư nhẹ nhàng bước qua cửa.',
@@ -530,14 +526,14 @@
               name: 'Gà Rừng',
               avatar: DEFAULT_LOGO,
               personality: 'Ngơ ngác, nóng tính nhưng trung thành.',
-              firstMsg: 'Gà Rừng: * Vẫn còn ngớ người ra một lúc, rồi gãi đầu. Cậu ta nhìn Đại Thiên Nhị như muốn hỏi chuyện gì đang xảy ra. *\n"À... ừm... chào cô... tôi là Gà Rừng."'
+              firstMsg: 'Gà Rừng: * Vẫn đứng đó, tròn mắt nhìn cô, rồi nhìn sang Hạo Nam như muốn hỏi ý kiến. *\n"Vậy... vậy là xong hết rồi hả anh Nam? Mấy thằng khốn đó không quay lại nữa chứ?"'
             },
             {
               id: 'char-2',
               name: 'Đại Thiên Nhị',
               avatar: DEFAULT_LOGO,
               personality: 'Trầm tĩnh, lịch sự, tôn trọng anh em.',
-              firstMsg: 'Đại Thiên Nhị: * Buông tay Gà Rừng ra, bước tới gần Thư, gật đầu nhẹ. *\n"Chào cô. Tôi là Đại Thiên Nhị."'
+              firstMsg: 'Đại Thiên Nhị: * Tiến tới gần nhẹ giọng *\n"Hạo Nam, có lẽ cô Thư cần một chỗ ngồi thoải mái hơn."'
             }
           ]
         });
@@ -548,7 +544,7 @@
       document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
       
       if (window.state.persona) {
-        document.getElementById('per-name').value = window.state.persona.name || '';
+        document.getElementById('per-name').value = window.state.persona.name || 'Anh Thư';
         document.getElementById('per-dob').value = window.state.persona.dob || '';
         document.getElementById('per-avatar').value = window.state.persona.avatar || '';
         document.getElementById('per-memories').value = window.state.persona.memories || '';
@@ -560,7 +556,7 @@
     }
 
     function saveStorage() {
-      localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
+      localStorage.setItem('teechat_state_v8', JSON.stringify(window.state));
     }
 
     function escapeHtml(str) {
@@ -650,7 +646,6 @@
       }
     }
 
-    /* BẤM VÀO TRUYỆN: TRUY CẬP THẲNG VÀO PHẦN TRÒ CHUYỆN */
     function openStoryDetail(storyId) {
       if (!window.state.stories) window.state.stories = [];
       const story = window.state.stories.find(s => s.id === storyId);
@@ -665,16 +660,10 @@
 
       if (!window.state.chatHistories) window.state.chatHistories = {};
       
-      // Nếu chưa có lịch sử trò chuyện, tạo bối cảnh mở đầu hoặc lời chào
       if (!window.state.chatHistories[storyId] || window.state.chatHistories[storyId].length === 0) {
         window.state.chatHistories[storyId] = [];
-        
         if (story.openingScene) {
           window.state.chatHistories[storyId].push({ sender: 'system', text: `* ${story.openingScene} *` });
-        } else if (story.characters && story.characters.length > 0) {
-          story.characters.forEach(c => {
-            if (c.firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: c.firstMsg });
-          });
         }
       }
 
@@ -682,7 +671,6 @@
       renderChatHistory();
     }
 
-    /* MỞ MODAL CẤU HÌNH CỐT TRUYỆN & NHÂN VẬT */
     function openStoryConfigModal() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story) return;
@@ -815,7 +803,7 @@
       input.focus();
     }
 
-    /* RENDER CHAT HISTORY (HÀNH ĐỘNG CÓ NỀN TÁCH BIỆT RA KHỎI BONG BÓNG CHAT) */
+    /* RENDER CHAT HISTORY (HÀNH ĐỘNG NẰM TRÔI NỀN - THOẠI TRONG KHUNG) */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -825,9 +813,8 @@
       history.forEach((msg, idx) => {
         if (msg.sender === 'system') {
           const div = document.createElement('div');
-          div.className = 'scene-action-block';
-          div.style.textAlign = 'center';
-          div.innerHTML = `🎬 <i>${escapeHtml(msg.text.replace(/\*/g, ''))}</i>`;
+          div.className = 'scene-action-inline';
+          div.innerHTML = `* ${escapeHtml(msg.text.replace(/\*/g, ''))} *`;
           container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, container, idx);
@@ -838,56 +825,56 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* NỔI PHẦN HÀNH ĐỘNG NẰM TRÊN NỀN BÊN NGOÀI BONG BÓNG CHAT */
+    /* XỬ LÝ NHẬP VÀO CỦA NGƯỜI DÙNG */
     function renderUserFormattedMessage(rawText, container, idx) {
-      let actionPart = '';
-      let dialogueParts = [];
+      const userName = (window.state.persona && window.state.persona.name) || 'Bạn';
+      const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
 
-      const dialogueMatches = rawText.match(/"([^"]+)"/g);
-      if (dialogueMatches) {
-        dialogueParts = dialogueMatches.map(m => m.replace(/"/g, ''));
+      // Quét chuỗi theo thứ tự xuất hiện của Thoại ("...") và Hành động (*...*)
+      const regex = /"([^"]+)"|\*([^*]+)\*/g;
+      let match;
+      let hasMatches = false;
+
+      while ((match = regex.exec(rawText)) !== null) {
+        hasMatches = true;
+        if (match[2]) {
+          // Là phần hành động (*) -> Nằm TRÔI TRÊN NỀN
+          const actionBlock = document.createElement('div');
+          actionBlock.className = 'scene-action-inline';
+          actionBlock.innerHTML = `* ${escapeHtml(userName)} ${escapeHtml(match[2].trim())} *`;
+          container.appendChild(actionBlock);
+        } else if (match[1]) {
+          // Là phần thoại (") -> Nằm trong KHUNG BONG BÓNG
+          appendUserBubble(match[1].trim(), userName, userAvatar, container, idx);
+        }
       }
 
-      const cleanAction = rawText.replace(/"([^"]+)"/g, '').replace(/\*/g, '').trim();
-      if (cleanAction) actionPart = cleanAction;
-
-      // 1. NẾU CÓ HÀNH ĐỘNG: Render Khối Hành động nằm riêng ở Nền
-      if (actionPart) {
-        const actionBlock = document.createElement('div');
-        actionBlock.className = 'scene-action-block';
-        actionBlock.innerHTML = `* ${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')} ${escapeHtml(actionPart)} *`;
-        container.appendChild(actionBlock);
-      }
-
-      // 2. NẾU CÓ LỜI THOẠI: Render Khung Bong Bóng Chat riêng cho Lời Thoại
-      let dialogueText = '';
-      if (dialogueParts.length > 0) {
-        dialogueText = dialogueParts.map(d => `"${escapeHtml(d)}"`).join('<br>');
-      } else if (!actionPart) {
-        dialogueText = `"${escapeHtml(rawText.replace(/"/g, ''))}"`;
-      }
-
-      if (dialogueText) {
-        const div = document.createElement('div');
-        div.className = 'chat-message user';
-        div.innerHTML = `
-          <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-          <div class="msg-bubble-wrap">
-            <div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div>
-            <div class="msg-bubble">
-              <span class="dialogue-text">${dialogueText}</span>
-            </div>
-            <div class="msg-action-bar">
-              <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
-              <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
-            </div>
-          </div>
-        `;
-        container.appendChild(div);
+      // Trường hợp không nhập đúng cú pháp -> Mặc định coi là Lời thoại
+      if (!hasMatches && rawText.trim()) {
+        appendUserBubble(rawText.trim(), userName, userAvatar, container, idx);
       }
     }
 
-    /* AI PHẢN HỒI: HÀNH ĐỘNG NẰM TRÊN NỀN NGUYÊN BẢN, KHUNG CHAT CHỈ CHỨA THOẠI */
+    function appendUserBubble(text, userName, userAvatar, container, idx) {
+      const div = document.createElement('div');
+      div.className = 'chat-message user';
+      div.innerHTML = `
+        <img src="${userAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+        <div class="msg-bubble-wrap">
+          <div class="msg-sender">${escapeHtml(userName)}</div>
+          <div class="msg-bubble">
+            <span class="dialogue-text">"${escapeHtml(text)}"</span>
+          </div>
+          <div class="msg-action-bar">
+            <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
+            <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    /* AI PHẢN HỒI: TỰ ĐỘNG PHÂN TÍCH TÂM LÝ/HÀNH ĐỘNG ĐẶT TRÊN NỀN, THOẠI TRONG KHUNG */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -896,7 +883,7 @@
 
         if (charMatch) {
           let speakerName = charMatch[1] ? charMatch[1].trim() : 'AI';
-          let restText = charMatch[2] ? charMatch[2].trim() : line;
+          let content = charMatch[2] ? charMatch[2].trim() : line;
 
           let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
           if (story && story.characters) {
@@ -904,33 +891,43 @@
             if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
           }
 
-          // Tách phần Hành động (*...*)
-          let actionContent = '';
-          const actionMatches = restText.match(/\*([^*]+)\*/g);
-          if (actionMatches) {
-            actionContent = actionMatches.map(a => a.replace(/\*/g, '').trim()).join(' ');
+          // Phân tích thứ tự tuần tự của Hành động (*) và Lời thoại (") trong từng dòng
+          const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
+          let seqMatch;
+          let foundSeq = false;
+
+          while ((seqMatch = seqRegex.exec(content)) !== null) {
+            foundSeq = true;
+            if (seqMatch[2]) {
+              // HÀNH ĐỘNG TRÔI NẰM NGUYÊN TRÊN NỀN
+              const actionBlock = document.createElement('div');
+              actionBlock.className = 'scene-action-inline';
+              actionBlock.innerHTML = `* ${escapeHtml(speakerName)}: ${escapeHtml(seqMatch[2].trim())} *`;
+              container.appendChild(actionBlock);
+            } else if (seqMatch[1]) {
+              // LỜI THOẠI NẰM TRONG BONG BÓNG CHAT CỦA NHÂN VẬT ĐÓ
+              const div = document.createElement('div');
+              div.className = 'chat-message ai';
+              div.innerHTML = `
+                <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+                <div class="msg-bubble-wrap">
+                  <div class="msg-sender">${escapeHtml(speakerName)}</div>
+                  <div class="msg-bubble">
+                    <span class="dialogue-text">"${escapeHtml(seqMatch[1].trim())}"</span>
+                  </div>
+                  <div class="msg-action-bar">
+                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                  </div>
+                </div>
+              `;
+              container.appendChild(div);
+            }
           }
 
-          // Tách phần Lời thoại ("...")
-          let dialogueContent = '';
-          const dialogueMatches = restText.match(/"([^"]+)"/g);
-          if (dialogueMatches) {
-            dialogueContent = dialogueMatches.map(d => `"${escapeHtml(d.replace(/"/g, ''))}"`).join('<br>');
-          } else {
-            const cleanRest = restText.replace(/\*([^*]+)\*/g, '').trim();
-            if (cleanRest) dialogueContent = `"${escapeHtml(cleanRest)}"`;
-          }
-
-          // 1. TẠO KHỐI HÀNH ĐỘNG TRÊN NỀN BÊN NGOÀI
-          if (actionContent) {
-            const actionBlock = document.createElement('div');
-            actionBlock.className = 'scene-action-block';
-            actionBlock.innerHTML = `* ${escapeHtml(speakerName)}: ${escapeHtml(actionContent)} *`;
-            container.appendChild(actionBlock);
-          }
-
-          // 2. TẠO BONG BÓNG CHAT CHỈ CHỨA LỜI THOẠI
-          if (dialogueContent) {
+          // Trường hợp không có ngoặc ghép -> Hiển thị dạng khung thoại đơn giản
+          if (!foundSeq && content) {
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
@@ -938,7 +935,7 @@
               <div class="msg-bubble-wrap">
                 <div class="msg-sender">${escapeHtml(speakerName)}</div>
                 <div class="msg-bubble">
-                  <span class="dialogue-text">${dialogueContent}</span>
+                  <span class="dialogue-text">"${escapeHtml(content.replace(/"/g, ''))}"</span>
                 </div>
                 <div class="msg-action-bar">
                   <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
@@ -1008,23 +1005,18 @@ Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truy�
 - Tên truyện: "${story ? story.title : ''}"
 - Bối cảnh chung: "${(story && story.setting) || ''}"
 - Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}"
-- Người dùng đóng vai: "${window.state.persona.name}" (Tính cách/Ghi nhớ: ${window.state.persona.memories})
-- Danh sách các nhân vật AI nhập vai:
+- Người dùng đóng vai: "${window.state.persona.name}" (Ghi nhớ: ${window.state.persona.memories})
+- Danh sách nhân vật AI nhập vai:
 ${charsPrompt}
 
-[QUY TẮC NHẬP VAI & PHẢN HỒI NGHIÊM NGẶT]
-1. Xử lý phản hồi (Phù hợp cả 1 người hoặc nhiều người tham gia):
-   - Khi có 1 nhân vật phản hồi: AI xuất ra đúng 1 dòng phản hồi cho nhân vật đó.
-   - Khi có nhiều nhân vật phản hồi trong cùng lượt: Xuất mỗi nhân vật trên 1 dòng riêng theo định dạng.
-2. Bắt buộc tách bạch HÀNH ĐỘNG và LỜI THOẠI:
-   - Phần HÀNH ĐỘNG / MIÊU TẢ CỬ CHỈ: Đặt trong cặp dấu sao *...* (Hiển thị ngoài khung chat, làm nền diễn biến).
-   - Phần LỜI THOẠI TRỰC TIẾP: Đặt trong cặp dấu ngoặc kép "..." (Hiển thị riêng trong khung chat).
-3. Mẫu định dạng bắt buộc cho từng dòng:
-[Tên Nhân Vật]: * [Mô tả hành động, biểu cảm, ánh mắt] * "[Lời thoại của nhân vật]"
+[QUY TẮC PHẢN HỒI KỊCH BẢN XEN KẼ]
+1. Đặt HÀNH ĐỘNG / TÂM LÝ / CỬ CHỈ ngập ngừng trong ngoặc sao *...* (sẽ được trôi trên nền).
+2. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "..." (sẽ được cho vào khung chat).
+3. Nếu nhân vật đang nói -> ngập ngừng / có hành động -> rồi nói tiếp, hãy sắp xếp xen kẽ tự nhiên:
+   [Tên Nhân Vật]: * [Hành động trước] * "[Cau thoại 1]" * [Hành động ngập ngừng] * "[Câu thoại 2]"
 
 Ví dụ:
-Trần Hạo Nam: * Rót nhẹ chén rượu đặt xuống bàn, ánh mắt thâm trầm nhìn người đối diện * "Đêm đã muộn, cô tới đây có việc gì?"
-Gà Rừng: * Đứng tựa lưng vào mép cửa, tay cầm điếu thuốc chưa châm * "Đại ca, để em ra ngoài canh chừng cho."
+Gà Rừng: * Đứng tựa lưng vào tường, nhìn Thư * "Vậy... xong hết rồi hả anh Nam?" * Cậu gãi đầu ngập ngừng nhìn quanh * "Chị Thư mệt hả? Để em lấy nước cho chị!"
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
