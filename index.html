@@ -94,8 +94,18 @@
     .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-top-left-radius: 4px; }
     .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-top-right-radius: 4px; }
 
-    .action-text { font-style: italic; color: #555555; margin-bottom: 6px; display: block; font-weight: normal; }
-    .dialogue-text { font-weight: bold; font-size: 1rem; color: #000000; display: block; }
+    /* ĐỊNH DẠNG HÀNH ĐỘNG CÓ NỀN TÁCH BIỆT */
+    .action-bg-box {
+      background: rgba(144, 212, 184, 0.18);
+      border-left: 3px solid var(--app-dark-green);
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-style: italic;
+      color: #444444;
+      font-size: 0.9rem;
+    }
+    .dialogue-text { font-weight: bold; font-size: 0.98rem; color: #111111; display: block; line-height: 1.4; }
 
     .msg-action-bar { display: flex; gap: 6px; margin-top: 4px; }
     .ai .msg-action-bar { justify-content: flex-start; }
@@ -256,7 +266,7 @@
       </div>
       <div class="form-group">
         <label>Lời Mở Đầu (Nếu không có bối cảnh mở đầu):</label>
-        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: "Cô có vẻ... biết chọn món."'></textarea>
+        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: * Đứng dậy đỡ ly rượu * "Cô có vẻ... biết chọn món."'></textarea>
       </div>
       <button class="btn btn-pink" onclick="saveCharacter()">Lưu Nhân Vật</button>
     </div>
@@ -524,22 +534,15 @@
               id: 'char-1',
               name: 'Gà Rừng',
               avatar: DEFAULT_LOGO,
-              personality: 'Vẫn còn ngớ người ra một lúc, rồi gãi đầu. Nhìn Đại Thiên Nhị như muốn hỏi chuyện gì đang xảy ra.',
-              firstMsg: 'Gà Rừng: * Vẫn còn ngớ người ra một lúc, rồi gãi đầu. Cậu ta nhìn Đại Thiên Nhị như muốn hỏi \'chuyện gì đang xảy ra vậy?\' *\n"À... ừm... chào cô... tôi là Gà Rừng."'
+              personality: 'Ngơ ngác, nóng tính nhưng trung thành.',
+              firstMsg: 'Gà Rừng: * Vẫn còn ngớ người ra một lúc, rồi gãi đầu. Cậu ta nhìn Đại Thiên Nhị như muốn hỏi chuyện gì đang xảy ra. *\n"À... ừm... chào cô... tôi là Gà Rừng."'
             },
             {
               id: 'char-2',
               name: 'Đại Thiên Nhị',
               avatar: DEFAULT_LOGO,
               personality: 'Trầm tĩnh, lịch sự, tôn trọng anh em.',
-              firstMsg: 'Đại Thiên Nhị: * Anh buông tay Gà Rừng ra, bước tới gần Thư, gật đầu nhẹ. *\n"Chào cô. Tôi là Đại Thiên Nhị."'
-            },
-            {
-              id: 'char-3',
-              name: 'Sào Bì',
-              avatar: DEFAULT_LOGO,
-              personality: 'Năng động, nhai kẹo cao su, hay đùa.',
-              firstMsg: 'Sào Bì: * Nhảy khỏi thùng rượu, chạy tới chỗ Thư, mắt sáng rỡ. Cậu nhai kẹo cao su đánh tóp tép. Anh vẫn tựa lưng vào tường, ánh mắt thâm trầm nhìn cô, không nói gì. *\n"Chào chị Thư! Em là Sào Bì. Chị ngầu quá đi!"'
+              firstMsg: 'Đại Thiên Nhị: * Buông tay Gà Rừng ra, bước tới gần Thư, gật đầu nhẹ. *\n"Chào cô. Tôi là Đại Thiên Nhị."'
             }
           ]
         });
@@ -829,7 +832,7 @@
       history.forEach((msg, idx) => {
         if (msg.sender === 'system') {
           const div = document.createElement('div');
-          div.className = 'action-text';
+          div.className = 'action-bg-box';
           div.style.textAlign = 'center';
           div.innerHTML = `🎬 <i>${escapeHtml(msg.text.replace(/\*/g, ''))}</i>`;
           container.appendChild(div);
@@ -859,7 +862,7 @@
       
       let innerContent = '';
       if (actionPart) {
-        innerContent += `<span class="action-text">* ${escapeHtml(actionPart)} *</span>`;
+        innerContent += `<div class="action-bg-box">* ${escapeHtml(actionPart)} *</div>`;
       }
       if (dialogueParts.length > 0) {
         innerContent += dialogueParts.map(d => `<span class="dialogue-text">"${escapeHtml(d)}"</span>`).join('');
@@ -881,7 +884,7 @@
       container.appendChild(div);
     }
 
-    /* ĐỊNH DẠNG: HÀNH ĐỘNG HIỆN TRƯỚC -> LỜI THOẠI HIỆN SAU CỦA MỖI NHÂN VẬT */
+    /* ĐỊNH DẠNG: HÀNH ĐỘNG CÓ NỀN TÁCH BIỆT */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -909,22 +912,21 @@
           let dialogueContent = '';
           const dialogueMatches = restText.match(/"([^"]+)"/g);
           if (dialogueMatches) {
-            dialogueContent = dialogueMatches.map(d => d.trim()).join('<br>');
+            dialogueContent = dialogueMatches.map(d => `"${escapeHtml(d.replace(/"/g, ''))}"`).join('<br>');
           } else {
-            // Nếu không dùng ngoặc kép, lấy phần còn lại ngoài ngoặc sao
             const cleanRest = restText.replace(/\*([^*]+)\*/g, '').trim();
-            if (cleanRest) dialogueContent = `"${cleanRest}"`;
+            if (cleanRest) dialogueContent = `"${escapeHtml(cleanRest)}"`;
           }
 
           const div = document.createElement('div');
           div.className = 'chat-message ai';
 
           let bubbleHtml = '';
-          // Bắt buộc Hành động hiện TRƯỚC
+          // Hành động nằm trong khối Nền (Background box) riêng
           if (actionContent) {
-            bubbleHtml += `<span class="action-text">* ${escapeHtml(actionContent)} *</span>`;
+            bubbleHtml += `<div class="action-bg-box">* ${escapeHtml(actionContent)} *</div>`;
           }
-          // Lời thoại hiện SAU
+          // Lời thoại hiển thị rõ phía dưới
           if (dialogueContent) {
             bubbleHtml += `<span class="dialogue-text">${dialogueContent}</span>`;
           }
@@ -994,21 +996,31 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
+      /* CẬP NHẬT PHÂN VAI VÀ QUY TẮC PHẢN HỒI KỊCH BẢN CHUẨN ĐÚNG TỆP BẠN GỬI */
       const systemInstruction = `
-[QUY TẮC BẮT BUỘC DÀNH CHO AI TẠO KỊCH BẢN PHIM/TRUYỆN]
-1. Tên truyện: "${story ? story.title : ''}".
-2. Bối cảnh chung: "${(story && story.setting) || ''}".
-3. Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}".
-4. Các nhân vật bạn nhập vai:
-${charsPrompt}
-5. Người dùng: "${window.state.persona.name}" (${window.state.persona.memories}).
+Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truyện tương tác.
 
-[ĐỊNH DẠNG THOẠI VÀ HÀNH ĐỘNG ĐẦU RA BẮT BUỘC CHẮC CHẮN 100%]
-- MỖI LẦN TRẢ LỜI, HÀNH ĐỘNG VÀ CẢM XÚC PHẢI HIỆN TRƯỚC, BỌC TRONG DẤU SAO *...*
-- LỜI THOẠI BẮT BUỘC PHẢI THEO SAU HÀNH ĐỘNG VÀ BỌC TRONG DẤU NGOẶC KÉP "..."
-- Cú pháp chuẩn mẫu:
-[Tên Nhân Vật]: * [Hành động / miêu tả cử chỉ, ánh mắt hiện lên trước] *
-"[Lời thoại nhân vật nói ra sau]"
+[THÔNG TIN BỐI CẢNH & NHÂN VẬT]
+- Tên truyện: "${story ? story.title : ''}"
+- Bối cảnh chung: "${(story && story.setting) || ''}"
+- Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}"
+- Người dùng đóng vai: "${window.state.persona.name}" (Tính cách/Ghi nhớ: ${window.state.persona.memories})
+- Danh sách các nhân vật AI nhập vai:
+${charsPrompt}
+
+[QUY TẮC NHẬP VAI & PHẢN HỒI NGHIÊM NGẶT]
+1. Xử lý phản hồi (Phù hợp cả 1 người hoặc nhiều người tham gia):
+   - Khi có 1 nhân vật phản hồi: AI xuất ra đúng 1 dòng phản hồi cho nhân vật đó.
+   - Khi có nhiều nhân vật phản hồi trong cùng lượt: Xuất mỗi nhân vật trên 1 dòng riêng theo định dạng.
+2. Bắt buộc tách bạch HÀNH ĐỘNG và LỜI THOẠI:
+   - Phần HÀNH ĐỘNG / MIÊU TẢ CỬ CHỈ: Đặt trong cặp dấu sao *...* (Hiện lên trên phần Nền).
+   - Phần LỜI THOẠI TRỰC TIẾP: Đặt trong cặp dấu ngoặc kép "..." (Hiện phía dưới).
+3. Mẫu định dạng bắt buộc cho từng dòng:
+[Tên Nhân Vật]: * [Mô tả hành động, biểu cảm, ánh mắt] * "[Lời thoại của nhân vật]"
+
+Ví dụ:
+Trần Hạo Nam: * Rót nhẹ chén rượu đặt xuống bàn, ánh mắt thâm trầm nhìn người đối diện * "Đêm đã muộn, cô tới đây có việc gì?"
+Gà Rừng: * Đứng tựa lưng vào mép cửa, tay cầm điếu thuốc chưa châm * "Đại ca, để em ra ngoài canh chừng cho."
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
