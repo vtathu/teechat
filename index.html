@@ -70,17 +70,19 @@
     /* CHAT CONTAINER */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
     
-    /* HÀNH ĐỘNG / TÂM LÝ TRÔI NẰM NGUYÊN TRÊN NỀN - KHÔNG DÙNG Ô KHUNG */
+    /* HÀNH ĐỘNG / TÂM LÝ TRÔI NẰM NGUYÊN TRÊN NỀN (KHÔNG KHUNG & KHÔNG CÓ DẤU SAO *) */
     .scene-action-inline {
       font-style: italic;
       color: #4a5568;
       font-size: 0.92rem;
-      padding: 6px 12px;
-      margin: 4px 0;
-      text-align: center;
+      padding: 4px 8px;
+      margin: 2px 0;
       line-height: 1.4;
       word-break: break-word;
+      max-width: 90%;
     }
+    .scene-action-inline.ai { text-align: left; align-self: flex-start; }
+    .scene-action-inline.user { text-align: right; align-self: flex-end; }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-start; margin-bottom: 2px; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
@@ -347,7 +349,7 @@
       </div>
       <div class="form-group">
         <label>Tên Của Bạn:</label>
-        <input type="text" id="per-name" value="Thư">
+        <input type="text" id="per-name" value="Anh Thư">
       </div>
       <div class="form-group">
         <label>Ngày Tháng Năm Sinh:</label>
@@ -463,7 +465,7 @@
           if (!window.state.chatHistories) window.state.chatHistories = {};
           if (!window.state.chatSummaries) window.state.chatSummaries = {};
           if (!window.state.apiKeys) window.state.apiKeys = [];
-          if (!window.state.persona) window.state.persona = { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' };
+          if (!window.state.persona) window.state.persona = { name: 'Anh Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' };
 
           window.saveStorage();
           window.loadStorage();
@@ -519,21 +521,21 @@
           title: 'Người trong giang hồ',
           avatar: DEFAULT_LOGO,
           setting: 'Cuộc chiến địa bàn gay cấn tại Chợ Mới giữa các băng nhóm.',
-          openingScene: 'Đêm muộn tại quán rượu Chợ Mới, Trần Hạo Nam lặng lẽ ngồi rót rượu. Thư nhẹ nhàng bước qua cửa.',
+          openingScene: 'Trần Hạo Nam lặng lẽ ngồi rót rượu. Thư nhẹ nhàng bước qua cửa.',
           characters: [
             {
               id: 'char-1',
               name: 'Gà Rừng',
               avatar: DEFAULT_LOGO,
               personality: 'Ngơ ngác, nóng tính nhưng trung thành.',
-              firstMsg: 'Gà Rừng: * Vẫn đứng đó, tròn mắt nhìn cô, rồi nhìn sang Hạo Nam như muốn hỏi ý kiến. *\n"Vậy... vậy là xong hết rồi hả anh Nam? Mấy thằng khốn đó không quay lại nữa chứ?"'
+              firstMsg: 'Gà Rừng: * Vẫn còn ngớ người ra một lúc, rồi gãi đầu. *\n"À... ừm... chào cô... tôi là Gà Rừng."'
             },
             {
               id: 'char-2',
-              name: 'Đại Thiên Nhị',
+              name: 'Trần Hạo Nam',
               avatar: DEFAULT_LOGO,
-              personality: 'Trầm tĩnh, lịch sự, tôn trọng anh em.',
-              firstMsg: 'Đại Thiên Nhị: * Tiến tới gần nhẹ giọng *\n"Hạo Nam, có lẽ cô Thư cần một chỗ ngồi thoải mái hơn."'
+              personality: 'Trầm tĩnh, uy nghiêm, thủ lĩnh băng nhóm.',
+              firstMsg: 'Trần Hạo Nam: * Mắt anh dõi theo Thư, ánh mắt tối màu thoáng một tia bất ngờ, rồi lại trầm tĩnh. *\n"Cô ngồi đi."'
             }
           ]
         });
@@ -561,6 +563,19 @@
 
     function escapeHtml(str) {
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    /* Hàm làm sạch chữ hành động: Bỏ dấu *, Bỏ 'Tên:' nếu có */
+    function cleanActionText(text, speakerName) {
+      let cleaned = (text || '').replace(/\*/g, '').trim();
+      if (speakerName) {
+        const prefixReg = new RegExp('^' + speakerName + '\\s*:\\s*', 'i');
+        cleaned = cleaned.replace(prefixReg, '');
+        if (!cleaned.toLowerCase().startsWith(speakerName.toLowerCase())) {
+          cleaned = `${speakerName} ${cleaned}`;
+        }
+      }
+      return cleaned;
     }
 
     function switchPage(pageId) {
@@ -803,7 +818,7 @@
       input.focus();
     }
 
-    /* RENDER CHAT HISTORY (HÀNH ĐỘNG NẰM TRÔI NỀN - THOẠI TRONG KHUNG) */
+    /* RENDER CHAT HISTORY: USER CĂN PHẢI, AI CĂN TRÁI, HÀNH ĐỘNG IN NGHIÊNG BỎ DẤU * */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -813,8 +828,8 @@
       history.forEach((msg, idx) => {
         if (msg.sender === 'system') {
           const div = document.createElement('div');
-          div.className = 'scene-action-inline';
-          div.innerHTML = `* ${escapeHtml(msg.text.replace(/\*/g, ''))} *`;
+          div.className = 'scene-action-inline ai';
+          div.innerHTML = escapeHtml(cleanActionText(msg.text, ''));
           container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, container, idx);
@@ -825,12 +840,11 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* XỬ LÝ NHẬP VÀO CỦA NGƯỜI DÙNG */
+    /* XỬ LÝ NHẬP VÀO CỦA NGƯỜI DÙNG - CĂN PHẢI HÀNH ĐỘNG & THOẠI */
     function renderUserFormattedMessage(rawText, container, idx) {
-      const userName = (window.state.persona && window.state.persona.name) || 'Bạn';
+      const userName = (window.state.persona && window.state.persona.name) || 'Anh Thư';
       const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
 
-      // Quét chuỗi theo thứ tự xuất hiện của Thoại ("...") và Hành động (*...*)
       const regex = /"([^"]+)"|\*([^*]+)\*/g;
       let match;
       let hasMatches = false;
@@ -838,18 +852,17 @@
       while ((match = regex.exec(rawText)) !== null) {
         hasMatches = true;
         if (match[2]) {
-          // Là phần hành động (*) -> Nằm TRÔI TRÊN NỀN
+          // HÀNH ĐỘNG CỦA USER -> CĂN PHẢI, BỎ DẤU SAO *
           const actionBlock = document.createElement('div');
-          actionBlock.className = 'scene-action-inline';
-          actionBlock.innerHTML = `* ${escapeHtml(userName)} ${escapeHtml(match[2].trim())} *`;
+          actionBlock.className = 'scene-action-inline user';
+          actionBlock.innerHTML = escapeHtml(cleanActionText(match[2], userName));
           container.appendChild(actionBlock);
         } else if (match[1]) {
-          // Là phần thoại (") -> Nằm trong KHUNG BONG BÓNG
+          // LỜI THOẠI CỦA USER -> BONG BÓNG CHAT CĂN PHẢI
           appendUserBubble(match[1].trim(), userName, userAvatar, container, idx);
         }
       }
 
-      // Trường hợp không nhập đúng cú pháp -> Mặc định coi là Lời thoại
       if (!hasMatches && rawText.trim()) {
         appendUserBubble(rawText.trim(), userName, userAvatar, container, idx);
       }
@@ -874,7 +887,7 @@
       container.appendChild(div);
     }
 
-    /* AI PHẢN HỒI: TỰ ĐỘNG PHÂN TÍCH TÂM LÝ/HÀNH ĐỘNG ĐẶT TRÊN NỀN, THOẠI TRONG KHUNG */
+    /* AI PHẢN HỒI: HÀNH ĐỘNG CĂN TRÁI, BỎ DẤU SAO *, THOẠI TRONG KHUNG */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -891,7 +904,6 @@
             if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
           }
 
-          // Phân tích thứ tự tuần tự của Hành động (*) và Lời thoại (") trong từng dòng
           const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
           let seqMatch;
           let foundSeq = false;
@@ -899,13 +911,13 @@
           while ((seqMatch = seqRegex.exec(content)) !== null) {
             foundSeq = true;
             if (seqMatch[2]) {
-              // HÀNH ĐỘNG TRÔI NẰM NGUYÊN TRÊN NỀN
+              // HÀNH ĐỘNG CỦA AI -> CĂN TRÁI, IN NGHIÊNG, BỎ DẤU SAO *
               const actionBlock = document.createElement('div');
-              actionBlock.className = 'scene-action-inline';
-              actionBlock.innerHTML = `* ${escapeHtml(speakerName)}: ${escapeHtml(seqMatch[2].trim())} *`;
+              actionBlock.className = 'scene-action-inline ai';
+              actionBlock.innerHTML = escapeHtml(cleanActionText(seqMatch[2], speakerName));
               container.appendChild(actionBlock);
             } else if (seqMatch[1]) {
-              // LỜI THOẠI NẰM TRONG BONG BÓNG CHAT CỦA NHÂN VẬT ĐÓ
+              // LỜI THOẠI CỦA AI -> KHUNG BONG BÓNG CĂN TRÁI
               const div = document.createElement('div');
               div.className = 'chat-message ai';
               div.innerHTML = `
@@ -926,7 +938,6 @@
             }
           }
 
-          // Trường hợp không có ngoặc ghép -> Hiển thị dạng khung thoại đơn giản
           if (!foundSeq && content) {
             const div = document.createElement('div');
             div.className = 'chat-message ai';
@@ -1009,14 +1020,11 @@ Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truy�
 - Danh sách nhân vật AI nhập vai:
 ${charsPrompt}
 
-[QUY TẮC PHẢN HỒI KỊCH BẢN XEN KẼ]
-1. Đặt HÀNH ĐỘNG / TÂM LÝ / CỬ CHỈ ngập ngừng trong ngoặc sao *...* (sẽ được trôi trên nền).
-2. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "..." (sẽ được cho vào khung chat).
-3. Nếu nhân vật đang nói -> ngập ngừng / có hành động -> rồi nói tiếp, hãy sắp xếp xen kẽ tự nhiên:
-   [Tên Nhân Vật]: * [Hành động trước] * "[Cau thoại 1]" * [Hành động ngập ngừng] * "[Câu thoại 2]"
-
-Ví dụ:
-Gà Rừng: * Đứng tựa lưng vào tường, nhìn Thư * "Vậy... xong hết rồi hả anh Nam?" * Cậu gãi đầu ngập ngừng nhìn quanh * "Chị Thư mệt hả? Để em lấy nước cho chị!"
+[QUY TẮC PHẢN HỒI KỊCH BẢN XEN KẼ BẮT BUỘC]
+1. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...* (ví dụ: * Trần Hạo Nam mắt anh dõi theo Thư *). Trong ngoặc sao bắt buộc bao gồm cả Tên nhân vật thực hiện hành động.
+2. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "..." (ví dụ: "Cô ngồi đi.").
+3. Hãy sắp xếp hành động và lời thoại xen kẽ tự nhiên theo trình tự thời gian:
+   [Tên Nhân Vật]: * [Tên] [Hành động 1] * "[Câu thoại 1]" * [Tên] [Hành động 2] * "[Câu thoại 2]"
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
