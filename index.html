@@ -85,4 +85,1058 @@
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
     .chat-message.ai { align-self: flex-start; }
     
-    .msg-avatar { width: 38px; height: 38px; border-radius: 50%;
+    .msg-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; margin-top: 2px; }
+    .msg-bubble-wrap { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .msg-sender { font-size: 0.8rem; font-weight: bold; color: #5a6b5c; padding: 0 4px; }
+    .user .msg-sender { text-align: right; }
+    
+    .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+    .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-top-left-radius: 4px; }
+    .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-top-right-radius: 4px; }
+
+    .dialogue-text { font-weight: bold; font-size: 0.98rem; color: #111111; display: block; line-height: 1.4; }
+
+    .msg-action-bar { display: flex; gap: 6px; margin-top: 2px; }
+    .ai .msg-action-bar { justify-content: flex-start; }
+    .user .msg-action-bar { justify-content: flex-end; }
+    .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
+
+    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; }
+    .chat-controls .btn { padding: 4px 8px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
+
+    .input-bar { padding: 10px 16px; background: #fff; display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; }
+    .input-bar input { flex: 1; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    .modal.active { display: flex; }
+    .modal-content { background: #fff; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 20px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.85rem; font-weight: bold; color: #4a5568; }
+    .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 8px; outline: none; font-size: 0.9rem; }
+    .status-badge { background: #e6fffa; border: 1px solid #b2f5ea; color: #234e52; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1: TRANG CHỦ -->
+  <div id="page-home" class="page active">
+    <div class="navbar">
+      <div class="app-logo-title">
+        <img src="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png" alt="Teechat Logo" onerror="this.src='https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png'">
+        <h1>Teechat</h1>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
+        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
+        <button class="btn" onclick="openModal('modal-settings')">⚙ Cài Đặt</button>
+      </div>
+    </div>
+
+    <div style="padding: 16px 16px 0 16px; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 1.3rem; color: var(--app-dark-green);">Danh Sách Truyện</h2>
+      <button class="btn btn-pink" onclick="openModal('modal-story')">+ Tạo Truyện Mới</button>
+    </div>
+
+    <div class="scenarios-container" id="story-list"></div>
+  </div>
+
+  <!-- PAGE 2: TRÒ CHUYỆN KỊCH BẢN TƯƠNG TÁC -->
+  <div id="page-story-detail" class="page">
+    <div class="navbar">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
+        <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">Tên Truyện</h3>
+      </div>
+      <button class="btn btn-pink" style="padding: 5px 10px; font-size: 0.78rem;" onclick="openStoryConfigModal()">⚙️ Cấu Hình Truyện</button>
+    </div>
+
+    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: transparent;">
+      <div class="chat-history" id="chat-history"></div>
+
+      <div class="chat-controls">
+        <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại ("")</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động (**)</button>
+        <button class="btn btn-outline" onclick="triggerAutoPlay()">✨ AI Chạy Tiếp</button>
+        <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa Chat</button>
+      </div>
+
+      <div class="input-bar">
+        <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)">
+        <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN & NHÂN VẬT -->
+  <div id="modal-story-config" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📜 Cài Đặt Cốt Truyện & Nhân Vật</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Bối Cảnh / Cốt Truyện Chung:</label>
+        <textarea id="story-setting-input" rows="3" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>🎬 Bối Cảnh Mở Đầu (Kịch bản bắt đầu):</label>
+        <textarea id="story-opening-input" rows="3" placeholder="Ví dụ: Đêm khuya tại quán bar, Trần Hạo Nam đang ngồi uống rượu..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+        <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">Danh Sách Nhân Vật</h4>
+        <button class="btn btn-pink" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
+      </div>
+
+      <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
+
+      <button class="btn" style="margin-top: 10px;" onclick="saveStorySettings()">💾 Lưu Cài Đặt Truyện</button>
+    </div>
+  </div>
+
+  <!-- MODAL: TẠO TRUYỆN MỚI -->
+  <div id="modal-story" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📖 Tạo Truyện / Kịch Bản Mới</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-story')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Tên Truyện / Kịch Bản:</label>
+        <input type="text" id="new-story-title" placeholder="VD: Băng Đảng Chợ Mới">
+      </div>
+      <div class="form-group">
+        <label>Ảnh Đại Diện Truyện:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-story-avatar" placeholder="Dán URL hoặc chọn ảnh..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('story-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="story-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'new-story-avatar')">
+      </div>
+      <div class="form-group">
+        <label>Mô Tả / Bối Cảnh Ban Đầu:</label>
+        <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Bối Cảnh Mở Đầu:</label>
+        <textarea id="new-story-opening" rows="2" placeholder="Ví dụ: Thư vừa bước vào quán cafe thì gặp Trần Hạo Nam..."></textarea>
+      </div>
+      <button class="btn btn-pink" onclick="createNewStory()">Tạo Truyện</button>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM / SỬA NHÂN VẬT -->
+  <div id="modal-char" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="char-modal-title">🎭 Thuộc Tính Nhân Vật</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-char')">✖</button>
+      </div>
+      <input type="hidden" id="char-edit-id">
+      <div class="form-group">
+        <label>Tên Nhân Vật:</label>
+        <input type="text" id="char-name" placeholder="VD: Trần Hạo Nam">
+      </div>
+      <div class="form-group">
+        <label>Avatar Nhân Vật:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="char-avatar" placeholder="Dán URL hoặc chọn ảnh..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('char-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="char-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'char-avatar')">
+      </div>
+      <div class="form-group">
+        <label>Tính Cách & Thuộc Tính Bắt Buộc:</label>
+        <textarea id="char-personality" rows="3" placeholder="Lạnh lùng, trung thành với anh em..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Lời Mở Đầu (Nếu có):</label>
+        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: * Đứng dậy đỡ ly rượu * "Cô có vẻ... biết chọn món."'></textarea>
+      </div>
+      <button class="btn btn-pink" onclick="saveCharacter()">Lưu Nhân Vật</button>
+    </div>
+  </div>
+
+  <!-- MODAL: ACCOUNT & FIREBASE CLOUD BACKUP -->
+  <div id="modal-auth" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>☁️ Đăng Nhập & Đồng Bộ Firebase</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
+      </div>
+      <div id="auth-status-box" class="status-badge">Đang kết nối Firebase...</div>
+      <div id="auth-form-container">
+        <div class="form-group">
+          <label>Email Tài Khoản:</label>
+          <input type="email" id="fb-email" placeholder="nhapemail@example.com">
+        </div>
+        <div class="form-group">
+          <label>Mật Khẩu:</label>
+          <input type="password" id="fb-password" placeholder="Mật khẩu ít nhất 6 ký tự">
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <button class="btn" style="flex:1;" onclick="handleFirebaseLogin()">Đăng Nhập</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="handleFirebaseRegister()">Đăng Ký</button>
+        </div>
+      </div>
+      <div id="cloud-action-container" class="hidden">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Lên Cloud</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Tải Từ Cloud Về</button>
+        </div>
+        <button class="btn btn-outline" style="width: 100%; margin-top: 8px; border-color: #f44336; color: #f44336;" onclick="handleFirebaseLogout()">Đăng Xuất</button>
+      </div>
+      <hr style="border: 0; border-top: 1px solid #eee;">
+      <div style="background: #f0fdf4; padding: 12px; border-radius: 12px; border: 1px solid #bbf7d0;">
+        <h4 style="font-size: 0.9rem; color: var(--app-dark-green); margin-bottom: 6px;">📂 Sao Lưu / Khôi Phục File JSON:</h4>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" style="flex:1;" onclick="exportToFile()">📤 Xuất File</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 Nhập File</button>
+          <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importFromFile(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SETTINGS -->
+  <div id="modal-settings" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚙️ Cài Đặt Ứng Dụng</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-settings')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Danh Sách Gemini API Keys (Mỗi dòng 1 Key):</label>
+        <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tên Model AI (Mặc định: gemini-2.5-flash):</label>
+        <input type="text" id="cfg-model-select" list="model-suggestions" placeholder="Nhập hoặc chọn tên model...">
+        <datalist id="model-suggestions">
+          <option value="gemini-2.5-flash"></option>
+          <option value="gemini-1.5-flash"></option>
+          <option value="gemini-2.5-pro"></option>
+        </datalist>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label>Màu Bong Bóng AI:</label>
+          <input type="color" id="cfg-ai-bubble" value="#ffffff" onchange="updateThemeColors()">
+        </div>
+        <div class="form-group">
+          <label>Màu Bong Bóng User:</label>
+          <input type="color" id="cfg-user-bubble" value="#c1ebd9" onchange="updateThemeColors()">
+        </div>
+      </div>
+      <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
+    </div>
+  </div>
+
+  <!-- MODAL: USER PERSONA -->
+  <div id="modal-persona" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>👤 Hồ Sơ Người Dùng</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-persona')">✖</button>
+      </div>
+      <div class="form-group">
+        <label>Tên Của Bạn:</label>
+        <input type="text" id="per-name" value="Anh Thư">
+      </div>
+      <div class="form-group">
+        <label>Ngày Tháng Năm Sinh:</label>
+        <input type="text" id="per-dob" placeholder="15/08/2002">
+      </div>
+      <div class="form-group">
+        <label>Avatar Của Bạn:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="per-avatar" placeholder="Dán URL hoặc tải từ máy..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('per-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'per-avatar')">
+      </div>
+      <div class="form-group">
+        <label>Sở Thích & Điều Bắt Buộc AI Phải Nhớ:</label>
+        <textarea id="per-memories" rows="3" placeholder="Ví dụ: Ghét ăn hành, thích màu xanh..."></textarea>
+      </div>
+      <button class="btn" onclick="savePersona()">Lưu Hồ Sơ</button>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6jSVSBLMp7hC_MSEYpph1xjCZ7vYS9oU",
+      authDomain: "teechat-2ad90.firebaseapp.com",
+      databaseURL: "https://teechat-2ad90-default-rtdb.firebaseio.com",
+      projectId: "teechat-2ad90",
+      storageBucket: "teechat-2ad90.firebasestorage.app",
+      messagingSenderId: "919705805231",
+      appId: "1:919705805231:web:4f70360c54167df92c4f5a",
+      measurementId: "G-F2RPZHRRJK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    onAuthStateChanged(auth, (user) => {
+      const statusBox = document.getElementById('auth-status-box');
+      const formContainer = document.getElementById('auth-form-container');
+      const actionContainer = document.getElementById('cloud-action-container');
+
+      if (user) {
+        statusBox.innerText = `Đã đăng nhập: ${user.email}`;
+        statusBox.style.background = "#e6fffa";
+        formContainer.classList.add('hidden');
+        actionContainer.classList.remove('hidden');
+      } else {
+        statusBox.innerText = "Trạng thái: Chưa đăng nhập Firebase";
+        statusBox.style.background = "#fff5f5";
+        formContainer.classList.remove('hidden');
+        actionContainer.classList.add('hidden');
+      }
+    });
+
+    window.handleFirebaseRegister = async function() {
+      const email = document.getElementById('fb-email').value.trim();
+      const pass = document.getElementById('fb-password').value.trim();
+      if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
+      try {
+        await createUserWithEmailAndPassword(auth, email, pass);
+        alert("Đăng ký thành công!");
+      } catch (err) { alert("Lỗi đăng ký: " + err.message); }
+    };
+
+    window.handleFirebaseLogin = async function() {
+      const email = document.getElementById('fb-email').value.trim();
+      const pass = document.getElementById('fb-password').value.trim();
+      if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        alert("Đăng nhập thành công!");
+      } catch (err) { alert("Lỗi đăng nhập: " + err.message); }
+    };
+
+    window.handleFirebaseLogout = function() { signOut(auth); };
+
+    window.uploadDataToFirebase = async function() {
+      const user = auth.currentUser;
+      if (!user) return alert("Vui lòng đăng nhập trước!");
+      
+      try {
+        if (!window.state.stories) window.state.stories = [];
+        if (!window.state.chatHistories) window.state.chatHistories = {};
+        if (!window.state.chatSummaries) window.state.chatSummaries = {};
+        if (!window.state.apiKeys) window.state.apiKeys = [];
+
+        window.saveStorage();
+        const cleanData = JSON.parse(JSON.stringify(window.state));
+
+        await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanData);
+        alert("☁️ Đã đồng bộ lên Firebase Cloud thành công!");
+      } catch (err) { alert("Lỗi khi tải dữ liệu lên Cloud: " + err.message); }
+    };
+
+    window.downloadDataFromFirebase = async function() {
+      const user = auth.currentUser;
+      if (!user) return alert("Vui lòng đăng nhập trước!");
+
+      if (!confirm("Tải dữ liệu từ Đám mây sẽ ghi đè lên dữ liệu hiện tại. Bạn có chắc chắn?")) return;
+
+      try {
+        const snapshot = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
+        if (snapshot.exists()) {
+          window.state = snapshot.val();
+
+          if (!window.state.stories) window.state.stories = [];
+          if (!window.state.chatHistories) window.state.chatHistories = {};
+          if (!window.state.chatSummaries) window.state.chatSummaries = {};
+          if (!window.state.apiKeys) window.state.apiKeys = [];
+          if (!window.state.persona) window.state.persona = { name: 'Anh Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' };
+
+          window.saveStorage();
+          window.loadStorage();
+          window.renderStoryList();
+
+          if (window.state.activeStoryId) {
+            const currentStory = window.state.stories.find(s => s.id === window.state.activeStoryId);
+            if (currentStory) window.openStoryDetail(window.state.activeStoryId);
+            else window.switchPage('page-home');
+          }
+
+          alert("📥 Đã tải và khôi phục toàn bộ dữ liệu thành công!");
+          window.closeModal('modal-auth');
+        } else alert("Tài khoản này chưa có dữ liệu nào lưu trên Đám Mây!");
+      } catch (err) { alert("Lỗi khi tải dữ liệu về: " + err.message); }
+    };
+  </script>
+
+  <!-- APP MAIN SCRIPT -->
+  <script>
+    const DEFAULT_LOGO = 'https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png';
+
+    window.state = {
+      apiKeys: [],
+      currentModel: 'gemini-2.5-flash',
+      activeStoryId: null,
+      stories: [],
+      persona: { name: 'Anh Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' },
+      chatHistories: {},
+      chatSummaries: {},
+      aiBubbleBg: '#ffffff',
+      userBubbleBg: '#c1ebd9'
+    };
+
+    window.onload = function() {
+      loadStorage();
+      renderStoryList();
+    };
+
+    function loadStorage() {
+      const savedState = localStorage.getItem('teechat_state_v9');
+      if (savedState) {
+        try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
+      }
+
+      if (!window.state.stories) window.state.stories = [];
+      if (!window.state.chatHistories) window.state.chatHistories = {};
+      if (!window.state.chatSummaries) window.state.chatSummaries = {};
+
+      if (window.state.stories.length === 0) {
+        window.state.stories.push({
+          id: 'story-1',
+          title: 'Người trong giang hồ',
+          avatar: DEFAULT_LOGO,
+          setting: 'Cuộc chiến địa bàn gay cấn tại Chợ Mới giữa các băng nhóm.',
+          openingScene: 'Trần Hạo Nam lặng lẽ ngồi rót rượu. Thư nhẹ nhàng bước qua cửa.',
+          characters: [
+            {
+              id: 'char-1',
+              name: 'Sào Bì',
+              avatar: DEFAULT_LOGO,
+              personality: 'Tinh nghịch, hoạt bát, dễ thương.',
+              firstMsg: 'Sào Bì: * Nhảy khỏi thùng rượu, chạy tới chỗ Thư, mắt sáng rỡ. * "Chào chị Thư! Em là Sào Bì. Chị ngầu quá đi!"'
+            },
+            {
+              id: 'char-2',
+              name: 'Đại Thiên Nhị',
+              avatar: DEFAULT_LOGO,
+              personality: 'Trầm tính, điềm đạm.',
+              firstMsg: 'Đại Thiên Nhị: "Chào cô. Tôi là Đại Thiên Nhị."'
+            }
+          ]
+        });
+        saveStorage();
+      }
+
+      document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
+      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
+      
+      if (window.state.persona) {
+        document.getElementById('per-name').value = window.state.persona.name || 'Anh Thư';
+        document.getElementById('per-dob').value = window.state.persona.dob || '';
+        document.getElementById('per-avatar').value = window.state.persona.avatar || '';
+        document.getElementById('per-memories').value = window.state.persona.memories || '';
+      }
+
+      if (window.state.aiBubbleBg) document.getElementById('cfg-ai-bubble').value = window.state.aiBubbleBg;
+      if (window.state.userBubbleBg) document.getElementById('cfg-user-bubble').value = window.state.userBubbleBg;
+      updateThemeColors();
+    }
+
+    function saveStorage() {
+      localStorage.setItem('teechat_state_v9', JSON.stringify(window.state));
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    /* Bỏ ngoặc kép và làm sạch thoại */
+    function cleanDialogueText(text) {
+      return (text || '').replace(/^["'“«]+|["'”»]+$/g, '').trim();
+    }
+
+    /* ĐÃ SỬA LỖI: Bỏ hoàn toàn việc tự ép nối tên nhân vật vào đầu câu miêu tả */
+    function cleanActionText(text) {
+      if (!text) return '';
+      return text.replace(/\*/g, '').trim();
+    }
+
+    function switchPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function handleImageUpload(event, targetInputId) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) { document.getElementById(targetInputId).value = e.target.result; };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function renderStoryList() {
+      const container = document.getElementById('story-list');
+      container.innerHTML = '';
+      (window.state.stories || []).forEach(story => {
+        const card = document.createElement('div');
+        card.className = 'scenario-card';
+        card.innerHTML = `
+          <div>
+            <div class="scenario-header">
+              <img src="${story.avatar || DEFAULT_LOGO}" class="scenario-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+              <h3>${escapeHtml(story.title)}</h3>
+            </div>
+            <p class="scenario-desc">${escapeHtml(story.setting || 'Chưa có bối cảnh')}</p>
+            <div style="font-size:0.8rem; color:var(--app-dark-green); font-weight:bold;">🎭 ${story.characters ? story.characters.length : 0} Nhân vật</div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="btn" style="flex:1;" onclick="openStoryDetail('${story.id}')">Trò Chuyện</button>
+            <button class="btn btn-outline" onclick="deleteStory('${story.id}')">Xóa</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function createNewStory() {
+      const title = document.getElementById('new-story-title').value.trim();
+      const avatar = document.getElementById('new-story-avatar').value.trim();
+      const setting = document.getElementById('new-story-desc').value.trim();
+      const openingScene = document.getElementById('new-story-opening').value.trim();
+
+      if (!title) return alert('Vui lòng nhập tên truyện!');
+
+      const newStory = {
+        id: 'story-' + Date.now(),
+        title,
+        avatar: avatar || DEFAULT_LOGO,
+        setting,
+        openingScene,
+        characters: []
+      };
+
+      if (!window.state.stories) window.state.stories = [];
+      window.state.stories.push(newStory);
+      saveStorage();
+      renderStoryList();
+      closeModal('modal-story');
+
+      document.getElementById('new-story-title').value = '';
+      document.getElementById('new-story-avatar').value = '';
+      document.getElementById('new-story-desc').value = '';
+      document.getElementById('new-story-opening').value = '';
+
+      openStoryDetail(newStory.id);
+    }
+
+    function deleteStory(id) {
+      if (confirm('Bạn có chắc muốn xóa truyện này?')) {
+        window.state.stories = window.state.stories.filter(s => s.id !== id);
+        if (window.state.chatHistories) delete window.state.chatHistories[id];
+        if (window.state.chatSummaries) delete window.state.chatSummaries[id];
+        saveStorage();
+        renderStoryList();
+      }
+    }
+
+    function openStoryDetail(storyId) {
+      if (!window.state.stories) window.state.stories = [];
+      const story = window.state.stories.find(s => s.id === storyId);
+
+      if (!story) return alert("Không tìm thấy dữ liệu truyện!");
+
+      window.state.activeStoryId = storyId;
+      document.getElementById('active-story-title').innerText = story.title || 'Chi Tiết Truyện';
+
+      if (!window.state.chatHistories) window.state.chatHistories = {};
+      
+      if (!window.state.chatHistories[storyId] || window.state.chatHistories[storyId].length === 0) {
+        window.state.chatHistories[storyId] = [];
+        if (story.openingScene) {
+          window.state.chatHistories[storyId].push({ sender: 'system', text: `* ${story.openingScene} *` });
+        }
+      }
+
+      switchPage('page-story-detail');
+      renderChatHistory();
+    }
+
+    function openStoryConfigModal() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (!story) return;
+
+      document.getElementById('story-setting-input').value = story.setting || '';
+      document.getElementById('story-opening-input').value = story.openingScene || '';
+
+      renderCharacterList();
+      openModal('modal-story-config');
+    }
+
+    function saveStorySettings() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (story) {
+        story.setting = document.getElementById('story-setting-input').value.trim();
+        story.openingScene = document.getElementById('story-opening-input').value.trim();
+        saveStorage();
+        closeModal('modal-story-config');
+        alert('Đã lưu cấu hình truyện!');
+      }
+    }
+
+    function renderCharacterList() {
+      const container = document.getElementById('character-list-container');
+      container.innerHTML = '';
+
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (!story || !story.characters || story.characters.length === 0) {
+        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào. Bấm "+ Thêm Nhân Vật" để tạo!</div>';
+        return;
+      }
+
+      story.characters.forEach(char => {
+        const div = document.createElement('div');
+        div.className = 'char-card';
+        div.innerHTML = `
+          <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
+          <div style="flex:1;">
+            <h4 style="font-size:0.9rem; font-weight:bold;">${escapeHtml(char.name)}</h4>
+            <p style="font-size:0.75rem; color:#666; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(char.personality)}</p>
+          </div>
+          <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
+          <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function openAddCharModal() {
+      document.getElementById('char-modal-title').innerText = '🎭 Thêm Nhân Vật Mới';
+      document.getElementById('char-edit-id').value = '';
+      document.getElementById('char-name').value = '';
+      document.getElementById('char-avatar').value = '';
+      document.getElementById('char-personality').value = '';
+      document.getElementById('char-first-msg').value = '';
+      openModal('modal-char');
+    }
+
+    function openEditCharModal(charId) {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const char = story ? story.characters.find(c => c.id === charId) : null;
+      if (!char) return;
+
+      document.getElementById('char-modal-title').innerText = '✏️ Chỉnh Sửa Nhân Vật';
+      document.getElementById('char-edit-id').value = char.id;
+      document.getElementById('char-name').value = char.name;
+      document.getElementById('char-avatar').value = char.avatar || '';
+      document.getElementById('char-personality').value = char.personality || '';
+      document.getElementById('char-first-msg').value = char.firstMsg || '';
+      openModal('modal-char');
+    }
+
+    function saveCharacter() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (!story) return;
+
+      const charId = document.getElementById('char-edit-id').value;
+      const name = document.getElementById('char-name').value.trim();
+      const avatar = document.getElementById('char-avatar').value.trim();
+      const personality = document.getElementById('char-personality').value.trim();
+      const firstMsg = document.getElementById('char-first-msg').value.trim();
+
+      if (!name) return alert('Vui lòng nhập tên nhân vật!');
+
+      if (charId) {
+        const char = story.characters.find(c => c.id === charId);
+        if (char) {
+          char.name = name;
+          char.avatar = avatar || DEFAULT_LOGO;
+          char.personality = personality;
+          char.firstMsg = firstMsg;
+        }
+      } else {
+        if (!story.characters) story.characters = [];
+        story.characters.push({
+          id: 'char-' + Date.now(),
+          name,
+          avatar: avatar || DEFAULT_LOGO,
+          personality,
+          firstMsg
+        });
+      }
+
+      saveStorage();
+      renderCharacterList();
+      closeModal('modal-char');
+    }
+
+    function deleteCharacter(charId) {
+      if (confirm('Xóa nhân vật này khỏi truyện?')) {
+        const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+        if (story) {
+          story.characters = story.characters.filter(c => c.id !== charId);
+          saveStorage();
+          renderCharacterList();
+        }
+      }
+    }
+
+    function insertInputFormat(type) {
+      const input = document.getElementById('user-input');
+      const val = input.value;
+      if (type === 'dialogue') {
+        input.value = val + '""';
+        input.setSelectionRange(input.value.length - 1, input.value.length - 1);
+      } else if (type === 'action') {
+        input.value = val + '**';
+        input.setSelectionRange(input.value.length - 1, input.value.length - 1);
+      }
+      input.focus();
+    }
+
+    function renderChatHistory() {
+      const container = document.getElementById('chat-history');
+      container.innerHTML = '';
+      const history = (window.state.chatHistories && window.state.chatHistories[window.state.activeStoryId]) || [];
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+
+      history.forEach((msg, idx) => {
+        if (msg.sender === 'system') {
+          const div = document.createElement('div');
+          div.className = 'scene-action-inline ai';
+          div.innerHTML = escapeHtml(cleanActionText(msg.text));
+          container.appendChild(div);
+        } else if (msg.sender === 'user') {
+          renderUserFormattedMessage(msg.text, container, idx);
+        } else {
+          parseAndRenderAiMessage(msg.text, story, container, idx);
+        }
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    /* KHUNG HOẠT ĐỘNG CỦA USER */
+    function renderUserFormattedMessage(rawText, container, idx) {
+      const userName = (window.state.persona && window.state.persona.name) || 'Anh Thư';
+      const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
+
+      const regex = /"([^"]+)"|\*([^*]+)\*/g;
+      let match;
+      let items = [];
+
+      while ((match = regex.exec(rawText)) !== null) {
+        if (match[2]) items.push({ type: 'action', content: match[2] });
+        else if (match[1]) items.push({ type: 'dialogue', content: match[1] });
+      }
+
+      if (items.length === 0 && rawText.trim()) {
+        items.push({ type: 'dialogue', content: rawText.trim() });
+      }
+
+      let pendingAction = [];
+
+      items.forEach(item => {
+        if (item.type === 'action') {
+          pendingAction.push(cleanActionText(item.content));
+        } else {
+          if (pendingAction.length > 0) {
+            const actionBlock = document.createElement('div');
+            actionBlock.className = 'scene-action-inline user';
+            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            container.appendChild(actionBlock);
+            pendingAction = [];
+          }
+          appendUserBubble(item.content, userName, userAvatar, container, idx);
+        }
+      });
+
+      if (pendingAction.length > 0) {
+        const actionBlock = document.createElement('div');
+        actionBlock.className = 'scene-action-inline user';
+        actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+        container.appendChild(actionBlock);
+      }
+    }
+
+    function appendUserBubble(text, userName, userAvatar, container, idx) {
+      const div = document.createElement('div');
+      div.className = 'chat-message user';
+      div.innerHTML = `
+        <img src="${userAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+        <div class="msg-bubble-wrap">
+          <div class="msg-sender">${escapeHtml(userName)}</div>
+          <div class="msg-bubble">
+            <span class="dialogue-text">${escapeHtml(cleanDialogueText(text))}</span>
+          </div>
+          <div class="msg-action-bar">
+            <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
+            <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    /* ĐÃ SỬA LỖI: HIỂN THỊ HÀNH ĐỘNG VÀ LỜI THOẠI CHÍNH XÁC KHÔNG BỊ TRÙNG LẶP TÊN */
+    function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
+      const lines = fullText.split('\n').filter(p => p.trim() !== '');
+
+      lines.forEach(line => {
+        const charMatch = line.match(/^(?:([A-Za-z0-9\sĐđÀ-ỹ]+):)?\s*(.*)/);
+
+        if (charMatch) {
+          let speakerName = charMatch[1] ? charMatch[1].trim() : 'AI';
+          let content = charMatch[2] ? charMatch[2].trim() : line;
+
+          let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+          if (story && story.characters) {
+            const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
+            if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
+          }
+
+          const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
+          let seqMatch;
+          let items = [];
+
+          while ((seqMatch = seqRegex.exec(content)) !== null) {
+            if (seqMatch[2]) items.push({ type: 'action', content: seqMatch[2] });
+            else if (seqMatch[1]) items.push({ type: 'dialogue', content: seqMatch[1] });
+          }
+
+          if (items.length === 0 && content) {
+            items.push({ type: 'dialogue', content: content });
+          }
+
+          let pendingAction = [];
+
+          items.forEach(item => {
+            if (item.type === 'action') {
+              pendingAction.push(cleanActionText(item.content));
+            } else {
+              if (pendingAction.length > 0) {
+                const actionBlock = document.createElement('div');
+                actionBlock.className = 'scene-action-inline ai';
+                actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+                container.appendChild(actionBlock);
+                pendingAction = [];
+              }
+              const div = document.createElement('div');
+              div.className = 'chat-message ai';
+              div.innerHTML = `
+                <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+                <div class="msg-bubble-wrap">
+                  <div class="msg-sender">${escapeHtml(speakerName)}</div>
+                  <div class="msg-bubble">
+                    <span class="dialogue-text">${escapeHtml(cleanDialogueText(item.content))}</span>
+                  </div>
+                  <div class="msg-action-bar">
+                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                  </div>
+                </div>
+              `;
+              container.appendChild(div);
+            }
+          });
+
+          if (pendingAction.length > 0) {
+            const actionBlock = document.createElement('div');
+            actionBlock.className = 'scene-action-inline ai';
+            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            container.appendChild(actionBlock);
+          }
+        }
+      });
+    }
+
+    function editMessage(idx) {
+      const history = window.state.chatHistories[window.state.activeStoryId];
+      if (!history) return;
+      const newText = prompt('Chỉnh sửa tin nhắn:', history[idx].text);
+      if (newText !== null) {
+        history[idx].text = newText;
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function deleteMessage(idx) {
+      if (confirm('Xóa tin nhắn này?')) {
+        window.state.chatHistories[window.state.activeStoryId].splice(idx, 1);
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function regenerateAiResponse(idx) {
+      window.state.chatHistories[window.state.activeStoryId].splice(idx);
+      sendMessage(null, true);
+    }
+
+    async function sendMessage(overrideText = null, isRegen = false) {
+      const inputEl = document.getElementById('user-input');
+      let text = overrideText || (inputEl ? inputEl.value.trim() : '');
+      if (!text && !isRegen) return;
+
+      if (!overrideText && !isRegen) inputEl.value = '';
+
+      const storyId = window.state.activeStoryId;
+      const story = window.state.stories.find(s => s.id === storyId);
+
+      if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
+
+      if (!overrideText && !isRegen) {
+        window.state.chatHistories[storyId].push({ sender: 'user', text });
+        renderChatHistory();
+      }
+
+      if (!window.state.apiKeys || window.state.apiKeys.length === 0) {
+        alert('Vui lòng nhập ít nhất 1 API Key trong Cài Đặt!');
+        return openModal('modal-settings');
+      }
+
+      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
+      
+      /* ĐÃ CẬP NHẬT PROMPT ĐỂ AI BẮT BUỘC TÁCH DÒNG RIÊNG CHO MỖI NHÂN VẬT PHÁT BIỂU */
+      const systemInstruction = `
+Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truyện tương tác.
+
+[THÔNG TIN BỐI CẢNH & NHÂN VẬT]
+- Tên truyện: "${story ? story.title : ''}"
+- Bối cảnh chung: "${(story && story.setting) || ''}"
+- Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}"
+- Người dùng đóng vai: "${window.state.persona.name}" (Ghi nhớ: ${window.state.persona.memories})
+- Danh sách nhân vật AI nhập vai:
+${charsPrompt}
+
+[QUY TẮC PHẢN HỒI BẮT BUỘC]
+1. Mỗi nhân vật khi có hành động hoặc lời thoại PHẢI viết thành một dòng riêng biệt, bắt đầu bằng tên nhân vật và dấu hai chấm. (Ví dụ: "Sào Bì: ..." hoặc "Trần Hạo Nam: ...").
+2. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...*. Tuyệt đối không nhầm lẫn hành động của nhân vật này sang cho nhân vật khác.
+3. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "...".
+      `;
+
+      const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+
+      const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: recentHistory
+      };
+
+      let responseText = null;
+      const selectedModel = window.state.currentModel || 'gemini-2.5-flash';
+
+      for (const key of window.state.apiKeys) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            responseText = data.candidates[0].content.parts[0].text;
+            break;
+          }
+        } catch (e) { console.error(e); }
+      }
+
+      if (responseText) {
+        window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
+        saveStorage();
+        renderChatHistory();
+      } else {
+        alert(`Lỗi kết nối với Model "${selectedModel}"! Vui lòng kiểm tra lại Key.`);
+      }
+    }
+
+    function triggerAutoPlay() { sendMessage("(Diễn biến tiếp theo của câu chuyện...)"); }
+    function clearHistory() {
+      if (confirm('Xóa lịch sử chat kịch bản này?')) {
+        window.state.chatHistories[window.state.activeStoryId] = [];
+        if (window.state.chatSummaries) delete window.state.chatSummaries[window.state.activeStoryId];
+        saveStorage();
+        renderChatHistory();
+      }
+    }
+
+    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+    function saveAppSettings() {
+      const keysRaw = document.getElementById('cfg-api-keys').value;
+      window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
+      window.state.currentModel = document.getElementById('cfg-model-select').value || 'gemini-2.5-flash';
+      window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
+      window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
+      updateThemeColors();
+      saveStorage();
+      closeModal('modal-settings');
+      alert('Đã lưu cài đặt!');
+    }
+
+    function updateThemeColors() {
+      document.documentElement.style.setProperty('--ai-bubble-bg', document.getElementById('cfg-ai-bubble').value);
+      document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
+    }
+
+    function savePersona() {
+      if (!window.state.persona) window.state.persona = {};
+      window.state.persona.name = document.getElementById('per-name').value;
+      window.state.persona.dob = document.getElementById('per-dob').value;
+      window.state.persona.avatar = document.getElementById('per-avatar').value;
+      window.state.persona.memories = document.getElementById('per-memories').value;
+      saveStorage();
+      closeModal('modal-persona');
+      alert('Đã lưu hồ sơ!');
+    }
+
+    function exportToFile() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `teechat_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importFromFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const importedData = JSON.parse(evt.target.result);
+          if (importedData && typeof importedData === 'object') {
+            window.state = importedData;
+            saveStorage();
+            loadStorage();
+            renderStoryList();
+            alert('Khôi phục thành công!');
+            closeModal('modal-auth');
+          }
+        } catch (err) { alert('File JSON không hợp lệ!'); }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
