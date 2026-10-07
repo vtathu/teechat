@@ -42,7 +42,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); }
     body { background-color: var(--bg-color); background-size: cover; background-position: center; color: #2d3748; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-    h1, h2, h3 { font-family: var(--font-heading); font-weight: normal; }
+    h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
 
     .btn { background: var(--app-green); color: #fff; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
     .btn:active { transform: scale(0.95); }
@@ -58,28 +58,20 @@
     .app-logo-title img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
     .app-logo-title h1 { font-size: 1.2rem; color: var(--app-dark-green); white-space: nowrap; }
 
-    /* TAB DẪN HƯỚNG */
-    .tab-header { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; }
-    .tab-btn { flex: 1; padding: 8px 4px; text-align: center; font-weight: bold; color: #718096; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.8rem; white-space: nowrap; }
-    .tab-btn.active { color: var(--app-dark-green); border-bottom-color: var(--app-dark-green); background: rgba(144, 212, 184, 0.15); }
-
-    .tab-content { display: none; flex: 1; overflow-y: auto; padding: 16px; flex-direction: column; gap: 16px; }
-    .tab-content.active { display: flex; }
-
     .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
     .scenario-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); flex-shrink: 0; }
     .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; position: relative; }
-    .char-header { display: flex; align-items: center; gap: 10px; }
-    .char-avatar-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); }
+    .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .char-header { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .char-avatar-mini { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
 
     /* CHAT STYLES */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     
-    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; text-align: center; background: rgba(255,255,255,0.4); border-radius: 10px; margin: 4px 0; }
+    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; text-align: center; background: rgba(255,255,255,0.5); border-radius: 10px; margin: 4px 0; }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
@@ -101,8 +93,8 @@
     .user .msg-action-bar { justify-content: flex-end; }
     .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
 
-    /* HÀNG NÚT ĐIỀU KIỂN CHAT */
-    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; }
+    /* HÀNG NÚT ĐIỀU KHIỂN CHAT */
+    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid #d0ebd8; }
     .chat-controls .btn { padding: 4px 8px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
 
     .input-bar { padding: 10px 16px; background: #fff; display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; }
@@ -132,7 +124,7 @@
       <div style="display: flex; gap: 4px;">
         <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
         <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
-        <button class="btn" onclick="openModal('modal-settings')">⚙ Cài Đặt</button>
+        <button class="btn" onclick="openModal('modal-settings')">⚙ Hệ Thống</button>
       </div>
     </div>
 
@@ -144,58 +136,58 @@
     <div class="scenarios-container" id="story-list"></div>
   </div>
 
-  <!-- PAGE 2: CHI TIẾT TRUYỆN -->
+  <!-- PAGE 2: MÀN HÌNH CHÁT CHÍNH (KHÔNG CÓ TAB) -->
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
         <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
-        <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">Tên Truyện</h3>
+        <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">Tên Truyện</h3>
       </div>
-      <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openModal('modal-settings')">⚙️</button>
+      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt Truyện</button>
     </div>
 
-    <div class="tab-header">
-      <div id="tab-btn-setup" class="tab-btn active" onclick="switchStoryTab('setup')">📜 Cốt Truyện & Nhân Vật</div>
-      <div id="tab-btn-chat" class="tab-btn" onclick="switchStoryTab('chat')">💬 Trò Chuyện</div>
+    <!-- KHU VỰC KHUNG CHÁT TRỰC TIẾP -->
+    <div class="chat-history" id="chat-history"></div>
+
+    <div class="chat-controls">
+      <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại ("")</button>
+      <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động (**)</button>
+      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨ AI Chạy Tiếp</button>
+      <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa Chat</button>
     </div>
 
-    <!-- TAB 1: CỐT TRUYỆN -->
-    <div id="tab-content-setup" class="tab-content active">
+    <div class="input-bar">
+      <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)">
+      <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CÀI ĐẶT TRUYỆN RIÊNG (BỐI CẢNH & NHÂN VẬT) -->
+  <div id="modal-story-config" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚙️ Cài Đặt Cốt Truyện & Nhân Vật</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
+      </div>
+
       <div class="form-group">
         <label>Bối Cảnh / Cốt Truyện Chung:</label>
-        <textarea id="story-setting-input" rows="2" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
+        <textarea id="story-setting-input" rows="3" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
       </div>
 
       <div class="form-group">
-        <label>🎬 Bối Cảnh Mở Đầu (Kịch bản bắt đầu):</label>
+        <label>🎬 Bối Cảnh Mở Đầu (Cảnh quay đầu tiên):</label>
         <textarea id="story-opening-input" rows="3" placeholder="Ví dụ: Đêm khuya tại quán bar, Trần Hạo Nam đang ngồi uống rượu thì Thư bước vào..."></textarea>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-        <h3 style="font-size: 1rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h3>
-        <button class="btn btn-pink" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+        <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
+        <button class="btn btn-pink" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
       </div>
 
-      <div id="character-list-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
 
-      <button class="btn" style="margin-top: 10px;" onclick="saveStorySettings()">💾 Lưu Cài Đặt Cốt Truyện</button>
-    </div>
-
-    <!-- TAB 2: TRÒ CHUYỆN -->
-    <div id="tab-content-chat" class="tab-content" style="padding:0; gap:0;">
-      <div class="chat-history" id="chat-history"></div>
-
-      <div class="chat-controls">
-        <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại ("")</button>
-        <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động (**)</button>
-        <button class="btn btn-outline" onclick="triggerAutoPlay()">✨ AI Chạy Tiếp</button>
-        <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa Chat</button>
-      </div>
-
-      <div class="input-bar">
-        <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)">
-        <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
-      </div>
+      <button class="btn" style="margin-top: 10px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
     </div>
   </div>
 
@@ -203,7 +195,7 @@
   <div id="modal-story" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>📖 Tạo Truyện / Kịch Bản Mới</h3>
+        <h3>📖 Tạo Truyện Mới</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story')">✖</button>
       </div>
       <div class="form-group">
@@ -223,7 +215,7 @@
         <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
       </div>
       <div class="form-group">
-        <label>Bối Cảnh Mở Đầu (Tự động chạy thoại đúng lượt):</label>
+        <label>Bối Cảnh Mở Đầu:</label>
         <textarea id="new-story-opening" rows="2" placeholder="Ví dụ: Thư vừa bước vào quán cafe thì gặp Trần Hạo Nam..."></textarea>
       </div>
       <button class="btn btn-pink" onclick="createNewStory()">Tạo Truyện</button>
@@ -262,7 +254,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ACCOUNT & FIREBASE CLOUD BACKUP -->
+  <!-- MODAL: FIREBASE BACKUP -->
   <div id="modal-auth" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -303,11 +295,11 @@
     </div>
   </div>
 
-  <!-- MODAL: SETTINGS -->
+  <!-- MODAL: SYSTEM SETTINGS -->
   <div id="modal-settings" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ Cài Đặt Ứng Dụng</h3>
+        <h3>⚙️ Cài Đặt Hệ Thống</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-settings')">✖</button>
       </div>
       <div class="form-group">
@@ -316,12 +308,7 @@
       </div>
       <div class="form-group">
         <label>Tên Model AI (Mặc định: gemini-2.5-flash):</label>
-        <input type="text" id="cfg-model-select" list="model-suggestions" placeholder="Nhập hoặc chọn tên model...">
-        <datalist id="model-suggestions">
-          <option value="gemini-2.5-flash"></option>
-          <option value="gemini-1.5-flash"></option>
-          <option value="gemini-2.5-pro"></option>
-        </datalist>
+        <input type="text" id="cfg-model-select" value="gemini-2.5-flash" readonly style="background:#f5f5f5;">
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div class="form-group">
@@ -434,14 +421,8 @@
       if (!user) return alert("Vui lòng đăng nhập trước!");
       
       try {
-        if (!window.state.stories) window.state.stories = [];
-        if (!window.state.chatHistories) window.state.chatHistories = {};
-        if (!window.state.chatSummaries) window.state.chatSummaries = {};
-        if (!window.state.apiKeys) window.state.apiKeys = [];
-
         window.saveStorage();
         const cleanData = JSON.parse(JSON.stringify(window.state));
-
         await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanData);
         alert("☁️ Đã đồng bộ lên Firebase Cloud thành công!");
       } catch (err) { alert("Lỗi khi tải dữ liệu lên Cloud: " + err.message); }
@@ -450,28 +431,20 @@
     window.downloadDataFromFirebase = async function() {
       const user = auth.currentUser;
       if (!user) return alert("Vui lòng đăng nhập trước!");
-
       if (!confirm("Tải dữ liệu từ Đám mây sẽ ghi đè lên dữ liệu hiện tại. Bạn có chắc chắn?")) return;
 
       try {
         const snapshot = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
         if (snapshot.exists()) {
           window.state = snapshot.val();
-
-          if (!window.state.stories) window.state.stories = [];
-          if (!window.state.chatHistories) window.state.chatHistories = {};
-          if (!window.state.chatSummaries) window.state.chatSummaries = {};
-          if (!window.state.apiKeys) window.state.apiKeys = [];
-          if (!window.state.persona) window.state.persona = { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' };
-
           window.saveStorage();
           window.loadStorage();
           window.renderStoryList();
 
           if (window.state.activeStoryId) {
-            const currentStory = window.state.stories.find(s => s.id === window.state.activeStoryId);
-            if (currentStory) window.openStoryDetail(window.state.activeStoryId);
-            else window.switchPage('page-home');
+            window.openStoryDetail(window.state.activeStoryId);
+          } else {
+            window.switchPage('page-home');
           }
 
           alert("📥 Đã tải và khôi phục toàn bộ dữ liệu thành công!");
@@ -492,7 +465,6 @@
       stories: [],
       persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
-      chatSummaries: {},
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
     };
@@ -503,19 +475,16 @@
     };
 
     function loadStorage() {
-      const savedState = localStorage.getItem('teechat_state_v6');
+      const savedState = localStorage.getItem('teechat_state_v7');
       if (savedState) {
         try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
       }
 
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
-      if (!window.state.chatSummaries) window.state.chatSummaries = {};
 
-      // Sửa model hỏng nếu còn lưu trong bộ nhớ
-      if (!window.state.currentModel || window.state.currentModel.includes('3.5')) {
-        window.state.currentModel = 'gemini-2.5-flash';
-      }
+      // ÉP BUỘC DÙNG MODEL GEMINI-2.5-FLASH
+      window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
         window.state.stories.push({
@@ -531,13 +500,6 @@
               avatar: DEFAULT_LOGO,
               personality: 'Lạnh lùng, quyết đoán, rất quan tâm đến Thư. Xưng hô: Anh - Thư.',
               firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."'
-            },
-            {
-              id: 'char-2',
-              name: 'Gà Rừng',
-              avatar: DEFAULT_LOGO,
-              personality: 'Vui tính, hay nói đùa, xưng Tôi - Cô.',
-              firstMsg: 'Gà Rừng: "Chào cô em!"'
             }
           ]
         });
@@ -545,7 +507,7 @@
       }
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
-      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
+      document.getElementById('cfg-model-select').value = 'gemini-2.5-flash';
       
       if (window.state.persona) {
         document.getElementById('per-name').value = window.state.persona.name || '';
@@ -560,7 +522,7 @@
     }
 
     function saveStorage() {
-      localStorage.setItem('teechat_state_v6', JSON.stringify(window.state));
+      localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
     }
 
     function escapeHtml(str) {
@@ -584,7 +546,7 @@
       }
     }
 
-    /* RENDER DANH SÁCH TRUYỆN */
+    /* RENDER TRANG CHỦ */
     function renderStoryList() {
       const container = document.getElementById('story-list');
       container.innerHTML = '';
@@ -601,7 +563,7 @@
             <div style="font-size:0.8rem; color:var(--app-dark-green); font-weight:bold;">🎭 ${story.characters ? story.characters.length : 0} Nhân vật</div>
           </div>
           <div style="display: flex; gap: 8px; margin-top: 10px;">
-            <button class="btn" style="flex:1;" onclick="openStoryDetail('${story.id}')">Vào Truyện</button>
+            <button class="btn" style="flex:1;" onclick="openStoryDetail('${story.id}')">💬 Trò Chuyện</button>
             <button class="btn btn-outline" onclick="deleteStory('${story.id}')">Xóa</button>
           </div>
         `;
@@ -644,34 +606,21 @@
       if (confirm('Bạn có chắc muốn xóa truyện này?')) {
         window.state.stories = window.state.stories.filter(s => s.id !== id);
         if (window.state.chatHistories) delete window.state.chatHistories[id];
-        if (window.state.chatSummaries) delete window.state.chatSummaries[id];
         saveStorage();
         renderStoryList();
       }
     }
 
-    /* VÀO TRUYỆN */
+    /* MỞ TRỰC TIẾP TRÒ CHUYỆN CỦA CÂU TRUYỆN */
     function openStoryDetail(storyId) {
-      if (!window.state.stories) window.state.stories = [];
       const story = window.state.stories.find(s => s.id === storyId);
-
-      if (!story) {
-        alert("Không tìm thấy dữ liệu truyện!");
-        return;
-      }
+      if (!story) return alert("Không tìm thấy dữ liệu truyện!");
 
       window.state.activeStoryId = storyId;
-      document.getElementById('active-story-title').innerText = story.title || 'Chi Tiết Truyện';
-      document.getElementById('story-setting-input').value = story.setting || '';
-      document.getElementById('story-opening-input').value = story.openingScene || '';
+      document.getElementById('active-story-title').innerText = story.title || 'Trò Chuyện';
 
-      renderCharacterList();
-      
-      if (!window.state.chatHistories) window.state.chatHistories = {};
-      
-      if (!window.state.chatHistories[storyId] || window.state.chatHistories[storyId].length === 0) {
+      if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
-        
         if (story.openingScene) {
           window.state.chatHistories[storyId].push({ sender: 'system', text: `*${story.openingScene}*` });
         } else if (story.characters && story.characters.length > 0 && story.characters[0].firstMsg) {
@@ -679,18 +628,19 @@
         }
       }
 
-      switchStoryTab('setup');
+      renderChatHistory();
       switchPage('page-story-detail');
     }
 
-    function switchStoryTab(tabName) {
-      document.getElementById('tab-btn-setup').classList.toggle('active', tabName === 'setup');
-      document.getElementById('tab-btn-chat').classList.toggle('active', tabName === 'chat');
+    /* POPUP CÀI ĐẶT RIÊNG CHO TRUYỆN */
+    function openStoryConfigModal() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (!story) return;
 
-      document.getElementById('tab-content-setup').classList.toggle('active', tabName === 'setup');
-      document.getElementById('tab-content-chat').classList.toggle('active', tabName === 'chat');
-
-      if (tabName === 'chat') renderChatHistory();
+      document.getElementById('story-setting-input').value = story.setting || '';
+      document.getElementById('story-opening-input').value = story.openingScene || '';
+      renderCharacterList();
+      openModal('modal-story-config');
     }
 
     function renderCharacterList() {
@@ -699,7 +649,7 @@
 
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.characters || story.characters.length === 0) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào. Bấm "+ Thêm Nhân Vật" để tạo!</div>';
+        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào trong truyện này.</div>';
         return;
       }
 
@@ -709,12 +659,14 @@
         div.innerHTML = `
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
-            <div style="flex:1;">
-              <h4 style="font-size:0.95rem; font-weight:bold;">${escapeHtml(char.name)}</h4>
-              <p style="font-size:0.8rem; color:#666;">${escapeHtml(char.personality)}</p>
+            <div style="flex:1; overflow:hidden;">
+              <h4 style="font-size:0.85rem; font-weight:bold; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(char.name)}</h4>
+              <p style="font-size:0.75rem; color:#666; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(char.personality)}</p>
             </div>
-            <button class="btn btn-outline" style="font-size:0.75rem; padding: 3px 8px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
-            <button class="btn btn-outline" style="font-size:0.75rem; padding: 3px 8px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
+            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
           </div>
         `;
         container.appendChild(div);
@@ -727,7 +679,8 @@
         story.setting = document.getElementById('story-setting-input').value.trim();
         story.openingScene = document.getElementById('story-opening-input').value.trim();
         saveStorage();
-        alert('Đã lưu bối cảnh kịch bản!');
+        closeModal('modal-story-config');
+        alert('Đã lưu cài đặt cho câu chuyện!');
       }
     }
 
@@ -953,18 +906,16 @@
       sendMessage(null, true);
     }
 
-    /* HÀM NÚT TỰ ĐỘNG CHẠY TIẾP */
     function triggerAutoPlay() {
       sendMessage(null, false, true);
     }
 
-    /* HÀM GỬI TIN NHẮN ĐÃ SỬA LỖI MODEL VÀ AUTOPLAY */
+    /* GỬI TIN NHẮN VỚI QUY TẮC BÁM SÁT CỐT TRUYỆN */
     async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
       
       if (!text && !isRegen && !isAutoPlay) return;
-
       if (!overrideText && !isRegen && !isAutoPlay) inputEl.value = '';
 
       const storyId = window.state.activeStoryId;
@@ -972,7 +923,6 @@
 
       if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
 
-      // Chỉ thêm tin nhắn User nếu không phải Regen và không phải AutoPlay
       if (!overrideText && !isRegen && !isAutoPlay) {
         window.state.chatHistories[storyId].push({ sender: 'user', text });
         renderChatHistory();
@@ -985,22 +935,22 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
+      // BỘ PROMPT NGHIÊM NGẶT - BÁM SÁT CỐT TRUYỆN & TIẾN TRIỂN CHẬM
       const systemInstruction = `
-[QUY TẮC BẮT BUỘC DÀNH CHO AI TẠO KỊCH BẢN PHIM/TRUYỆN]
-1. Tên truyện: "${story ? story.title : ''}".
-2. Bối cảnh chung: "${(story && story.setting) || ''}".
-3. Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}".
-4. Các nhân vật bạn nhập vai:
+[QUY TẮC NHẬP VÀI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
+1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
+2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
+3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
-5. Người dùng: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[ĐỊNH DẠNG ĐẦU RA BẮT BUỘC]
-- Nhập vai diễn tiếp tục diễn biến câu chuyện tự nhiên dựa trên lịch sử trò chuyện.
-- Tách biệt rõ ràng LỜI THOẠI và HÀNH ĐỘNG:
-  + Lời thoại bọc trong dấu ngoặc kép: "Lời thoại ở đây..."
-  + Hành động/Miêu tả cảm xúc bọc trong dấu sao: *Hành động ở đây...*
-- Cú pháp mẫu:
-[Tên Nhân Vật]: *hành động* "Lời thoại..."
+[NGUYÊN TẮC QUAN TRỌNG VỀ TỐC ĐỘ DIỄN BIẾN]
+- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
+- Chỉ đáp lại ĐÚNG 1 lượt phản hồi (1 câu thoại ngắn và/hoặc 1 cử chỉ/hành động tiếp theo).
+- Bắt buộc duy trì đúng tính cách, xưng hô và không tự ý nhảy cảnh hay tự kết thúc tình huống.
+
+[ĐỊNH DẠNG ĐẦU RA (ĐÚNG CÚ PHÁP)]
+[Tên Nhân Vật]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
       `;
 
       let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
@@ -1008,11 +958,10 @@ ${charsPrompt}
         parts: [{ text: m.text }]
       }));
 
-      // Nếu bấm AI Chạy Tiếp, thêm câu lệnh ngầm mà không lưu vào màn hình chat
       if (isAutoPlay) {
         recentHistory.push({
           role: 'user',
-          parts: [{ text: 'Hãy tiếp tục diễn biến tự nhiên của câu chuyện.' }]
+          parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
         });
       }
 
@@ -1022,14 +971,7 @@ ${charsPrompt}
       };
 
       let responseText = null;
-      let selectedModel = window.state.currentModel || 'gemini-2.5-flash';
-
-      // Sửa lỗi tự động nếu tên model không hợp lệ
-      if (selectedModel.includes('3.5')) {
-        selectedModel = 'gemini-2.5-flash';
-        window.state.currentModel = 'gemini-2.5-flash';
-        saveStorage();
-      }
+      const selectedModel = 'gemini-2.5-flash';
 
       for (const key of window.state.apiKeys) {
         try {
@@ -1052,14 +994,13 @@ ${charsPrompt}
         saveStorage();
         renderChatHistory();
       } else {
-        alert(`Lỗi kết nối với Model "${selectedModel}"! Vui lòng kiểm tra lại Key hoặc tên Model trong Cài Đặt.`);
+        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.`);
       }
     }
 
     function clearHistory() {
       if (confirm('Xóa lịch sử chat kịch bản này?')) {
         window.state.chatHistories[window.state.activeStoryId] = [];
-        if (window.state.chatSummaries) delete window.state.chatSummaries[window.state.activeStoryId];
         saveStorage();
         renderChatHistory();
       }
@@ -1070,10 +1011,7 @@ ${charsPrompt}
     function saveAppSettings() {
       const keysRaw = document.getElementById('cfg-api-keys').value;
       window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
-      let modelInput = document.getElementById('cfg-model-select').value || 'gemini-2.5-flash';
-      if (modelInput.includes('3.5')) modelInput = 'gemini-2.5-flash';
-      
-      window.state.currentModel = modelInput;
+      window.state.currentModel = 'gemini-2.5-flash';
       window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
       window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
       updateThemeColors();
