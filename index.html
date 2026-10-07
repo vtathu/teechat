@@ -255,7 +255,7 @@
       </div>
       <div class="form-group">
         <label>Lời Mở Đầu (Nếu có):</label>
-        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: * Đứng dậy đỡ ly rượu * "Cô có vẻ... biết chọn món."'></textarea>
+        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: *Đứng dậy đỡ ly rượu* "Cô có vẻ... biết chọn món."'></textarea>
       </div>
       <button class="btn btn-pink" onclick="saveCharacter()">Lưu Nhân Vật</button>
     </div>
@@ -524,7 +524,7 @@
               name: 'Gà Rừng',
               avatar: DEFAULT_LOGO,
               personality: 'Tinh nghịch, hoạt bát, bốc đồng.',
-              firstMsg: 'Gà Rừng: * Nhảy khỏi thùng rượu, chạy tới * "Chào chị Thư! Em là Gà Rừng."'
+              firstMsg: 'Gà Rừng: *Nhảy khỏi thùng rượu, chạy tới* "Chào chị Thư! Em là Gà Rừng."'
             },
             {
               id: 'char-2',
@@ -566,32 +566,10 @@
       return (text || '').replace(/^["'“«]+|["'”»]+$/g, '').trim();
     }
 
-    /* Làm sạch ký tự đặc biệt cho hành động */
-    function cleanActionText(text) {
-      if (!text) return '';
-      return text.replace(/\*/g, '').trim();
-    }
-
-    /* XỬ LÝ CHÈN TÊN CHUẨN THÔNG MINH (Tránh lỗi: "Gà Rừng Anh rời khỏi...") */
-    function formatActionTextWithSubject(actionText, subjectName) {
-      let cleaned = cleanActionText(actionText);
-      if (!cleaned) return '';
-      if (!subjectName || subjectName === 'AI') return cleaned;
-
-      let sentences = cleaned.split(/(?<=[.!?])\s+/);
-      if (sentences.length === 0) return cleaned;
-
-      let firstSentence = sentences[0];
-
-      const pronounRegex = /^(Anh|Hắn|Y|Cô|Cậu|Chị|Em|Ông|Bà)\b/i;
-      if (pronounRegex.test(firstSentence)) {
-        firstSentence = firstSentence.replace(pronounRegex, subjectName);
-      } else if (!firstSentence.toLowerCase().includes(subjectName.toLowerCase())) {
-        firstSentence = subjectName + ' ' + firstSentence;
-      }
-      
-      sentences[0] = firstSentence;
-      return sentences.join(' ');
+    /* Làm sạch ký tự đặc biệt cho hành động - GIỮ NGUYÊN NỘI DUNG GỐC CỦA HÀNH ĐỘNG */
+    function formatActionTextWithSubject(actionText) {
+      if (!actionText) return '';
+      return actionText.replace(/\*/g, '').trim();
     }
 
     function switchPage(pageId) {
@@ -690,7 +668,7 @@
       if (!window.state.chatHistories[storyId] || window.state.chatHistories[storyId].length === 0) {
         window.state.chatHistories[storyId] = [];
         if (story.openingScene) {
-          window.state.chatHistories[storyId].push({ sender: 'system', text: `* ${story.openingScene} *` });
+          window.state.chatHistories[storyId].push({ sender: 'system', text: `*${story.openingScene}*` });
         }
       }
 
@@ -840,7 +818,7 @@
         if (msg.sender === 'system') {
           const div = document.createElement('div');
           div.className = 'scene-action-inline ai';
-          div.innerHTML = escapeHtml(cleanActionText(msg.text));
+          div.innerHTML = escapeHtml(formatActionTextWithSubject(msg.text));
           container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, container, idx);
@@ -873,7 +851,7 @@
         if (item.type === 'action') {
           const actionBlock = document.createElement('div');
           actionBlock.className = 'scene-action-inline user';
-          actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(item.content, userName));
+          actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(item.content));
           container.appendChild(actionBlock);
         } else {
           appendUserBubble(item.content, userName, userAvatar, container, idx);
@@ -900,7 +878,7 @@
       container.appendChild(div);
     }
 
-    /* HÀM XỬ LÝ TÁCH THEO ĐÚNG THỨ TỰ: HÀNH ĐỘNG -> THOẠI -> HÀNH ĐỘNG */
+    /* HÀM XỬ LÝ TÁCH NỘI DUNG VÀ HIỂN THỊ THEO THỨ TỰ THUẦN TÚY (KHÔNG TỰ TẠO THÊM TÊN TRONG HÀNH ĐỘNG) */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -940,12 +918,12 @@
           items.push({ type: 'dialogue', content: content });
         }
 
-        // VẼ TỪNG THÀNH PHẦN LÊN GIAO DIỆN Nối Tiếp
+        // VẼ TỪNG THÀNH PHẦN NỐI TIẾP VÀ NGUYÊN BẢN HÀNH ĐỘNG
         items.forEach(item => {
           if (item.type === 'action') {
             const actionBlock = document.createElement('div');
             actionBlock.className = 'scene-action-inline ai';
-            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(item.content, speakerName));
+            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(item.content));
             container.appendChild(actionBlock);
           } else if (item.type === 'dialogue') {
             const div = document.createElement('div');
