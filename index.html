@@ -990,7 +990,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 
       for (const key of window.state.apiKeys) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
