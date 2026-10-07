@@ -309,8 +309,8 @@
         <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
       </div>
       <div class="form-group">
-        <label>Tên Model AI (Mặc định: gemini-2.5-flash):</label>
-        <input type="text" id="cfg-model-select" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+        <label>Tên Model AI (Mặc định: gemini-3.8-flash):</label>
+        <input type="text" id="cfg-model-select" value="gemini-3.8-flash" placeholder="gemini-3.8-flash">
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div class="form-group">
@@ -462,7 +462,7 @@
 
     window.state = {
       apiKeys: [],
-      currentModel: 'gemini-2.5-flash',
+      currentModel: 'gemini-3.8-flash',
       activeStoryId: null,
       stories: [],
       persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
@@ -485,7 +485,7 @@
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
 
-      if (!window.state.currentModel) window.state.currentModel = 'gemini-2.5-flash';
+      if (!window.state.currentModel || window.state.currentModel === 'gemini-2.5-flash') window.state.currentModel = 'gemini-3.8-flash';
 
       if (window.state.stories.length === 0) {
         window.state.stories.push({
@@ -508,7 +508,7 @@
       }
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
-      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
+      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-3.8-flash';
       
       if (window.state.persona) {
         document.getElementById('per-name').value = window.state.persona.name || '';
@@ -969,7 +969,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       `;
 
       let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
-        role: m.sender === 'user' ? 'user' : 'model',
+        role: m.sender === 'ai' ? 'model' : 'user',
         parts: [{ text: m.text }]
       }));
 
@@ -980,13 +980,31 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
         });
       }
 
+      // Chuẩn hóa lượt hội thoại: gộp các lượt liền nhau cùng vai, và lượt đầu phải là 'user'
+      {
+        const merged = [];
+        for (const turn of recentHistory) {
+          if (!turn.parts[0].text) continue;
+          const last = merged[merged.length - 1];
+          if (last && last.role === turn.role) last.parts[0].text += '\n' + turn.parts[0].text;
+          else merged.push({ role: turn.role, parts: [{ text: turn.parts[0].text }] });
+        }
+        if (merged.length === 0 || merged[0].role !== 'user') {
+          merged.unshift({ role: 'user', parts: [{ text: 'Bắt đầu câu chuyện.' }] });
+        }
+        if (merged[merged.length - 1].role !== 'user') {
+          merged.push({ role: 'user', parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }] });
+        }
+        recentHistory = merged;
+      }
+
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: recentHistory
       };
 
       let responseText = null;
-      const selectedModel = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
+      const selectedModel = (window.state.currentModel || 'gemini-3.8-flash').trim().replace(/^models\//,'');
       let lastError = '';
 
       for (const rawKey of window.state.apiKeys) {
@@ -1032,7 +1050,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
     function saveAppSettings() {
       const keysRaw = document.getElementById('cfg-api-keys').value;
       window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
-      window.state.currentModel = (document.getElementById('cfg-model-select').value || '').trim().replace(/^models\//,'') || 'gemini-2.5-flash';
+      window.state.currentModel = (document.getElementById('cfg-model-select').value || '').trim().replace(/^models\//,'') || 'gemini-3.8-flash';
       window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
       window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
       updateThemeColors();
