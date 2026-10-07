@@ -566,10 +566,30 @@
       return (text || '').replace(/^["'“«]+|["'”»]+$/g, '').trim();
     }
 
-    /* ĐÃ SỬA LỖI: Bỏ hoàn toàn việc tự ép nối tên nhân vật vào đầu câu miêu tả */
+    /* Làm sạch ký tự đặc biệt cho hành động */
     function cleanActionText(text) {
       if (!text) return '';
       return text.replace(/\*/g, '').trim();
+    }
+
+    /* HÀM HỖ TRỢ HIỂN THỊ TÊN Ở CÂU ĐẦU TIÊN CỦA ĐOẠN HÀNH ĐỘNG */
+    function formatActionTextWithSubject(actionText, subjectName) {
+      let cleaned = cleanActionText(actionText);
+      if (!cleaned) return '';
+      if (!subjectName || subjectName === 'AI') return cleaned;
+
+      // Chia đoạn thành các câu theo dấu chấm, hỏi, cảm
+      let sentences = cleaned.split(/(?<=[.!?])\s+/);
+      if (sentences.length === 0) return cleaned;
+
+      let firstSentence = sentences[0];
+      // Nếu câu đầu chưa có tên nhân vật ở đầu câu thì gắn tên vào
+      if (!firstSentence.toLowerCase().startsWith(subjectName.toLowerCase())) {
+        firstSentence = subjectName + ' ' + firstSentence;
+      }
+      sentences[0] = firstSentence;
+
+      return sentences.join(' ');
     }
 
     function switchPage(pageId) {
@@ -829,7 +849,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* KHUNG HOẠT ĐỘNG CỦA USER */
+    /* KHUNG HOẠT ĐỘNG CỦA USER (Đã cập nhật quy tắc tên ở câu đầu hành động) */
     function renderUserFormattedMessage(rawText, container, idx) {
       const userName = (window.state.persona && window.state.persona.name) || 'Anh Thư';
       const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
@@ -856,7 +876,7 @@
           if (pendingAction.length > 0) {
             const actionBlock = document.createElement('div');
             actionBlock.className = 'scene-action-inline user';
-            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), userName));
             container.appendChild(actionBlock);
             pendingAction = [];
           }
@@ -867,7 +887,7 @@
       if (pendingAction.length > 0) {
         const actionBlock = document.createElement('div');
         actionBlock.className = 'scene-action-inline user';
-        actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+        actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), userName));
         container.appendChild(actionBlock);
       }
     }
@@ -891,7 +911,7 @@
       container.appendChild(div);
     }
 
-    /* ĐÃ SỬA LỖI: HIỂN THỊ HÀNH ĐỘNG VÀ LỜI THOẠI CHÍNH XÁC KHÔNG BỊ TRÙNG LẶP TÊN */
+    /* ĐÃ SỬA LỖI: Cập nhật hàm parseAndRenderAiMessage đúng quy tắc chèn tên ở câu đầu của khối hành động */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -930,7 +950,7 @@
               if (pendingAction.length > 0) {
                 const actionBlock = document.createElement('div');
                 actionBlock.className = 'scene-action-inline ai';
-                actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+                actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
                 container.appendChild(actionBlock);
                 pendingAction = [];
               }
@@ -957,7 +977,7 @@
           if (pendingAction.length > 0) {
             const actionBlock = document.createElement('div');
             actionBlock.className = 'scene-action-inline ai';
-            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            actionBlock.innerHTML = escapeHtml(formatActionTextWithSubject(pendingAction.join(' '), speakerName));
             container.appendChild(actionBlock);
           }
         }
@@ -1012,7 +1032,6 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      /* ĐÃ CẬP NHẬT PROMPT ĐỂ AI BẮT BUỘC TÁCH DÒNG RIÊNG CHO MỖI NHÂN VẬT PHÁT BIỂU */
       const systemInstruction = `
 Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truyện tương tác.
 
