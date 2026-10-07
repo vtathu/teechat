@@ -950,7 +950,7 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      const systemInstruction = `
+      const systemInstructionText = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
@@ -968,29 +968,32 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: hành động ngắn lời thoại ngắn
       `;
 
-      let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
+      let contentsArray = window.state.chatHistories[storyId].slice(-10).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       }));
 
       if (isAutoPlay) {
-        recentHistory.push({
+        contentsArray.push({
           role: 'user',
           parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
         });
       }
 
+      // Cấu trúc payload chuẩn tương thích với v1beta/v1
       const payload = {
-        system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: recentHistory
+        contents: contentsArray,
+        systemInstruction: {
+          parts: [{ text: systemInstructionText }]
+        }
       };
 
       let responseText = null;
-      const selectedModel = 'gemini-2.5-flash';
+      const selectedModel = document.getElementById('cfg-model-select') ? document.getElementById('cfg-model-select').value.trim() : 'gemini-1.5-flash';
 
       for (const key of window.state.apiKeys) {
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${key}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -998,10 +1001,15 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 
           if (res.ok) {
             const data = await res.json();
-            responseText = data.candidates[0].content.parts[0].text;
-            break;
+            if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+              responseText = data.candidates[0].content.parts[0].text;
+              break;
+            }
+          } else {
+            const errJson = await res.json();
+            console.error("API Error details:", errJson);
           }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Fetch exception:", e); }
       }
 
       if (responseText) {
@@ -1009,10 +1017,9 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
         saveStorage();
         renderChatHistory();
       } else {
-        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.`);
+        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại:\n1. API Key hợp lệ và có hạn mức.\n2. Tên Model chính xác (ví dụ: gemini-1.5-flash).`);
       }
     }
-
     function clearHistory() {
       if (confirm('Xóa lịch sử chat kịch bản này?')) {
         window.state.chatHistories[window.state.activeStoryId] = [];
