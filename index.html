@@ -935,7 +935,7 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      // BỘ PROMPT NGHIÊM NGẶT - BÁM SÁT CỐT TRUYỆN & TIẾN TRIỂN CHẬM
+      // BỘ PROMPT NGHIÊM NGẶT - BÁM SÁT CỐT TRUYỆN, LINH HOẠT SỐ LƯỢNG NHÂN VẬT PHẢN HỒI VÀ TIẾN TRIỂN CHẬM
       const systemInstruction = `
 [QUY TẮC NHẬP VÀI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -944,13 +944,17 @@
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[NGUYÊN TẮC QUAN TRỌNG VỀ TỐC ĐỘ DIỄN BIẾN]
+[NGUYÊN TẮC QUAN TRỌNG VỀ PHẢN HỒI VÀ TỐC ĐỘ DIỄN BIẾN]
+- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy thuộc vào bối cảnh và tình huống thực tế. Không cố định chỉ 1 người!
+  + Nếu tình huống là bước vào phòng/chào hỏi chung mà có nhiều nhân vật đang có mặt ở đó, TẤT CẢ hoặc NHIỀU NHÂN VẬT có thể lần lượt phản hồi / chào lại trong cùng 1 lượt này.
+  + Nếu tình huống là đối thoại cá nhân 1-1, chỉ người liên quan trả lời.
 - KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
-- Chỉ đáp lại ĐÚNG 1 lượt phản hồi (1 câu thoại ngắn và/hoặc 1 cử chỉ/hành động tiếp theo).
 - Bắt buộc duy trì đúng tính cách, xưng hô và không tự ý nhảy cảnh hay tự kết thúc tình huống.
 
 [ĐỊNH DẠNG ĐẦU RA (ĐÚNG CÚ PHÁP)]
-[Tên Nhân Vật]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
+Mỗi nhân vật phát ngôn nằm riêng trên một dòng:
+[Tên Nhân Vật 1]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
+[Tên Nhân Vật 2]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
       `;
 
       let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
