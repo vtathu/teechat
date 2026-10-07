@@ -52,13 +52,13 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    /* CHỈNH SỬA TOOLBAR NAVBAR TREN CUNG CỰC GỌN TRÊN 1 HÀNG */
+    /* NAVBAR TOOLBAR */
     .navbar { background: rgba(255, 255, 255, 0.85); padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 6px; }
     .app-logo-title { display: flex; align-items: center; gap: 6px; }
     .app-logo-title img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
     .app-logo-title h1 { font-size: 1.2rem; color: var(--app-dark-green); white-space: nowrap; }
 
-    /* CHỈNH SỬA TAB DẪN HƯỚNG BÉ VỪA 1 HÀNG */
+    /* TAB DẪN HƯỚNG */
     .tab-header { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; }
     .tab-btn { flex: 1; padding: 8px 4px; text-align: center; font-weight: bold; color: #718096; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; font-size: 0.8rem; white-space: nowrap; }
     .tab-btn.active { color: var(--app-dark-green); border-bottom-color: var(--app-dark-green); background: rgba(144, 212, 184, 0.15); }
@@ -76,10 +76,9 @@
     .char-header { display: flex; align-items: center; gap: 10px; }
     .char-avatar-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); }
 
-    /* STYLES CHAT TÁCH BIỆT THOẠI VÀ HÀNH ĐỘNG */
+    /* CHAT STYLES */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     
-    /* Hành động/Miêu tả hiển thị trực tiếp trên nền khung chat */
     .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; text-align: center; background: rgba(255,255,255,0.4); border-radius: 10px; margin: 4px 0; }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
@@ -102,7 +101,7 @@
     .user .msg-action-bar { justify-content: flex-end; }
     .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
 
-    /* CHỈNH SỬA 4 NÚT ĐIỀU KIỂN CHAT TRÊN 1 HÀNG NGANG */
+    /* HÀNG NÚT ĐIỀU KIỂN CHAT */
     .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; }
     .chat-controls .btn { padding: 4px 8px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
 
@@ -513,6 +512,11 @@
       if (!window.state.chatHistories) window.state.chatHistories = {};
       if (!window.state.chatSummaries) window.state.chatSummaries = {};
 
+      // Sửa model hỏng nếu còn lưu trong bộ nhớ
+      if (!window.state.currentModel || window.state.currentModel.includes('3.5')) {
+        window.state.currentModel = 'gemini-2.5-flash';
+      }
+
       if (window.state.stories.length === 0) {
         window.state.stories.push({
           id: 'story-1',
@@ -646,7 +650,7 @@
       }
     }
 
-    /* VÀO TRUYỆN VÀ KHỞI TẠO LỜI THOẠI ĐÚNG LƯỢT */
+    /* VÀO TRUYỆN */
     function openStoryDetail(storyId) {
       if (!window.state.stories) window.state.stories = [];
       const story = window.state.stories.find(s => s.id === storyId);
@@ -798,7 +802,6 @@
       }
     }
 
-    /* 2 NÚT THÊM ĐỊNH DẠNG TỰ ĐỘNG CỦA USER */
     function insertInputFormat(type) {
       const input = document.getElementById('user-input');
       const val = input.value;
@@ -812,7 +815,7 @@
       input.focus();
     }
 
-    /* RENDER CHAT TÁCH BIỆT THOẠI IN ĐẬM VÀ KHUÂN NỀN HÀNH ĐỘNG */
+    /* RENDER LỊCH SỬ CHAT */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -834,7 +837,6 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* HIỂN THỊ DỮ LIỆU USER */
     function renderUserFormattedMessage(rawText, container, idx) {
       let actionPart = '';
       let dialogueParts = [];
@@ -877,7 +879,6 @@
       }
     }
 
-    /* PARSE VÀ RENDER THOẠI AI */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -952,19 +953,27 @@
       sendMessage(null, true);
     }
 
-    async function sendMessage(overrideText = null, isRegen = false) {
+    /* HÀM NÚT TỰ ĐỘNG CHẠY TIẾP */
+    function triggerAutoPlay() {
+      sendMessage(null, false, true);
+    }
+
+    /* HÀM GỬI TIN NHẮN ĐÃ SỬA LỖI MODEL VÀ AUTOPLAY */
+    async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
-      if (!text && !isRegen) return;
+      
+      if (!text && !isRegen && !isAutoPlay) return;
 
-      if (!overrideText && !isRegen) inputEl.value = '';
+      if (!overrideText && !isRegen && !isAutoPlay) inputEl.value = '';
 
       const storyId = window.state.activeStoryId;
       const story = window.state.stories.find(s => s.id === storyId);
 
       if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
 
-      if (!overrideText && !isRegen) {
+      // Chỉ thêm tin nhắn User nếu không phải Regen và không phải AutoPlay
+      if (!overrideText && !isRegen && !isAutoPlay) {
         window.state.chatHistories[storyId].push({ sender: 'user', text });
         renderChatHistory();
       }
@@ -983,21 +992,29 @@
 3. Bối cảnh mở đầu kịch bản: "${(story && story.openingScene) || ''}".
 4. Các nhân vật bạn nhập vai:
 ${charsPrompt}
-5. Người dùng: "${window.state.persona.name}" (${window.state.persona.memories}).
+5. Người dùng: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[ĐỊNH DẠNG ĐẦU RA BẮT BUỘC CHẮC CHẮN 100%]
-- Mỗi lượt thoại CỦA DUY NHẤT NHÂN VẬT ĐẾN LƯỢT HÀNH ĐỘNG. Không tự sinh toàn bộ thoại của tất cả nhân vật một lúc!
+[ĐỊNH DẠNG ĐẦU RA BẮT BUỘC]
+- Nhập vai diễn tiếp tục diễn biến câu chuyện tự nhiên dựa trên lịch sử trò chuyện.
 - Tách biệt rõ ràng LỜI THOẠI và HÀNH ĐỘNG:
   + Lời thoại bọc trong dấu ngoặc kép: "Lời thoại ở đây..."
   + Hành động/Miêu tả cảm xúc bọc trong dấu sao: *Hành động ở đây...*
 - Cú pháp mẫu:
-[Tên Nhân Vật]: *nhìn xung quanh* "Lời thoại nhân vật..."
+[Tên Nhân Vật]: *hành động* "Lời thoại..."
       `;
 
-      const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
+      let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       }));
+
+      // Nếu bấm AI Chạy Tiếp, thêm câu lệnh ngầm mà không lưu vào màn hình chat
+      if (isAutoPlay) {
+        recentHistory.push({
+          role: 'user',
+          parts: [{ text: 'Hãy tiếp tục diễn biến tự nhiên của câu chuyện.' }]
+        });
+      }
 
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
@@ -1005,7 +1022,14 @@ ${charsPrompt}
       };
 
       let responseText = null;
-      const selectedModel = window.state.currentModel || 'gemini-2.5-flash';
+      let selectedModel = window.state.currentModel || 'gemini-2.5-flash';
+
+      // Sửa lỗi tự động nếu tên model không hợp lệ
+      if (selectedModel.includes('3.5')) {
+        selectedModel = 'gemini-2.5-flash';
+        window.state.currentModel = 'gemini-2.5-flash';
+        saveStorage();
+      }
 
       for (const key of window.state.apiKeys) {
         try {
@@ -1028,11 +1052,10 @@ ${charsPrompt}
         saveStorage();
         renderChatHistory();
       } else {
-        alert(`Lỗi kết nối với Model "${selectedModel}"! Vui lòng kiểm tra lại Key.`);
+        alert(`Lỗi kết nối với Model "${selectedModel}"! Vui lòng kiểm tra lại Key hoặc tên Model trong Cài Đặt.`);
       }
     }
 
-    function triggerAutoPlay() { sendMessage("(Diễn biến tiếp theo của câu chuyện...)"); }
     function clearHistory() {
       if (confirm('Xóa lịch sử chat kịch bản này?')) {
         window.state.chatHistories[window.state.activeStoryId] = [];
@@ -1047,7 +1070,10 @@ ${charsPrompt}
     function saveAppSettings() {
       const keysRaw = document.getElementById('cfg-api-keys').value;
       window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
-      window.state.currentModel = document.getElementById('cfg-model-select').value || 'gemini-2.5-flash';
+      let modelInput = document.getElementById('cfg-model-select').value || 'gemini-2.5-flash';
+      if (modelInput.includes('3.5')) modelInput = 'gemini-2.5-flash';
+      
+      window.state.currentModel = modelInput;
       window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
       window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
       updateThemeColors();
