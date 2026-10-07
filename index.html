@@ -126,7 +126,7 @@
       </div>
       <div style="display: flex; gap: 4px;">
         <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
-        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤 Hồ Sơ</button>
+        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤  Người dùng</button>
         <button class="btn" onclick="openModal('modal-settings')">⚙ Hệ Thống</button>
       </div>
     </div>
@@ -143,10 +143,10 @@
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
-        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
+        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trang chủ</button>
         <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">Tên Truyện</h3>
       </div>
-      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt Truyện</button>
+      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cốt Truyện</button>
     </div>
 
     <div class="chat-history" id="chat-history"></div>
@@ -154,8 +154,8 @@
     <div class="chat-controls">
       <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại</button>
       <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động</button>
-      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
-      <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa</button>
+      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨ Tiếp tục</button>
+      <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa </button>
     </div>
 
     <div class="input-bar">
@@ -168,12 +168,12 @@
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ Cài Đặt Cốt Truyện & Nhân Vật</h3>
+        <h3>⚙️ Cốt Truyện & Nhân Vật</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
 
       <div class="form-group">
-        <label>Bối Cảnh / Cốt Truyện Chung:</label>
+        <label>Cốt Truyện Chung:</label>
         <textarea id="story-setting-input" rows="3" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
       </div>
 
@@ -197,7 +197,7 @@
   <div id="modal-story" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>📖 Tạo Truyện Mới</h3>
+        <h3>📖 Tạo Mới</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story')">✖</button>
       </div>
       <div class="form-group">
@@ -213,7 +213,7 @@
         <input type="file" id="story-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'new-story-avatar')">
       </div>
       <div class="form-group">
-        <label>Cốt truyện:</label>
+        <label>Mô Tả Cốt Truyện:</label>
         <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
       </div>
       <div class="form-group">
@@ -260,10 +260,10 @@
   <div id="modal-auth" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>☁️ Đăng Nhập & Đồng Bộ Firebase</h3>
+        <h3>☁️ Đăng Nhập & Đồng Bộ </h3>
         <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
       </div>
-      <div id="auth-status-box" class="status-badge">Đang kết nối Firebase...</div>
+      <div id="auth-status-box" class="status-badge">Đang kết nối ...</div>
       <div id="auth-form-container">
         <div class="form-group">
           <label>Email Tài Khoản:</label>
@@ -280,7 +280,7 @@
       </div>
       <div id="cloud-action-container" class="hidden">
         <div style="display: flex; gap: 8px;">
-          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Gửi đi/button>
+          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Nhật Ký</button>
           <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Cập nhật</button>
         </div>
         <button class="btn btn-outline" style="width: 100%; margin-top: 8px; border-color: #f44336; color: #f44336;" onclick="handleFirebaseLogout()">Đăng Xuất</button>
@@ -426,7 +426,7 @@
         window.saveStorage();
         const cleanData = JSON.parse(JSON.stringify(window.state));
         await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanData);
-        alert("☁️ Đã đồng bộ lên Firebase Cloud thành công!");
+        alert("☁️ Đã đồng bộ lên Cloud thành công!");
       } catch (err) { alert("Lỗi khi tải dữ liệu lên Cloud: " + err.message); }
     };
 
@@ -449,7 +449,7 @@
             window.switchPage('page-home');
           }
 
-          alert("📥 Đã tải và khôi phục toàn bộ dữ liệu thành công!");
+          alert("Đã tải và khôi phục toàn bộ dữ liệu thành công!");
           window.closeModal('modal-auth');
         } else alert("Tài khoản này chưa có dữ liệu nào lưu trên Đám Mây!");
       } catch (err) { alert("Lỗi khi tải dữ liệu về: " + err.message); }
@@ -523,7 +523,12 @@
     }
 
     function saveStorage() {
-      localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
+      try {
+        localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
+      } catch (e) {
+        console.error(e);
+        alert('Bộ nhớ trình duyệt đã đầy nên chưa lưu được. Hãy dùng ảnh nhỏ hơn hoặc xóa bớt dữ liệu cũ.');
+      }
     }
 
     function escapeHtml(str) {
@@ -542,7 +547,29 @@
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) { document.getElementById(targetInputId).value = e.target.result; };
+        reader.onload = function(e) {
+          const target = document.getElementById(targetInputId);
+          const original = e.target.result;
+          // Thu nhỏ ảnh để lưu được vào bộ nhớ trình duyệt (ảnh gốc từ điện thoại quá nặng nên lưu thất bại)
+          const img = new Image();
+          img.onload = function() {
+            try {
+              const max = 512;
+              const ratio = Math.min(1, max / Math.max(img.width, img.height));
+              const w = Math.max(1, Math.round(img.width * ratio));
+              const h = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              target.value = canvas.toDataURL('image/jpeg', 0.88);
+            } catch (err) { target.value = original; }
+          };
+          img.onerror = function() { target.value = original; };
+          img.src = original;
+        };
         reader.readAsDataURL(file);
       }
     }
@@ -1002,11 +1029,11 @@ ${charsPrompt}
 [NGUYÊN TẮC QUAN TRỌNG]
 - BẮT BUỘC: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
 - SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy vào tình huống và tính cách từng nhân vật để quyết định ai lên tiếng. Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại sẽ nói thì mới có lời thoại; nhân vật nào theo tính cách sẽ im lặng, ít nói hoặc không muốn nói thì chỉ viết hành động/biểu cảm (không có lời thoại), hoặc không xuất hiện trong lượt đó. Không ép nhân vật nào phải nói. Khi người dùng gọi chung như "mọi người", chỉ những nhân vật phù hợp mới đáp lời.
-- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
+- TÊN TRONG HÀNH ĐỘNG: mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Sào Bì cười tít mắt, xua tay*), không được viết hành động mà thiếu tên chủ thể, vì giao diện sẽ không hiển thị tên riêng ở dòng hành động.\n- TUYỆT ĐỐI KHÔNG viết lời thoại, hành động, suy nghĩ hay quyết định thay cho người dùng \"${(window.state.persona && window.state.persona.name) || 'User'}\" và không để dòng nào bắt đầu bằng tên người dùng. Khi tình huống đến lúc người dùng cần phản hồi, trả lời hoặc hành động, hãy DỪNG lại và chờ người dùng.\n- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
 
 [ĐỊNH DẠNG ĐẦU RA]
 Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
-[Tên Nhân Vật]: *hành động ngắn* "lời thoại ngắn"
+[Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
       `;
 
       let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
@@ -1102,6 +1129,24 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       if (loadingEl && loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
 
       if (responseText) {
+        // Không cho AI nói/hành động thay người dùng: gặp dòng của người dùng thì cắt từ đó trở đi
+        try {
+          const pn = ((window.state.persona && window.state.persona.name) || '').trim().toLowerCase();
+          if (pn) {
+            const charNames = ((story && story.characters) || []).map(c => (c.name || '').trim().toLowerCase());
+            const kept = [];
+            for (const ln of responseText.split('\n')) {
+              const mm = ln.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:/);
+              if (mm) {
+                const sp = mm[1].trim().toLowerCase();
+                if (sp && !charNames.includes(sp) && (sp === pn || pn.split(/\s+/).includes(sp) || sp.split(/\s+/).includes(pn))) break;
+              }
+              kept.push(ln);
+            }
+            const trimmed = kept.join('\n').trim();
+            if (trimmed) responseText = trimmed;
+          }
+        } catch (e) { console.error(e); }
         window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
         saveStorage();
         renderChatHistory();
@@ -1145,6 +1190,8 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       window.state.persona.memories = document.getElementById('per-memories').value;
       saveStorage();
       closeModal('modal-persona');
+      // Cập nhật lại avatar/tên của bạn trong khung chat đang mở
+      if (window.state.activeStoryId && document.getElementById('chat-history')) renderChatHistory();
       alert('Đã lưu hồ sơ!');
     }
 
