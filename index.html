@@ -951,7 +951,7 @@
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
       const systemInstruction = `
-[QUY TẮC NHẬP VÀI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
+[QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Các nhân vật bạn nhập vai:
@@ -1001,7 +1001,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
             responseText = data.candidates[0].content.parts[0].text;
             break;
           }
-        } const (e) { console.error(e); }
+        } catch (e) { console.error(e); }
       }
 
       if (responseText) {
