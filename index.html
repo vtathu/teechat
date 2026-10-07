@@ -839,16 +839,34 @@
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
-        const charMatch = line.match(/^(?:([A-Za-z0-9\sĐđÀ-ỹ]+):)?\s*(.*)/);
+        // Tách "Tên: nội dung" (chấp nhận cả dạng [Tên]: hoặc **Tên**: ), nếu không có tên thì speakerRaw = ''
+        const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
 
-        if (charMatch) {
-          let speakerName = charMatch[1] ? charMatch[1].trim() : 'AI';
-          let restText = charMatch[2] ? charMatch[2].trim() : line;
+        {
+          let speakerRaw = charMatch ? charMatch[1].trim() : '';
+          let speakerName = speakerRaw || 'AI';
+          let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
 
           let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-          if (story && story.characters) {
-            const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
-            if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
+          let isKnownChar = false;
+          if (story && story.characters && speakerRaw) {
+            const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === speakerRaw.toLowerCase());
+            if (foundChar) {
+              isKnownChar = true;
+              if (foundChar.avatar) matchedAvatar = foundChar.avatar;
+            }
+          }
+
+          // Nhân vật chưa được tạo (hoặc dòng không có tên): giữ nguyên tên, hành động + "thoại" chung 1 hàng, không tạo khung chat
+          if (!isKnownChar) {
+            const narrText = restText.replace(/\*/g, '').trim();
+            if (narrText) {
+              const nDiv = document.createElement('div');
+              nDiv.className = 'narrative-block ai-action';
+              nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
+              container.appendChild(nDiv);
+            }
+            return;
           }
 
           let parts = restText.split('"');
