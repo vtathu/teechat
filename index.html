@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Teechat - Story Platform</title>
-  
+
   <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
   <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
   <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  
+
   <style>
     @font-face {
       font-family: 'CeCe';
@@ -70,7 +70,7 @@
 
     /* CHAT STYLES */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-    
+
     .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.5); border-radius: 10px; margin: 4px 0; max-width: 88%; }
     .narrative-block.ai-action { align-self: flex-start; text-align: left; }
     .narrative-block.user-action { align-self: flex-end; text-align: right; }
@@ -79,12 +79,12 @@
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
     .chat-message.ai { align-self: flex-start; }
-    
+
     .msg-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; }
     .msg-bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
     .msg-sender { font-size: 0.75rem; color: #718096; padding: 0 4px; }
     .user .msg-sender { text-align: right; }
-    
+
     .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
     .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-bottom-left-radius: 4px; }
     .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-bottom-right-radius: 4px; }
@@ -107,7 +107,7 @@
     .modal.active { display: flex; }
     .modal-content { background: #fff; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 20px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-    
+
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 0.85rem; font-weight: bold; color: #4a5568; }
     .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 8px; outline: none; font-size: 0.9rem; }
@@ -421,7 +421,7 @@
     window.uploadDataToFirebase = async function() {
       const user = auth.currentUser;
       if (!user) return alert("Vui lòng đăng nhập trước!");
-      
+
       try {
         window.saveStorage();
         const cleanData = JSON.parse(JSON.stringify(window.state));
@@ -509,7 +509,7 @@
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
       document.getElementById('cfg-model-select').value = 'gemini-2.5-flash';
-      
+
       if (window.state.persona) {
         document.getElementById('per-name').value = window.state.persona.name || '';
         document.getElementById('per-dob').value = window.state.persona.dob || '';
@@ -929,7 +929,7 @@
     async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
-      
+
       if (!text && !isRegen && !isAutoPlay) return;
       if (!overrideText && !isRegen && !isAutoPlay) inputEl.value = '';
 
@@ -949,51 +949,49 @@
       }
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
-      
-      const contextPrefix = `[THÔNG TIN HỆ THỐNG & KỊCH BẢN]
-- Bối cảnh: "${(story && story.setting) || ''}"
-- Cảnh mở đầu: "${(story && story.openingScene) || ''}"
-- Các nhân vật tham gia (AI điều phối nhiều nhân vật cùng phản hồi khi user gọi chung như "mọi người", "tất cả"):
-${charsPrompt}
-- Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''})
 
-[QUY TẮC BẮT BUỘC]
+      const systemInstruction = `
+[QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
+1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
+2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
+3. Các nhân vật bạn nhập vai (AI phải điều phối nhiều nhân vật cùng tham gia khi user gọi chung như "mọi người", "tất cả"):
+${charsPrompt}
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+
+[NGUYÊN TẮC QUAN TRỌNG]
 - Không dùng dấu ngoặc kép (") cho lời thoại và không dùng dấu sao (*) cho hành động.
 - SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Khi người dùng hỏi chung hoặc gọi "mọi người", BẮT BUỘC phải có nhiều nhân vật khác nhau lần lượt lên tiếng phản hồi trong cùng một lượt trả lời.
-- Diễn biến câu chuyện cực kỳ chậm rãi, từng bước một.
-- Định dạng mỗi dòng: [Tên Nhân Vật]: hành động ngắn lời thoại ngắn
--------------------------\n\n`;
+- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
 
-      let contentsArray = [];
-      
-      // Đưa context vào tin nhắn đầu tiên để AI nhận diện ổn định mọi model
-      let historyList = window.state.chatHistories[storyId];
-      historyList.forEach((m, idx) => {
-        let contentText = m.text;
-        if (idx === 0) {
-          contentText = contextPrefix + m.text;
-        }
-        contentsArray.push({
-          role: m.sender === 'user' ? 'user' : 'model',
-          parts: [{ text: contentText }]
-        });
-      });
+[ĐỊNH DẠNG ĐẦU RA]
+Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
+[Tên Nhân Vật]: hành động ngắn lời thoại ngắn
+      `;
+
+      let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
 
       if (isAutoPlay) {
-        contentsArray.push({
+        recentHistory.push({
           role: 'user',
-          parts: [{ text: contextPrefix + 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
+          parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
         });
       }
 
-      const payload = { contents: contentsArray };
+      const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: recentHistory
+      };
 
       let responseText = null;
-      const selectedModel = document.getElementById('cfg-model-select') ? document.getElementById('cfg-model-select').value.trim() : 'gemini-1.5-flash';
+      const selectedModel = 'gemini-2.5-flash';
 
       for (const key of window.state.apiKeys) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1001,15 +999,10 @@ ${charsPrompt}
 
           if (res.ok) {
             const data = await res.json();
-            if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-              responseText = data.candidates[0].content.parts[0].text;
-              break;
-            }
-          } else {
-            const errJson = await res.json();
-            console.error("API Error details:", errJson);
+            responseText = data.candidates[0].content.parts[0].text;
+            break;
           }
-        } catch (e) { console.error("Fetch exception:", e); }
+        } catch (e) { console.error(e); }
       }
 
       if (responseText) {
@@ -1017,7 +1010,15 @@ ${charsPrompt}
         saveStorage();
         renderChatHistory();
       } else {
-        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại:\n1. API Key hợp lệ và đang hoạt động.\n2. Tên Model (ví dụ: gemini-1.5-flash hoặc gemini-2.5-flash tùy bạn cấu hình).`);
+        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.`);
+      }
+    }
+
+    function clearHistory() {
+      if (confirm('Xóa lịch sử chat kịch bản này?')) {
+        window.state.chatHistories[window.state.activeStoryId] = [];
+        saveStorage();
+        renderChatHistory();
       }
     }
 
