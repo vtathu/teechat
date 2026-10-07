@@ -71,27 +71,28 @@
     /* CHAT STYLES */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     
-    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; text-align: center; background: rgba(255,255,255,0.5); border-radius: 10px; margin: 4px 0; }
+    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.88rem; text-align: left; background: rgba(255,255,255,0.65); border-left: 3px solid var(--app-dark-green); border-radius: 6px; margin: 4px 0; }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
     .chat-message.ai { align-self: flex-start; }
     
     .msg-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; }
-    .msg-bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
-    .msg-sender { font-size: 0.75rem; color: #718096; padding: 0 4px; }
+    .msg-bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+    .msg-sender { font-size: 0.75rem; color: #718096; padding: 0 4px; font-weight: bold; }
     .user .msg-sender { text-align: right; }
     
     .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
     .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-bottom-left-radius: 4px; }
     .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-bottom-right-radius: 4px; }
 
-    .dialogue-text { font-weight: bold; margin-top: 4px; display: block; }
+    .dialogue-text { font-weight: bold; margin-top: 2px; display: block; }
+    .action-text { font-style: italic; color: #555; margin-bottom: 4px; display: block; font-size: 0.88rem; }
 
-    .msg-action-bar { display: flex; gap: 6px; margin-top: 4px; }
+    .msg-action-bar { display: flex; gap: 6px; margin-top: 2px; }
     .ai .msg-action-bar { justify-content: flex-start; }
     .user .msg-action-bar { justify-content: flex-end; }
-    .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
+    .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; cursor: pointer; font-weight: bold; }
 
     /* HÀNG NÚT ĐIỀU KHIỂN CHAT */
     .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid #d0ebd8; }
@@ -136,7 +137,7 @@
     <div class="scenarios-container" id="story-list"></div>
   </div>
 
-  <!-- PAGE 2: MÀN HÌNH CHÁT CHÍNH (KHÔNG CÓ TAB) -->
+  <!-- PAGE 2: MÀN HÌNH CHÁT CHÍNH -->
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
@@ -162,7 +163,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CÀI ĐẶT TRUYỆN RIÊNG (BỐI CẢNH & NHÂN VẬT) -->
+  <!-- MODAL: CÀI ĐẶT TRUYỆN RIÊNG -->
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -475,7 +476,7 @@
     };
 
     function loadStorage() {
-      const savedState = localStorage.getItem('teechat_state_v7');
+      const savedState = localStorage.getItem('teechat_state_v8');
       if (savedState) {
         try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
       }
@@ -483,7 +484,6 @@
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
 
-      // ÉP BUỘC DÙNG MODEL GEMINI-2.5-FLASH
       window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
@@ -522,7 +522,7 @@
     }
 
     function saveStorage() {
-      localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
+      localStorage.setItem('teechat_state_v8', JSON.stringify(window.state));
     }
 
     function escapeHtml(str) {
@@ -768,7 +768,7 @@
       input.focus();
     }
 
-    /* RENDER LỊCH SỬ CHAT */
+    /* RENDER LỊCH SỬ CHAT - TÁCH TỪNG BONG BÓNG RIÊNG */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -832,52 +832,73 @@
       }
     }
 
+    /* HÀM PARSE VÀ TÁCH RIÊNG TỪNG KHUNG CHAT CHO TỪNG NHÂN VẬT */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
-      const lines = fullText.split('\n').filter(p => p.trim() !== '');
+      // Tách văn bản thành các dòng riêng biệt
+      const lines = fullText.split('\n').map(l => l.trim()).filter(l => l !== '');
 
-      lines.forEach(line => {
-        const charMatch = line.match(/^(?:([A-Za-z0-9\sĐđÀ-ỹ]+):)?\s*(.*)/);
+      lines.forEach((line) => {
+        // Tìm định dạng [Tên Nhân Vật]: Lời thoại/Hành động
+        const charMatch = line.match(/^([A-Za-z0-9\sĐđÀ-ỹ]+):\s*(.*)/);
 
         if (charMatch) {
-          let speakerName = charMatch[1] ? charMatch[1].trim() : 'AI';
-          let restText = charMatch[2] ? charMatch[2].trim() : line;
+          let speakerName = charMatch[1].trim();
+          let restContent = charMatch[2].trim();
 
+          // Tìm avatar tương ứng của nhân vật
           let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
           if (story && story.characters) {
             const foundChar = story.characters.find(c => c.name.toLowerCase() === speakerName.toLowerCase());
             if (foundChar && foundChar.avatar) matchedAvatar = foundChar.avatar;
           }
 
-          const dialogueMatches = restText.match(/"([^"]+)"/g);
-          const cleanAction = restText.replace(/"([^"]+)"/g, '').replace(/\*/g, '').trim();
+          // Tách riêng hành động trong dấu *...* và thoại trong dấu "..."
+          const actionMatches = restContent.match(/\*([^*]+)\*/g);
+          const dialogueMatches = restContent.match(/"([^"]+)"/g);
 
-          if (cleanAction) {
-            const actDiv = document.createElement('div');
-            actDiv.className = 'narrative-block';
-            actDiv.innerText = `${speakerName}: *${cleanAction}*`;
-            container.appendChild(actDiv);
+          let cleanActionStr = '';
+          if (actionMatches) {
+            cleanActionStr = actionMatches.map(a => a.replace(/\*/g, '').trim()).join(' ');
           }
 
-          if (dialogueMatches && dialogueMatches.length > 0) {
-            const div = document.createElement('div');
-            div.className = 'chat-message ai';
+          let cleanDialogueStr = '';
+          if (dialogueMatches) {
+            cleanDialogueStr = dialogueMatches.map(d => d.replace(/"/g, '').trim()).join(' ');
+          } else if (!actionMatches) {
+            cleanDialogueStr = restContent;
+          }
 
-            let formattedDialogues = dialogueMatches.map(d => `<span class="dialogue-text">${escapeHtml(d)}</span>`).join('');
+          // Render bong bóng chat ĐỘC LẬP cho từng dòng/nhân vật
+          const div = document.createElement('div');
+          div.className = 'chat-message ai';
 
-            div.innerHTML = `
-              <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-              <div class="msg-bubble-wrap">
-                <div class="msg-sender">${escapeHtml(speakerName)}</div>
-                <div class="msg-bubble">${formattedDialogues}</div>
-                <div class="msg-action-bar">
-                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                </div>
+          let innerContentHTML = '';
+          if (cleanActionStr) {
+            innerContentHTML += `<span class="action-text">* ${escapeHtml(cleanActionStr)} *</span>`;
+          }
+          if (cleanDialogueStr) {
+            innerContentHTML += `<span class="dialogue-text">"${escapeHtml(cleanDialogueStr)}"</span>`;
+          }
+
+          div.innerHTML = `
+            <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+            <div class="msg-bubble-wrap">
+              <div class="msg-sender">${escapeHtml(speakerName)}</div>
+              <div class="msg-bubble">${innerContentHTML}</div>
+              <div class="msg-action-bar">
+                <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
               </div>
-            `;
-            container.appendChild(div);
-          }
+            </div>
+          `;
+          container.appendChild(div);
+        } else {
+          // Dòng dẫn chuyện tự do không thuộc tên nhân vật cụ thể
+          const actDiv = document.createElement('div');
+          actDiv.className = 'narrative-block';
+          actDiv.innerText = line.replace(/\*/g, '');
+          container.appendChild(actDiv);
         }
       });
     }
@@ -910,7 +931,7 @@
       sendMessage(null, false, true);
     }
 
-    /* GỬI TIN NHẮN VỚI QUY TẮC BÁM SÁT CỐT TRUYỆN */
+    /* GỬI TIN NHẮN CHUẨN ĐỊNH DẠNG TÁCH DÒNG */
     async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
@@ -935,26 +956,27 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      // BỘ PROMPT NGHIÊM NGẶT - BÁM SÁT CỐT TRUYỆN, LINH HOẠT SỐ LƯỢNG NHÂN VẬT PHẢN HỒI VÀ TIẾN TRIỂN CHẬM
+      // SYSTEM PROMPT TÍNH NĂNG TÁCH KHUNG CHAT ĐỘC LẬP
       const systemInstruction = `
-[QUY TẮC NHẬP VÀI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
+[QUY TẮC PHẢN HỒI VÀ TÁCH DÒNG BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[NGUYÊN TẮC QUAN TRỌNG VỀ PHẢN HỒI VÀ TỐC ĐỘ DIỄN BIẾN]
-- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy thuộc vào bối cảnh và tình huống thực tế. Không cố định chỉ 1 người!
-  + Nếu tình huống là bước vào phòng/chào hỏi chung mà có nhiều nhân vật đang có mặt ở đó, TẤT CẢ hoặc NHIỀU NHÂN VẬT có thể lần lượt phản hồi / chào lại trong cùng 1 lượt này.
-  + Nếu tình huống là đối thoại cá nhân 1-1, chỉ người liên quan trả lời.
-- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
-- Bắt buộc duy trì đúng tính cách, xưng hô và không tự ý nhảy cảnh hay tự kết thúc tình huống.
+[QUY TẮC ĐỊNH DẠNG BẮT BUỘC]
+- Mỗi nhân vật khi nói hoặc hành động PHẢI NẰM RIÊNG Ở MỘT DÒNG ĐỘC LẬP.
+- ĐỊNH DẠNG MỖI DÒNG: Tên Nhân Vật: *Mô tả hành động/cảm xúc* "Thoại..."
+- TUYỆT ĐỐI KHÔNG gộp hành động hoặc lời thoại của nhiều nhân vật vào cùng một dòng hay một đoạn!
+- Trong một tình huống có nhiều người, bạn có thể xuất ra nhiều dòng tương ứng với nhiều nhân vật nối tiếp nhau.
+- Sau khi các nhân vật tương tác xong phản hồi hiện tại, DỪNG LẠI để chờ lượt nhập tiếp theo của người dùng (${(window.state.persona && window.state.persona.name) || 'User'}).
 
-[ĐỊNH DẠNG ĐẦU RA (ĐÚNG CÚ PHÁP)]
-Mỗi nhân vật phát ngôn nằm riêng trên một dòng:
-[Tên Nhân Vật 1]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
-[Tên Nhân Vật 2]: *cử chỉ/hành động ngắn* "Lời thoại ngắn..."
+VÍ DỤ ĐẦU RA CHUẨN:
+Gà Rừng: *Vẫn còn bán tin bán nghi, nhìn đoàn thanh tra đang thu dọn đồ đạc* "Thiệt hả cô? Làm sao cô làm được hay vậy?"
+Đại Thiên Nhị: *Anh nhìn đoàn thanh tra rồi quay sang Thư với ánh mắt ngưỡng mộ* "Cảm ơn cô Anh Thư. Cô đã giúp Kim Sa một chuyện lớn."
+Sào Bì: *Nhảy cẫng lên, nhai kẹo cao su* "Hay quá! Hết bị làm khó rồi!"
+Trần Hạo Nam: *Anh khẽ gật đầu, ánh mắt nheo lại đánh giá* "Cảm ơn."
       `;
 
       let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
@@ -965,7 +987,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng:
       if (isAutoPlay) {
         recentHistory.push({
           role: 'user',
-          parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
+          parts: [{ text: 'Tiếp tục phản hồi diễn biến tiếp theo.' }]
         });
       }
 
