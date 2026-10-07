@@ -52,7 +52,6 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    /* NAVBAR HEADER */
     .navbar { background: rgba(255, 255, 255, 0.85); padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 6px; }
     .app-logo-title { display: flex; align-items: center; gap: 6px; }
     .app-logo-title img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
@@ -67,10 +66,8 @@
     .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; position: relative; }
     .char-avatar-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
 
-    /* CHAT CONTAINER */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
     
-    /* HÀNH ĐỘNG / TÂM LÝ TRÔI NẰM NGUYÊN TRÊN NỀN (KHÔNG KHUNG & KHÔNG CÓ DẤU SAO *) */
     .scene-action-inline {
       font-style: italic;
       color: #4a5568;
@@ -93,7 +90,6 @@
     .msg-sender { font-size: 0.8rem; font-weight: bold; color: #5a6b5c; padding: 0 4px; }
     .user .msg-sender { text-align: right; }
     
-    /* BONG BÓNG CHAT CHỈ CHỨA LỜI THOẠI CỦA TỪNG LƯỢT */
     .msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
     .ai .msg-bubble { background: var(--ai-bubble-bg); color: var(--ai-text-color); border-top-left-radius: 4px; }
     .user .msg-bubble { background: var(--user-bubble-bg); color: var(--user-text-color); border-top-right-radius: 4px; }
@@ -506,7 +502,7 @@
     };
 
     function loadStorage() {
-      const savedState = localStorage.getItem('teechat_state_v8');
+      const savedState = localStorage.getItem('teechat_state_v9');
       if (savedState) {
         try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
       }
@@ -525,17 +521,17 @@
           characters: [
             {
               id: 'char-1',
-              name: 'Gà Rừng',
+              name: 'Sào Bì',
               avatar: DEFAULT_LOGO,
-              personality: 'Ngơ ngác, nóng tính nhưng trung thành.',
-              firstMsg: 'Gà Rừng: * Vẫn còn ngớ người ra một lúc, rồi gãi đầu. *\n"À... ừm... chào cô... tôi là Gà Rừng."'
+              personality: 'Tinh nghịch, hoạt bát, dễ thương.',
+              firstMsg: 'Sào Bì: * Sào Bì Nhảy khỏi thùng rượu, chạy tới chỗ Thư, mắt sáng rỡ. * "Chào chị Thư! Em là Sào Bì. Chị ngầu quá đi!"'
             },
             {
               id: 'char-2',
-              name: 'Trần Hạo Nam',
+              name: 'Đại Thiên Nhị',
               avatar: DEFAULT_LOGO,
-              personality: 'Trầm tĩnh, uy nghiêm, thủ lĩnh băng nhóm.',
-              firstMsg: 'Trần Hạo Nam: * Mắt anh dõi theo Thư, ánh mắt tối màu thoáng một tia bất ngờ, rồi lại trầm tĩnh. *\n"Cô ngồi đi."'
+              personality: 'Trầm tính, điềm đạm.',
+              firstMsg: 'Đại Thiên Nhị: "Chào cô. Tôi là Đại Thiên Nhị."'
             }
           ]
         });
@@ -558,14 +554,19 @@
     }
 
     function saveStorage() {
-      localStorage.setItem('teechat_state_v8', JSON.stringify(window.state));
+      localStorage.setItem('teechat_state_v9', JSON.stringify(window.state));
     }
 
     function escapeHtml(str) {
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    /* Hàm làm sạch chữ hành động: Bỏ dấu *, Bỏ 'Tên:' nếu có */
+    /* Bỏ ngoặc kép và làm sạch thoại */
+    function cleanDialogueText(text) {
+      return (text || '').replace(/^["'“«]+|["'”»]+$/g, '').trim();
+    }
+
+    /* Bỏ dấu * và tiền tố Tên: */
     function cleanActionText(text, speakerName) {
       let cleaned = (text || '').replace(/\*/g, '').trim();
       if (speakerName) {
@@ -595,7 +596,6 @@
       }
     }
 
-    /* RENDER DANH SÁCH TRUYỆN */
     function renderStoryList() {
       const container = document.getElementById('story-list');
       container.innerHTML = '';
@@ -665,10 +665,7 @@
       if (!window.state.stories) window.state.stories = [];
       const story = window.state.stories.find(s => s.id === storyId);
 
-      if (!story) {
-        alert("Không tìm thấy dữ liệu truyện!");
-        return;
-      }
+      if (!story) return alert("Không tìm thấy dữ liệu truyện!");
 
       window.state.activeStoryId = storyId;
       document.getElementById('active-story-title').innerText = story.title || 'Chi Tiết Truyện';
@@ -818,7 +815,6 @@
       input.focus();
     }
 
-    /* RENDER CHAT HISTORY: USER CĂN PHẢI, AI CĂN TRÁI, HÀNH ĐỘNG IN NGHIÊNG BỎ DẤU * */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -840,31 +836,47 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    /* XỬ LÝ NHẬP VÀO CỦA NGƯỜI DÙNG - CĂN PHẢI HÀNH ĐỘNG & THOẠI */
+    /* KHUNG HOẠT ĐỘNG CỦA USER */
     function renderUserFormattedMessage(rawText, container, idx) {
       const userName = (window.state.persona && window.state.persona.name) || 'Anh Thư';
       const userAvatar = (window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO;
 
       const regex = /"([^"]+)"|\*([^*]+)\*/g;
       let match;
-      let hasMatches = false;
+      let items = [];
 
       while ((match = regex.exec(rawText)) !== null) {
-        hasMatches = true;
-        if (match[2]) {
-          // HÀNH ĐỘNG CỦA USER -> CĂN PHẢI, BỎ DẤU SAO *
-          const actionBlock = document.createElement('div');
-          actionBlock.className = 'scene-action-inline user';
-          actionBlock.innerHTML = escapeHtml(cleanActionText(match[2], userName));
-          container.appendChild(actionBlock);
-        } else if (match[1]) {
-          // LỜI THOẠI CỦA USER -> BONG BÓNG CHAT CĂN PHẢI
-          appendUserBubble(match[1].trim(), userName, userAvatar, container, idx);
-        }
+        if (match[2]) items.push({ type: 'action', content: match[2] });
+        else if (match[1]) items.push({ type: 'dialogue', content: match[1] });
       }
 
-      if (!hasMatches && rawText.trim()) {
-        appendUserBubble(rawText.trim(), userName, userAvatar, container, idx);
+      if (items.length === 0 && rawText.trim()) {
+        items.push({ type: 'dialogue', content: rawText.trim() });
+      }
+
+      // Gộp các hành động liên tiếp
+      let pendingAction = [];
+
+      items.forEach(item => {
+        if (item.type === 'action') {
+          pendingAction.push(cleanActionText(item.content, userName));
+        } else {
+          if (pendingAction.length > 0) {
+            const actionBlock = document.createElement('div');
+            actionBlock.className = 'scene-action-inline user';
+            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            container.appendChild(actionBlock);
+            pendingAction = [];
+          }
+          appendUserBubble(item.content, userName, userAvatar, container, idx);
+        }
+      });
+
+      if (pendingAction.length > 0) {
+        const actionBlock = document.createElement('div');
+        actionBlock.className = 'scene-action-inline user';
+        actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+        container.appendChild(actionBlock);
       }
     }
 
@@ -876,7 +888,7 @@
         <div class="msg-bubble-wrap">
           <div class="msg-sender">${escapeHtml(userName)}</div>
           <div class="msg-bubble">
-            <span class="dialogue-text">"${escapeHtml(text)}"</span>
+            <span class="dialogue-text">${escapeHtml(cleanDialogueText(text))}</span>
           </div>
           <div class="msg-action-bar">
             <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
@@ -887,7 +899,7 @@
       container.appendChild(div);
     }
 
-    /* AI PHẢN HỒI: HÀNH ĐỘNG CĂN TRÁI, BỎ DẤU SAO *, THOẠI TRONG KHUNG */
+    /* KHUNG HOẠT ĐỘNG CỦA AI: GỘP HÀNH ĐỘNG LIÊN TIẾP & BỎ NGOẶC KÉP THOẠI */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -906,18 +918,32 @@
 
           const seqRegex = /"([^"]+)"|\*([^*]+)\*/g;
           let seqMatch;
-          let foundSeq = false;
+          let items = [];
 
           while ((seqMatch = seqRegex.exec(content)) !== null) {
-            foundSeq = true;
-            if (seqMatch[2]) {
-              // HÀNH ĐỘNG CỦA AI -> CĂN TRÁI, IN NGHIÊNG, BỎ DẤU SAO *
-              const actionBlock = document.createElement('div');
-              actionBlock.className = 'scene-action-inline ai';
-              actionBlock.innerHTML = escapeHtml(cleanActionText(seqMatch[2], speakerName));
-              container.appendChild(actionBlock);
-            } else if (seqMatch[1]) {
-              // LỜI THOẠI CỦA AI -> KHUNG BONG BÓNG CĂN TRÁI
+            if (seqMatch[2]) items.push({ type: 'action', content: seqMatch[2] });
+            else if (seqMatch[1]) items.push({ type: 'dialogue', content: seqMatch[1] });
+          }
+
+          if (items.length === 0 && content) {
+            items.push({ type: 'dialogue', content: content });
+          }
+
+          // Tiến hành Gộp hành động liên tiếp của 1 câu/dòng
+          let pendingAction = [];
+
+          items.forEach(item => {
+            if (item.type === 'action') {
+              pendingAction.push(cleanActionText(item.content, speakerName));
+            } else {
+              if (pendingAction.length > 0) {
+                const actionBlock = document.createElement('div');
+                actionBlock.className = 'scene-action-inline ai';
+                actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+                container.appendChild(actionBlock);
+                pendingAction = [];
+              }
+              // Lời thoại trong ngoặc bọc ở khung bong bóng chat (BỎ HOÀN TOÀN DẤU NGOẶC KÉP "")
               const div = document.createElement('div');
               div.className = 'chat-message ai';
               div.innerHTML = `
@@ -925,7 +951,7 @@
                 <div class="msg-bubble-wrap">
                   <div class="msg-sender">${escapeHtml(speakerName)}</div>
                   <div class="msg-bubble">
-                    <span class="dialogue-text">"${escapeHtml(seqMatch[1].trim())}"</span>
+                    <span class="dialogue-text">${escapeHtml(cleanDialogueText(item.content))}</span>
                   </div>
                   <div class="msg-action-bar">
                     <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
@@ -936,26 +962,13 @@
               `;
               container.appendChild(div);
             }
-          }
+          });
 
-          if (!foundSeq && content) {
-            const div = document.createElement('div');
-            div.className = 'chat-message ai';
-            div.innerHTML = `
-              <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-              <div class="msg-bubble-wrap">
-                <div class="msg-sender">${escapeHtml(speakerName)}</div>
-                <div class="msg-bubble">
-                  <span class="dialogue-text">"${escapeHtml(content.replace(/"/g, ''))}"</span>
-                </div>
-                <div class="msg-action-bar">
-                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                </div>
-              </div>
-            `;
-            container.appendChild(div);
+          if (pendingAction.length > 0) {
+            const actionBlock = document.createElement('div');
+            actionBlock.className = 'scene-action-inline ai';
+            actionBlock.innerHTML = escapeHtml(pendingAction.join(' '));
+            container.appendChild(actionBlock);
           }
         }
       });
@@ -1021,10 +1034,10 @@ Bạn là Trợ lý AI nhập vai vào các nhân vật trong kịch bản truy�
 ${charsPrompt}
 
 [QUY TẮC PHẢN HỒI KỊCH BẢN XEN KẼ BẮT BUỘC]
-1. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...* (ví dụ: * Trần Hạo Nam mắt anh dõi theo Thư *). Trong ngoặc sao bắt buộc bao gồm cả Tên nhân vật thực hiện hành động.
-2. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "..." (ví dụ: "Cô ngồi đi.").
-3. Hãy sắp xếp hành động và lời thoại xen kẽ tự nhiên theo trình tự thời gian:
-   [Tên Nhân Vật]: * [Tên] [Hành động 1] * "[Câu thoại 1]" * [Tên] [Hành động 2] * "[Câu thoại 2]"
+1. Đặt HÀNH ĐỘNG / CỬ CHỈ / TÂM LÝ trong ngoặc sao *...* (ví dụ: * Sào Bì Cậu nhai kẹo cao su đánh tóp tép. *).
+2. Đặt LỜI THOẠI TRỰC TIẾP trong ngoặc kép "..." (ví dụ: "Chào chị Thư! Em là Sào Bì.").
+3. Sắp xếp hành động và lời thoại xen kẽ tự nhiên:
+   [Tên Nhân Vật]: * [Tên] [Hành động] * "[Lời thoại]"
       `;
 
       const recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
