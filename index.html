@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Teechat - Story Platform</title>
+  <title>Teechat</title>
   
   <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
   <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
@@ -126,7 +126,7 @@
       </div>
       <div style="display: flex; gap: 4px;">
         <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
-        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤  Người dùng</button>
+        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤Người dùng</button>
         <button class="btn" onclick="openModal('modal-settings')">⚙ Hệ Thống</button>
       </div>
     </div>
@@ -143,10 +143,10 @@
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
-        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trang chủ</button>
+        <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
         <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">Tên Truyện</h3>
       </div>
-      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cốt Truyện</button>
+      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt Truyện</button>
     </div>
 
     <div class="chat-history" id="chat-history"></div>
@@ -154,8 +154,9 @@
     <div class="chat-controls">
       <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại</button>
       <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động</button>
-      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨ Tiếp tục</button>
-      <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa </button>
+      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
+      <button class="btn btn-outline" onclick="clearHistory()">🗑️ Xóa Chat</button>
+      <button class="btn btn-outline" onclick="resetStory()">🔄 Làm Lại</button>
     </div>
 
     <div class="input-bar">
@@ -168,12 +169,12 @@
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ Cốt Truyện & Nhân Vật</h3>
+        <h3>⚙️ Cài Đặt Cốt Truyện & Nhân Vật</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
 
       <div class="form-group">
-        <label>Cốt Truyện Chung:</label>
+        <label>Cốt Truyện Chính:</label>
         <textarea id="story-setting-input" rows="3" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
       </div>
 
@@ -197,7 +198,7 @@
   <div id="modal-story" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>📖 Tạo Mới</h3>
+        <h3>📖 Tạo Truyện Mới</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story')">✖</button>
       </div>
       <div class="form-group">
@@ -213,7 +214,7 @@
         <input type="file" id="story-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'new-story-avatar')">
       </div>
       <div class="form-group">
-        <label>Mô Tả Cốt Truyện:</label>
+        <label>Cốt truyện chính:</label>
         <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
       </div>
       <div class="form-group">
@@ -228,7 +229,7 @@
   <div id="modal-char" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="char-modal-title">🎭 Thuộc Tính Nhân Vật</h3>
+        <h3 id="char-modal-title">🎭 Cài đặt Nhân Vật</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-char')">✖</button>
       </div>
       <input type="hidden" id="char-edit-id">
@@ -263,7 +264,7 @@
         <h3>☁️ Đăng Nhập & Đồng Bộ </h3>
         <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
       </div>
-      <div id="auth-status-box" class="status-badge">Đang kết nối ...</div>
+      <div id="auth-status-box" class="status-badge">Đang kết nối Cloud...</div>
       <div id="auth-form-container">
         <div class="form-group">
           <label>Email Tài Khoản:</label>
@@ -280,8 +281,8 @@
       </div>
       <div id="cloud-action-container" class="hidden">
         <div style="display: flex; gap: 8px;">
-          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Nhật Ký</button>
-          <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Cập nhật</button>
+          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Lên Cloud</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Cập nhật Cloud</button>
         </div>
         <button class="btn btn-outline" style="width: 100%; margin-top: 8px; border-color: #f44336; color: #f44336;" onclick="handleFirebaseLogout()">Đăng Xuất</button>
       </div>
@@ -389,7 +390,7 @@
         formContainer.classList.add('hidden');
         actionContainer.classList.remove('hidden');
       } else {
-        statusBox.innerText = "Trạng thái: Chưa đăng nhập Firebase";
+        statusBox.innerText = "Trạng thái: Chưa đăng nhập ";
         statusBox.style.background = "#fff5f5";
         formContainer.classList.remove('hidden');
         actionContainer.classList.add('hidden');
@@ -449,7 +450,7 @@
             window.switchPage('page-home');
           }
 
-          alert("Đã tải và khôi phục toàn bộ dữ liệu thành công!");
+          alert("📥 Đã cập nhật toàn bộ dữ liệu thành công!");
           window.closeModal('modal-auth');
         } else alert("Tài khoản này chưa có dữ liệu nào lưu trên Đám Mây!");
       } catch (err) { alert("Lỗi khi tải dữ liệu về: " + err.message); }
@@ -1016,7 +1017,16 @@
         return openModal('modal-settings');
       }
 
-      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
+      // Bản tóm tắt diễn biến cũ (nếu có) + các tin gần nhất
+      if (!window.state.summaries) window.state.summaries = {};
+      let sumObj = window.state.summaries[storyId];
+      const histLen = window.state.chatHistories[storyId].length;
+      if (sumObj && sumObj.upto > histLen) { delete window.state.summaries[storyId]; sumObj = null; } // tin đã bị xóa/tạo lại -> bỏ tóm tắt cũ
+      const summaryText = (sumObj && sumObj.text) ? sumObj.text : '';
+      const summaryUpto = sumObj ? sumObj.upto : 0;
+      const histStart = Math.max(Math.min(histLen - 10, summaryUpto), histLen - 20, 0);
+
+      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}` + (c.firstMsg ? ` | Câu nói mẫu thể hiện giọng điệu: ${c.firstMsg}` : '')).join('\n');
       
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
@@ -1024,9 +1034,14 @@
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Các nhân vật bạn nhập vai (AI phải điều phối nhiều nhân vật cùng tham gia khi user gọi chung như "mọi người", "tất cả"):
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `
+
+[TÓM TẮT DIỄN BIẾN ĐÃ XẢY RA TRƯỚC ĐÓ - phải nhớ và giữ nhất quán]
+${summaryText}` : ''}
 
 [NGUYÊN TẮC QUAN TRỌNG]
+- BÁM SÁT CỐT TRUYỆN (BẮT BUỘC): mọi diễn biến, lời thoại và hành động phải phù hợp với bối cảnh/cốt truyện ở mục 1 và cảnh mở đầu ở mục 2; không tự bịa ra tình tiết mâu thuẫn với chúng, không bỏ qua hay đảo lộn các sự kiện đã xảy ra trong đoạn chat. Khi người dùng chỉ bảo tiếp tục (không đưa chỉ dẫn mới), hãy tự đẩy câu chuyện đi tiếp theo đúng hướng cốt truyện: để các nhân vật hành động hợp lý theo mục tiêu và tính cách của họ, nhưng chỉ tiến một bước nhỏ mỗi lượt. Nếu người dùng đưa hành động hoặc lời thoại mới thì phản ứng theo đó nhưng vẫn giữ mạch cốt truyện.
+- BÁM SÁT NHÂN VẬT (BẮT BUỘC): mỗi nhân vật phải nói và hành động ĐÚNG với tính cách, thuộc tính đã cho ở mục 3: giọng điệu, thái độ, cách ứng xử, mức độ nói nhiều hay ít. Tuyệt đối giữ đúng CÁCH XƯNG HÔ đã ghi (cách nhân vật tự xưng và cách gọi người khác, kể cả cách gọi người dùng), không tự đổi sang xưng hô khác và giữ nhất quán từ đầu đến cuối. Không để nhân vật nói hay làm trái tính cách; nếu thuộc tính không ghi rõ xưng hô thì chọn cách xưng hô hợp lý theo bối cảnh và giữ cố định. Mỗi nhân vật chỉ biết những gì họ có thể biết trong truyện.
 - BẮT BUỘC: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
 - SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy vào tình huống và tính cách từng nhân vật để quyết định ai lên tiếng. Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại sẽ nói thì mới có lời thoại; nhân vật nào theo tính cách sẽ im lặng, ít nói hoặc không muốn nói thì chỉ viết hành động/biểu cảm (không có lời thoại), hoặc không xuất hiện trong lượt đó. Không ép nhân vật nào phải nói. Khi người dùng gọi chung như "mọi người", chỉ những nhân vật phù hợp mới đáp lời.
 - TÊN TRONG HÀNH ĐỘNG: mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Sào Bì cười tít mắt, xua tay*), không được viết hành động mà thiếu tên chủ thể, vì giao diện sẽ không hiển thị tên riêng ở dòng hành động.\n- TUYỆT ĐỐI KHÔNG viết lời thoại, hành động, suy nghĩ hay quyết định thay cho người dùng \"${(window.state.persona && window.state.persona.name) || 'User'}\" và không để dòng nào bắt đầu bằng tên người dùng. Khi tình huống đến lúc người dùng cần phản hồi, trả lời hoặc hành động, hãy DỪNG lại và chờ người dùng.\n- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
@@ -1036,7 +1051,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
       `;
 
-      let recentHistory = window.state.chatHistories[storyId].slice(-10).map(m => ({
+      let recentHistory = window.state.chatHistories[storyId].slice(histStart).map(m => ({
         role: m.sender === 'ai' ? 'model' : 'user',
         parts: [{ text: m.text }]
       }));
@@ -1044,7 +1059,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       if (isAutoPlay) {
         recentHistory.push({
           role: 'user',
-          parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }]
+          parts: [{ text: 'Hãy tự tiếp tục câu chuyện theo đúng cốt truyện, bối cảnh và tính cách nhân vật, diễn tiến từng bước nhỏ, ngắn gọn. Không viết thay người dùng; nếu đến lúc cần người dùng phản hồi hoặc hành động thì dừng lại chờ.' }]
         });
       }
 
@@ -1061,7 +1076,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
           merged.unshift({ role: 'user', parts: [{ text: 'Bắt đầu câu chuyện.' }] });
         }
         if (merged[merged.length - 1].role !== 'user') {
-          merged.push({ role: 'user', parts: [{ text: 'Tiếp tục phản hồi ngắn gọn theo đúng diễn biến hiện tại.' }] });
+          merged.push({ role: 'user', parts: [{ text: 'Hãy tự tiếp tục câu chuyện theo đúng cốt truyện, bối cảnh và tính cách nhân vật, diễn tiến từng bước nhỏ, ngắn gọn. Không viết thay người dùng; nếu đến lúc cần người dùng phản hồi hoặc hành động thì dừng lại chờ.' }] });
         }
         recentHistory = merged;
       }
@@ -1150,17 +1165,116 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
         window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
         saveStorage();
         renderChatHistory();
+        maybeSummarize(storyId); // chạy ngầm, không chờ
       } else {
         alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.\n\nChi tiết: ${lastError || 'không rõ'}`);
+      }
+    }
+
+    /* TÓM TẮT TỰ ĐỘNG: cứ khi có thêm ~6 tin nằm ngoài 10 tin cuối thì gộp vào bản tóm tắt */
+    async function maybeSummarize(storyId) {
+      try {
+        window._summarizing = window._summarizing || {};
+        if (window._summarizing[storyId]) return;
+        const hist = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
+        if (!window.state.summaries) window.state.summaries = {};
+        const cur = window.state.summaries[storyId] || { text: '', upto: 0 };
+        const end = hist.length - 10;
+        if (end - cur.upto < 6) return;
+        if (!window.state.apiKeys || window.state.apiKeys.length === 0) return;
+
+        window._summarizing[storyId] = true;
+        const personaName = (window.state.persona && window.state.persona.name) || 'Người dùng';
+        const chunk = hist.slice(cur.upto, end).map(m => {
+          const t = (m.text || '').replace(/\*/g, '').trim();
+          return m.sender === 'user' ? `${personaName}: ${t}` : t;
+        }).join('\n');
+
+        const prompt = `Bạn là người ghi chép diễn biến truyện nhập vai. Hãy viết lại bản TÓM TẮT DIỄN BIẾN hoàn chỉnh bằng tiếng Việt (tối đa khoảng 250 từ), gộp tóm tắt cũ với đoạn hội thoại mới.
+Giữ lại: sự kiện chính theo thứ tự thời gian, địa điểm, quan hệ và thái độ giữa các nhân vật, lời hứa/thỏa thuận, mâu thuẫn hoặc việc còn dang dở, thông tin quan trọng người dùng đã nói. Bỏ chi tiết vụn vặt. Chỉ viết nội dung tóm tắt, không giải thích thêm.
+
+[TÓM TẮT CŨ]
+${cur.text || '(chưa có)'}
+
+[ĐOẠN HỘI THOẠI MỚI]
+${chunk}`;
+
+        const model = (window.state.currentModel || 'gemini-3.8-flash').trim().replace(/^models\//,'');
+        let result = '';
+        for (const rawKey of window.state.apiKeys) {
+          const key = (rawKey || '').trim().replace(/^["']|["']$/g, '');
+          const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingLevel: 'low' } } };
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 60000);
+            let res, data;
+            try {
+              res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                body: JSON.stringify(body),
+                signal: ctrl.signal
+              });
+              data = await res.json().catch(() => ({}));
+            } catch (e) {
+              clearTimeout(timer);
+              await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+              continue;
+            }
+            clearTimeout(timer);
+            if (res.status === 400 && body.generationConfig) { delete body.generationConfig; continue; }
+            if (res.ok) {
+              const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+              result = parts ? parts.map(p => p.text || '').join('').trim() : '';
+              break;
+            }
+            if (![429, 500, 503].includes(res.status)) break;
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          }
+          if (result) break;
+        }
+
+        if (result) {
+          const latest = (window.state.chatHistories[storyId] || []).length;
+          // chỉ lưu nếu lịch sử chưa bị xóa/rút ngắn trong lúc đang tóm tắt
+          if (latest >= end) {
+            window.state.summaries[storyId] = { text: result, upto: end };
+            saveStorage();
+          }
+        }
+      } catch (e) {
+        console.error('Lỗi tóm tắt:', e);
+      } finally {
+        if (window._summarizing) window._summarizing[storyId] = false;
       }
     }
 
     function clearHistory() {
       if (confirm('Xóa lịch sử chat kịch bản này?')) {
         window.state.chatHistories[window.state.activeStoryId] = [];
+        if (window.state.summaries) delete window.state.summaries[window.state.activeStoryId];
         saveStorage();
         renderChatHistory();
       }
+    }
+
+    /* LÀM LẠI TỪ ĐẦU: xóa toàn bộ tin nhắn + tóm tắt, rồi bắt đầu lại từ cảnh mở đầu */
+    function resetStory() {
+      if (!confirm('Làm lại truyện từ đầu? Toàn bộ tin nhắn và bản tóm tắt sẽ bị xóa.')) return;
+      const storyId = window.state.activeStoryId;
+      const story = window.state.stories.find(s => s.id === storyId);
+      const fresh = [];
+      if (story) {
+        if (story.openingScene) {
+          fresh.push({ sender: 'system', text: story.openingScene });
+        } else if (story.characters && story.characters.length > 0 && story.characters[0].firstMsg) {
+          fresh.push({ sender: 'ai', text: story.characters[0].firstMsg });
+        }
+      }
+      window.state.chatHistories[storyId] = fresh;
+      if (window.state.summaries) delete window.state.summaries[storyId];
+      saveStorage();
+      renderChatHistory();
     }
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
