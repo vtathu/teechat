@@ -1081,11 +1081,18 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
         recentHistory = merged;
       }
 
-      const payload = {
+          const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: recentHistory,
-        generationConfig: { thinkingConfig: { thinkingLevel: 'low' } }
+        generationConfig: { thinkingConfig: { thinkingLevel: 'low' } },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
       };
+
 
       // Hiện chỉ báo "đang trả lời" để biết app vẫn đang chạy
       const chatBox = document.getElementById('chat-history');
