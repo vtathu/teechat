@@ -1459,22 +1459,26 @@
     }
 
     function renderChatHistory() {
-      const container = document.getElementById('chat-history');
-      container.innerHTML = '';
-      const history = (window.state.chatHistories && window.state.chatHistories[window.state.activeStoryId]) || [];
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+  const container = document.getElementById('chat-history');
+  container.innerHTML = '';
+  const history = (window.state.chatHistories && window.state.chatHistories[window.state.activeStoryId]) || [];
+  const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
 
-      history.forEach((msg, idx) => {
-        if (msg.sender === 'system') {
-          const div = document.createElement('div'); div.className = 'narrative-block system-action'; div.innerText = msg.text.replace(/[\*\"]/g, ''); container.appendChild(div);
-        } else if (msg.sender === 'user') {
-          renderUserFormattedMessage(msg.text, msg.img, container, idx);
-        } else {
-          parseAndRenderAiMessage(msg.text, story, container, idx);
-        }
-      });
-      container.scrollTop = container.scrollHeight;
+  history.forEach((msg, idx) => {
+    if (msg.sender === 'system') {
+      const div = document.createElement('div'); div.className = 'narrative-block system-action'; div.innerText = msg.text.replace(/[\*\"]/g, ''); container.appendChild(div);
+    } else if (msg.sender === 'user') {
+      renderUserFormattedMessage(msg.text, msg.img, container, idx);
+    } else {
+      parseAndRenderAiMessage(msg.text, story, container, idx);
     }
+  });
+
+  // Dùng setTimeout nhỏ để đảm bảo trình duyệt đã render xong DOM rồi mới cuộn sát xuống dưới đáy
+  setTimeout(() => {
+    container.scrollTop = container.scrollHeight;
+  }, 50);
+}
 
     function renderUserFormattedMessage(rawText, imgData, container, idx) {
       const text = (rawText || '').replace(/[“”]/g, '"');
