@@ -44,7 +44,7 @@
 
     h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
 
-    .btn { background: var(--app-green); color: #fff; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
+    .btn { background: var(--app-green); color: #fff; border: none; padding: 6px 10px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; }
     .btn:active { transform: scale(0.95); }
     .btn-pink { background: var(--app-pink); }
     .btn-outline { background: transparent; border: 2px solid var(--app-green); color: var(--app-dark-green); }
@@ -52,11 +52,11 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    /* NAVBAR TOOLBAR */
-    .navbar { background: rgba(255, 255, 255, 0.85); padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 6px; }
-    .app-logo-title { display: flex; align-items: center; gap: 6px; }
-    .app-logo-title img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
-    .app-logo-title h1 { font-size: 1.2rem; color: var(--app-dark-green); white-space: nowrap; }
+    /* NAVBAR TOOLBAR THU GỌN KHÔNG TRÀN MÀN HÌNH */
+    .navbar { background: rgba(255, 255, 255, 0.9); padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 4px; }
+    .app-logo-title { display: flex; align-items: center; gap: 4px; }
+    .app-logo-title img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
+    .app-logo-title h1 { font-size: 1.1rem; color: var(--app-dark-green); white-space: nowrap; }
 
     .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
     .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
@@ -64,7 +64,7 @@
     .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); flex-shrink: 0; }
     .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    /* FIX TRIỆT ĐỂ LỖI TRÀN KHUNG THẺ NHÂN VẬT */
+    /* FIX TRÀN KHUNG THẺ NHÂN VẬT */
     .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; overflow: hidden; }
     .char-header { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden; }
     .char-avatar-mini { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
@@ -149,10 +149,10 @@
         <img src="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png" alt="Teechat Logo" onerror="this.src='https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png'">
         <h1>Teechat</h1>
       </div>
-      <div style="display: flex; gap: 4px;">
-        <button class="btn btn-outline" onclick="openModal('modal-auth')">☁️ Đồng Bộ</button>
-        <button class="btn btn-outline" onclick="openModal('modal-persona')">👤Người dùng</button>
-        <button class="btn" onclick="openModal('modal-settings')">⚙ Hệ Thống</button>
+      <div style="display: flex; gap: 3px;">
+        <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-auth')">☁️ Cloud</button>
+        <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-persona')">👤 User</button>
+        <button class="btn" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-settings')">⚙ Cài đặt</button>
       </div>
     </div>
 
@@ -235,6 +235,7 @@
           <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handlePlusAction('transfer')">Chuyển Khoản</button>
         </div>
         <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
+        <div style="font-size: 0.78rem; color: #2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 5/5 | Thời gian đổi nghề: Có thể đổi ngay</div>
       </div>
 
       <div class="life-card">
@@ -251,7 +252,7 @@
           </select>
         </div>
         <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
-          Lắc bình shaker pha chế cocktail để kiếm thu nhập.
+          Pha chế cocktail qua minigame ghép công thức.
         </div>
         <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">🎮 Bắt Đầu Làm Việc Ngay</button>
       </div>
@@ -265,7 +266,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CHUYỂN KHOẢN HAI CHIỀU (USER & AI) -->
+  <!-- MODAL: CHUYỂN KHOẢN HAI CHIỀU -->
   <div id="modal-transfer" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -279,7 +280,7 @@
         <label>Chiều Giao Dịch:</label>
         <select id="transfer-direction" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;" onchange="updateTransferUI()">
           <option value="user_to_ai">User chuyển cho Nhân Vật AI</option>
-          <option value="ai_to_user">Nhân Vật AI chuyển cho User</option>
+          <option value="ai_to_user">Nhân Vật AI chuyển cho User (Theo tình huống)</option>
         </select>
       </div>
       <div class="form-group">
@@ -295,6 +296,18 @@
         <input type="text" id="transfer-note" value="Chuyển khoản tài trợ">
       </div>
       <button class="btn btn-pink" onclick="executeTransfer()">Xác Nhận Chuyển Khoản</button>
+    </div>
+  </div>
+
+  <!-- MODAL: MUA SẮM CHI TIẾT (CHỌN LOẠI RƯỢU, LOẠI NHÀ...) -->
+  <div id="modal-buy-detail" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="buy-modal-title">🛍️ Chọn Phân Loại Vật Phẩm</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-buy-detail')">✖</button>
+      </div>
+      <div id="buy-modal-body" class="form-group"></div>
+      <button class="btn btn-pink" onclick="confirmBuyItem()">Xác Nhận Mua Sắm</button>
     </div>
   </div>
 
@@ -321,29 +334,41 @@
     </div>
   </div>
 
-  <!-- MODAL: MINIGAME SUDOKU 10 TỶ -->
+  <!-- MODAL: MINIGAME SUDOKU 9X9 -->
   <div id="modal-sudoku" class="modal">
-    <div class="modal-content" style="max-width: 400px; text-align: center;">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header">
-        <h3>⚡ Thử Thách Sudoku 10 Tỷ</h3>
+        <h3>⚡ Hacker Sudoku 9x9 (Thưởng 10 Tỷ)</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-sudoku')">✖</button>
       </div>
-      <p style="font-size: 0.85rem; color: #555;">Điền số đúng vào ô trống (Hàng ngang và cột dọc đủ số 1 đến 3 không trùng):</p>
-      <div id="sudoku-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px auto; width: 180px;"></div>
-      <button class="btn btn-pink" onclick="checkSudokuResult()">Xác Nhận Giải Mã</button>
+      <p style="font-size: 0.8rem; color: #555;">Điền số từ 1 đến 9 vào bảng (Không trùng lặp hàng ngang, cột dọc, ô 3x3):</p>
+      <div id="sudoku-grid-9" style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; margin: 8px auto; width: 100%; max-width: 420px;"></div>
+      <button class="btn btn-pink" onclick="checkSudoku9Result()">Xác Nhận Giải Mã</button>
     </div>
   </div>
 
-  <!-- MODAL: MINIGAME THÔNG THƯỜNG -->
-  <div id="modal-minigame" class="modal">
-    <div class="modal-content" style="max-width: 400px; text-align: center;">
+  <!-- MODAL: MINIGAME TƯƠNG TÁC CHO CÁC NGHỀ KHÁC -->
+  <div id="modal-job-game" class="modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
       <div class="modal-header">
-        <h3 id="mg-title">🎮 Thử Thách Công Việc</h3>
-        <button class="btn btn-outline" onclick="closeModal('modal-minigame')">✖</button>
+        <h3 id="jgame-title">🎮 Thử Thách Công Việc</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
       </div>
-      <p id="mg-instruction" style="font-size: 0.9rem; color: #555; margin: 10px 0;">Bấm liên tục để hoàn thành công việc!</p>
-      <div id="mg-score" style="font-size: 1.5rem; font-weight: bold; color: var(--app-dark-green); margin: 10px 0;">0 / 5</div>
-      <button class="btn btn-pink" id="mg-action-btn" onclick="handleMinigameClick()">Thực Hiện</button>
+      <div style="font-size: 0.82rem; color: #e53e3e; font-weight: bold;" id="jgame-stats">Sai: 0/5 | Lượt còn: 5/5</div>
+      <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green);">Câu hỏi thử thách...</div>
+      <div id="jgame-options-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: SỰ KIỆN POP-UP NGẪU NHIÊN KHI Ở TAB CUỘC SỐNG -->
+  <div id="modal-random-event" class="modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <h3 style="color: #d69e2e;">⚡ Sự Kiện Ngẫu Nhiên!</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-random-event')">✖</button>
+      </div>
+      <p id="revent-desc" style="font-size: 0.92rem; color: #4a5568; margin: 10px 0; line-height: 1.4;"></p>
+      <div id="revent-btns" style="display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
   </div>
 
@@ -591,26 +616,40 @@
       walletBalance: 10000000,
       inventory: [],
       currentJob: 'barista',
+      jobChangeTimestamp: 0,
+      dailyWorkCount: 0,
+      lastWorkDate: '',
       affection: {},
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
     };
 
     const SHOP_CATALOG = [
-      { id: 'item-1', name: '🌹 Bó Hoa Hồng Tươi', price: 200000, desc: 'Tặng bó hoa hồng đỏ thắm.' },
-      { id: 'item-2', name: '🍷 Rượu Ngoại Thượng Hạng', price: 1500000, desc: 'Mời chai rượu ngoại đắt tiền.' },
-      { id: 'item-3', name: '💍 Nhẫn Kim Cương', price: 10000000, desc: 'Trao chiếc nhẫn lấp lánh sang trọng.' },
-      { id: 'item-4', name: '🍫 Hộp Socola Ngọt Ngào', price: 150000, desc: 'Đút viên socola ngọt ngào.' },
-      { id: 'item-5', name: '🧥 Áo Khoác Ấm Áp', price: 800000, desc: 'Khoác áo ấm lên vai nhân vật.' }
+      { id: 'item-1', name: '🌹 Bó Hoa Hồng Tươi', price: 200000, desc: 'Tặng bó hoa hồng đỏ thắm.', options: ['Hoa đỏ rực', 'Hoa hồng phớt lãng mạn', 'Bó hồng xanh độc lạ'] },
+      { id: 'item-2', name: '🍷 Rượu Ngoại Thượng Hạng', price: 1500000, desc: 'Mời chai rượu ngoại đắt tiền.', options: ['Rượu Vang Pháp Chateaux', 'Rượu Whisky Macallan 18', 'Rượu Champagne Dom Perignon'] },
+      { id: 'item-3', name: '💍 Nhẫn Kim Cương', price: 10000000, desc: 'Trao chiếc nhẫn lấp lánh sang trọng.', options: ['Nhẫn kim cương tim', 'Nhẫn đính hôn hoàng gia', 'Nhẫn đôi khắc tên'] },
+      { id: 'item-4', name: '🍫 Hộp Socola Ngọt Ngào', price: 150000, desc: 'Đút viên socola ngọt ngào.', options: ['Socola đen nguyên chất', 'Socola sữa hạnh nhân', 'Socola tươi truffle'] },
+      { id: 'item-5', name: '🧥 Áo Khoác Ấm Áp', price: 800000, desc: 'Khoác áo ấm lên vai nhân vật.', options: ['Áo dạ dài hàn quốc', 'Áo khoác da cá tính', 'Áo len lông cừu mềm mại'] },
+      { id: 'item-6', name: '🏠 Bất Động Sản / Nhà Ở', price: 500000000, desc: 'Mua nhà làm tổ ấm bất ngờ.', options: ['Căn hộ Penthouse view sông', 'Biệt thự sân vườn ngoại ô', 'Nhà phố trung tâm sầm uất'] }
     ];
 
     window.onload = function() {
       loadStorage();
       renderStoryList();
+      checkDailyReset();
     };
 
+    function checkDailyReset() {
+      const today = new Date().toDateString();
+      if (window.state.lastWorkDate !== today) {
+        window.state.lastWorkDate = today;
+        window.state.dailyWorkCount = 0;
+        saveStorage();
+      }
+    }
+
     function loadStorage() {
-      const saved = localStorage.getItem('teechat_state_v9');
+      const saved = localStorage.getItem('teechat_state_v10');
       if (saved) { try { window.state = JSON.parse(saved); } catch(e) {} }
 
       if (!window.state.stories) window.state.stories = [];
@@ -619,6 +658,8 @@
       if (!window.state.inventory) window.state.inventory = [];
       if (!window.state.affection) window.state.affection = {};
       if (!window.state.currentJob) window.state.currentJob = 'barista';
+      if (!window.state.jobChangeTimestamp) window.state.jobChangeTimestamp = Date.now();
+      if (typeof window.state.dailyWorkCount !== 'number') window.state.dailyWorkCount = 0;
       if (!window.state.currentModel) window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
@@ -645,7 +686,7 @@
     }
 
     function saveStorage() {
-      try { localStorage.setItem('teechat_state_v9', JSON.stringify(window.state)); } catch(e) {}
+      try { localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); } catch(e) {}
     }
 
     function escapeHtml(str) {
@@ -673,14 +714,26 @@
         chatView.classList.add('hidden'); lifeView.classList.remove('hidden');
         chatBtn.classList.remove('active'); lifeBtn.classList.add('active');
         renderLifeModeUI();
+        maybeTriggerRandomEvent(); // Xác suất xuất hiện sự kiện ngẫu nhiên khi vào tab cuộc sống
       }
     }
 
     function renderLifeModeUI() {
+      checkDailyReset();
       document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
+      
       const jobSel = document.getElementById('job-select');
       if (jobSel) jobSel.value = window.state.currentJob || 'barista';
       updateJobDesc();
+
+      const daysPassed = Math.floor((Date.now() - (window.state.jobChangeTimestamp || Date.now())) / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.max(0, 3 - daysPassed);
+      const limitInfo = document.getElementById('job-limit-info');
+      if (daysLeft > 0) {
+        limitInfo.innerText = `Lượt làm việc hôm nay: ${window.state.dailyWorkCount}/5 | Cần đợi thêm ${daysLeft} ngày nữa mới được đổi nghề.`;
+      } else {
+        limitInfo.innerText = `Lượt làm việc hôm nay: ${window.state.dailyWorkCount}/5 | Đã có thể đổi nghề tự do!`;
+      }
 
       const shopContainer = document.getElementById('shop-items-container');
       shopContainer.innerHTML = '';
@@ -692,7 +745,7 @@
             <div style="font-weight: bold; font-size: 0.9rem;">${item.name}</div>
             <div style="font-size: 0.78rem; color: #e53e3e; font-weight: bold;">${item.price.toLocaleString('vi-VN')} VNĐ</div>
           </div>
-          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="buyShopItem('${item.id}')">🛒 Mua</button>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openBuyDetailModal('${item.id}')">🛒 Mua</button>
         `;
         shopContainer.appendChild(row);
       });
@@ -700,130 +753,70 @@
     }
 
     function changeJobSelection() {
+      const daysPassed = Math.floor((Date.now() - (window.state.jobChangeTimestamp || Date.now())) / (1000 * 60 * 60 * 24));
+      if (daysPassed < 3) {
+        alert(`Bạn chưa đủ 3 ngày để đổi nghề! Còn ${3 - daysPassed} ngày nữa.`);
+        document.getElementById('job-select').value = window.state.currentJob;
+        return;
+      }
+
       window.state.currentJob = document.getElementById('job-select').value;
+      window.state.jobChangeTimestamp = Date.now();
       saveStorage();
       updateJobDesc();
+      renderLifeModeUI();
+      alert('Đã đổi nghề thành công!');
     }
 
     function updateJobDesc() {
       const box = document.getElementById('job-desc-box');
       const j = window.state.currentJob;
-      if (j === 'barista') box.innerText = 'Lắc bình shaker pha chế cocktail (Lương: 150k - 300k VNĐ).';
-      else if (j === 'office') box.innerText = 'Gõ phím siêu tốc hoàn thành báo cáo (Lương: 200k - 400k VNĐ).';
-      else if (j === 'gangster') box.innerText = 'Đi thu hộ phí bảo kê Chợ Mới (Lương: 300k - 600k VNĐ).';
-      else if (j === 'teacher') box.innerText = 'Chấm xấp bài kiểm tra học sinh (Lương: 350k - 700k VNĐ).';
-      else if (j === 'artist') box.innerText = 'Sáng tác tranh nghệ thuật bán khách (Lương: 250k - 500k VNĐ).';
-      else if (j === 'sudoku') box.innerText = '⚡ Giải mã toán học Sudoku thiên tài (Lương khủng: 10.000.000.000 VNĐ).';
+      if (j === 'barista') box.innerText = 'Pha chế cocktail qua minigame ghép công thức đúng (Lương cơ bản: 200.000 VNĐ).';
+      else if (j === 'office') box.innerText = 'Giải bài toán kiểm toán tài chính Excel nhanh (Lương cơ bản: 300.000 VNĐ).';
+      else if (j === 'gangster') box.innerText = 'Phản xạ nhanh né đòn và phản công giang hồ (Lương cơ bản: 400.000 VNĐ).';
+      else if (j === 'teacher') box.innerText = 'Chấm bài kiểm tra trắc nghiệm kiến thức (Lương cơ bản: 350.000 VNĐ).';
+      else if (j === 'artist') box.innerText = 'Phối màu sắc hoàn thành bức tranh nghệ thuật (Lương cơ bản: 300.000 VNĐ).';
+      else if (j === 'sudoku') box.innerText = '⚡ Giải mã bảng Sudoku 9x9 thiên tài (Lương khủng: 10.000.000.000 VNĐ).';
     }
 
-    /* MINIGAME ĐI LÀM */
-    let activeMinigameData = { job: '', target: 0, current: 0, reward: 0 };
+    /* MUA SẮM CHI TIẾT (CHỌN PHÂN LOẠI) */
+    let selectedShopItem = null;
+    function openBuyDetailModal(itemId) {
+      selectedShopItem = SHOP_CATALOG.find(i => i.id === itemId);
+      if (!selectedShopItem) return;
 
-    function executeWorkMinigame() {
-      const job = window.state.currentJob;
-      if (job === 'sudoku') {
-        openSudokuMinigame();
-        return;
-      }
-
-      activeMinigameData.job = job;
-      activeMinigameData.current = 0;
-      
-      if (job === 'barista') {
-        activeMinigameData.target = 5;
-        activeMinigameData.reward = Math.floor(Math.random() * 150000) + 150000;
-        document.getElementById('mg-title').innerText = '🍸 Lắc Bình Shaker';
-        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để lắc bình và pha chế cocktail!';
-      } else if (job === 'office') {
-        activeMinigameData.target = 6;
-        activeMinigameData.reward = Math.floor(Math.random() * 200000) + 200000;
-        document.getElementById('mg-title').innerText = '💻 Gõ Phím Báo Cáo';
-        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 6 lần để gõ bàn phím hoàn thành file Excel!';
-      } else if (job === 'gangster') {
-        activeMinigameData.target = 4;
-        activeMinigameData.reward = Math.floor(Math.random() * 300000) + 300000;
-        document.getElementById('mg-title').innerText = '🗡️ Thu Hộ Bảo Kê';
-        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 4 lần để đi thu tiền địa bàn Chợ Mới!';
-      } else if (job === 'teacher') {
-        activeMinigameData.target = 5;
-        activeMinigameData.reward = Math.floor(Math.random() * 350000) + 350000;
-        document.getElementById('mg-title').innerText = '📚 Chấm Bài Kiểm Tra';
-        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để chấm xong xấp bài học sinh!';
-      } else if (job === 'artist') {
-        activeMinigameData.target = 5;
-        activeMinigameData.reward = Math.floor(Math.random() * 250000) + 250000;
-        document.getElementById('mg-title').innerText = '🎨 Sáng Tác Tranh';
-        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để hoàn thành bức tranh nghệ thuật!';
-      }
-
-      document.getElementById('mg-score').innerText = `0 / ${activeMinigameData.target}`;
-      openModal('modal-minigame');
+      document.getElementById('buy-modal-title').innerText = `🛒 Mua: ${selectedShopItem.name}`;
+      const body = document.getElementById('buy-modal-body');
+      body.innerHTML = `
+        <label>Chọn Phân Loại / Kiểu Dáng:</label>
+        <select id="buy-option-select" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;">
+          ${selectedShopItem.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+        </select>
+        <div style="font-size: 0.8rem; color: #666; margin-top: 6px;">Giá tiền: <span style="color: #e53e3e; font-weight: bold;">${selectedShopItem.price.toLocaleString('vi-VN')} VNĐ</span></div>
+      `;
+      openModal('modal-buy-detail');
     }
 
-    function handleMinigameClick() {
-      activeMinigameData.current++;
-      document.getElementById('mg-score').innerText = `${activeMinigameData.current} / ${activeMinigameData.target}`;
-      if (activeMinigameData.current >= activeMinigameData.target) {
-        closeModal('modal-minigame');
-        window.state.walletBalance = (window.state.walletBalance || 0) + activeMinigameData.reward;
-        saveStorage();
-        renderLifeModeUI();
-        alert(`🎉 HOÀN THÀNH XUẤT SẮC! Nhận được ${activeMinigameData.reward.toLocaleString('vi-VN')} VNĐ vào ví.`);
+    function confirmBuyItem() {
+      if (!selectedShopItem) return;
+      const optVal = document.getElementById('buy-option-select').value;
+      if ((window.state.walletBalance || 0) < selectedShopItem.price) {
+        closeModal('modal-buy-detail');
+        return alert('Số dư ví không đủ để mua món đồ này!');
       }
-    }
 
-    // Minigame Sudoku 10 Tỷ
-    function openSudokuMinigame() {
-      const grid = document.getElementById('sudoku-grid');
-      grid.innerHTML = '';
-      const puzzle = [[null, 2, 3], [3, null, 1], [1, 3, null]];
-      puzzle.forEach((row, r) => {
-        row.forEach((val, c) => {
-          const cell = document.createElement('input');
-          cell.type = 'number'; cell.min = '1'; cell.max = '3';
-          cell.style.width = '50px'; cell.style.height = '50px'; cell.style.textAlign = 'center'; cell.style.fontSize = '1.2rem'; cell.style.fontWeight = 'bold'; cell.style.borderRadius = '8px'; cell.style.border = '2px solid #cbd5e0';
-          cell.dataset.r = r; cell.dataset.c = c;
-          if (val !== null) { cell.value = val; cell.disabled = true; cell.style.background = '#edf2f7'; }
-          grid.appendChild(cell);
-        });
-      });
-      openModal('modal-sudoku');
-    }
-
-    function checkSudokuResult() {
-      const inputs = document.querySelectorAll('#sudoku-grid input');
-      let userMatrix = [[0,2,3],[3,0,1],[1,3,0]];
-      inputs.forEach(inp => {
-        userMatrix[parseInt(inp.dataset.r)][parseInt(inp.dataset.c)] = parseInt(inp.value) || 0;
-      });
-      let success = true;
-      for (let i = 0; i < 3; i++) {
-        let rSet = new Set(userMatrix[i]);
-        let cSet = new Set([userMatrix[0][i], userMatrix[1][i], userMatrix[2][i]]);
-        if (rSet.size !== 3 || cSet.size !== 3 || rSet.has(0) || cSet.has(0)) success = false;
-      }
-      closeModal('modal-sudoku');
-      if (success) {
-        const reward = 10000000000;
-        window.state.walletBalance = (window.state.walletBalance || 0) + reward;
-        saveStorage();
-        renderLifeModeUI();
-        alert('🎉 CHÍNH XÁC! Hacker tài ba đã giải mã thành công hệ thống và nhận phần thưởng khủng: 10.000.000.000 VNĐ!');
-      } else {
-        alert('❌ GIẢI MÃ THẤT BẠI! Các con số chưa chính xác theo quy tắc.');
-      }
-    }
-
-    function buyShopItem(itemId) {
-      const item = SHOP_CATALOG.find(i => i.id === itemId);
-      if (!item) return;
-      if ((window.state.walletBalance || 0) < item.price) return alert('Số dư ví không đủ!');
-      window.state.walletBalance -= item.price;
+      window.state.walletBalance -= selectedShopItem.price;
       if (!window.state.inventory) window.state.inventory = [];
-      window.state.inventory.push({ ...item, uniqueId: 'inv-' + Date.now() + Math.random() });
+      window.state.inventory.push({
+        name: `${selectedShopItem.name} (${optVal})`,
+        price: selectedShopItem.price,
+        desc: `${selectedShopItem.desc} Phân loại: ${optVal}.`,
+        uniqueId: 'inv-' + Date.now() + Math.random()
+      });
       saveStorage();
+      closeModal('modal-buy-detail');
       renderLifeModeUI();
-      alert(`Đã mua thành công "${item.name}"!`);
+      alert(`🎉 Đã mua thành công "${selectedShopItem.name} (${optVal})"!`);
     }
 
     function renderInventoryUI() {
@@ -837,6 +830,248 @@
         badge.innerHTML = `<span>${obj.name}</span>`;
         container.appendChild(badge);
       });
+    }
+
+    /* MINIGAME ĐI LÀM VỚI THƯỞNG PHẠT 10% & GIỚI HẠN 5 LẦN */
+    let jobGameState = { job: '', baseSalary: 0, currentSalary: 0, wrongCount: 0, qIndex: 0, questions: [] };
+
+    function executeWorkMinigame() {
+      checkDailyReset();
+      if (window.state.dailyWorkCount >= 5) {
+        return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay! Hãy quay lại vào ngày mai.');
+      }
+
+      const job = window.state.currentJob;
+      if (job === 'sudoku') {
+        openSudoku9Minigame();
+        return;
+      }
+
+      jobGameState.job = job;
+      jobGameState.wrongCount = 0;
+      jobGameState.qIndex = 0;
+
+      if (job === 'barista') {
+        jobGameState.baseSalary = 200000;
+        jobGameState.questions = [
+          { q: 'Pha ly Mojito cần nguyên liệu chính nào?', opts: ['Rượu Rum & Bạc Hà', 'Sữa tươi & Trân châu', 'Nước mắm & Đường', 'Cà phê đen'], ans: 0 },
+          { q: 'Tỷ lệ pha chuẩn ly Blue Lagoon gồm Vodka và gì?', opts: ['Curacao xanh & Sprite', 'Mật ong nguyên chất', 'Nước cam tươi', 'Sữa đặc có đường'], ans: 0 },
+          { q: 'Khi lắc bình Shaker, động tác chuẩn là gì?', opts: ['Lắc dứt khoát theo chiều ngang/dọc', 'Khuấy nhẹ bằng đũa', 'Đặt yên trong tủ lạnh', 'Đun sôi trên bếp'], ans: 0 },
+          { q: 'Ly Cocktail nào thường trang trí vỏ cam xoắn?', opts: ['Old Fashioned', 'Bia hơi', 'Trà đá chanh', 'Sữa chua dầm'], ans: 0 },
+          { q: 'Nhiệt độ đá lý tưởng trong ly cocktail là bao nhiêu?', opts: ['Đá lạnh sâu từ -10°C', 'Đá đun sôi', 'Đá tan chảy', 'Nước ấm'], ans: 0 }
+        ];
+      } else if (job === 'office') {
+        jobGameState.baseSalary = 300000;
+        jobGameState.questions = [
+          { q: 'Hàm Excel tính tổng dãy ô từ A1 đến A10 là gì?', opts: ['=SUM(A1:A10)', '=TOTAL(A1:A10)', '=ADD(A1:A10)', '=COUNT(A1:A10)'], ans: 0 },
+          { q: 'Doanh thu 500tr, chi phí 200tr, lợi nhuận là bao nhiêu?', opts: ['300 triệu', '700 triệu', '500 triệu', '200 triệu'], ans: 0 },
+          { q: 'Hàm VLOOKUP dùng để làm gì trong bảng tính?', opts: ['Tìm kiếm giá trị theo cột', 'Vẽ biểu đồ hình tròn', 'Tô màu tự động', 'Đếm số lượng chữ'], ans: 0 },
+          { q: 'Thuế thu nhập doanh nghiệp cơ bản hiện hành là bao nhiêu?', opts: ['20%', '10%', '50%', '5%'], ans: 0 },
+          { q: 'Phím tắt sao chép (Copy) nhanh trong Windows là gì?', opts: ['Ctrl + C', 'Ctrl + V', 'Ctrl + X', 'Ctrl + Z'], ans: 0 }
+        ];
+      } else if (job === 'gangster') {
+        jobGameState.baseSalary = 400000;
+        jobGameState.questions = [
+          { q: 'Khi đối thủ bất ngờ tấn công diện hẹp, phản xạ đầu tiên?', opts: ['Né đòn và phản công nhanh', 'Đứng im chịu trận', 'Ngồi xuống khóc', 'Bỏ chạy mất dạng'], ans: 0 },
+          { q: 'Khu vực Chợ Mới do ai quản lý bảo kê chính?', opts: ['Băng nhóm của bạn', 'Cảnh sát khu vực', 'Khách du lịch', 'Hội người cao tuổi'], ans: 0 },
+          { q: 'Khi thu tiền bảo kê hàng tháng gặp hộ chống đối?', opts: ['Uy nghiêm dằn mặt theo luật giang hồ', 'Tặng quà tri ân', 'Báo công an bắt', 'Đóng tiền thay cho họ'], ans: 0 },
+          { q: 'Vũ khí cận chiến ưa thích của tay anh chị là gì?', opts: ['Gậy sắt / Dao găm giấu túi', 'Cây chổi quét nhà', 'Quạt giấy mùa hè', 'Bút bi thiên long'], ans: 0 },
+          { q: 'Nguyên tắc vàng sống trong giới giang hồ là gì?', opts: ['Trọng chữ tín và trung thành', 'Phản bội anh em', 'Khai hết với đối thủ', 'Trốn nợ trền đầu'], ans: 0 }
+        ];
+      } else if (job === 'teacher') {
+        jobGameState.baseSalary = 350000;
+        jobGameState.questions = [
+          { q: 'Nước sôi ở điều kiện tiêu chuẩn bao nhiêu độ C?', opts: ['100°C', '50°C', '0°C', '200°C'], ans: 0 },
+          { q: 'Công thức tính diện tích hình chữ nhật là gì?', opts: ['Dài nhân Rộng', 'Cạnh nhân 4', 'Bán kính bình phương', 'Đáy nhân cao chia 2'], ans: 0 },
+          { q: 'Thủ đô của Việt Nam là gì?', opts: ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng'], ans: 0 },
+          { q: '1 năm có bao nhiêu tháng có 28 ngày?', opts: ['Cả 12 tháng', 'Chỉ 1 tháng', '6 tháng', 'Không tháng nào'], ans: 0 },
+          { q: 'Nguyên tố hóa học ký hiệu là H là gì?', opts: ['Hydro', 'Oxy', 'Cacbon', 'Nitơ'], ans: 0 }
+        ];
+      } else if (job === 'artist') {
+        jobGameState.baseSalary = 300000;
+        jobGameState.questions = [
+          { q: 'Pha màu Đỏ và màu Xanh Dương ra màu gì?', opts: ['Màu Tím', 'Màu Cam', 'Màu Xanh Lá', 'Màu Nâu'], ans: 0 },
+          { q: 'Màu nào biểu trưng cho sự lãng mạn và tình yêu?', opts: ['Màu Hồng / Đỏ thắm', 'Màu Đen xám', 'Màu Xám tro', 'Màu Xâu đậm'], ans: 0 },
+          { q: 'Dụng cụ không thể thiếu của họa sĩ vẽ tranh sơn dầu?', opts: ['Cọ vẽ và Bảng pha màu', 'Búa đinh sắt', 'Máy hàn điện', 'Kìm cắt dây'], ans: 0 },
+          { q: 'Pha màu Vàng và Xanh Dương ra màu gì?', opts: ['Màu Xanh Lá', 'Màu Hồng', 'Màu Tím', 'Màu Cam'], ans: 0 },
+          { q: 'Bức tranh trường phái trừu tượng đòi hỏi điều gì?', opts: ['Sự sáng tạo và cảm xúc thăng hoa', 'Vẽ giống y đúc chụp ảnh', 'Chỉ dùng một màu đen', 'Không cần suy nghĩ'], ans: 0 }
+        ];
+      }
+
+      jobGameState.currentSalary = jobGameState.baseSalary;
+      renderJobGameQuestion();
+      openModal('modal-job-game');
+    }
+
+    function renderJobGameQuestion() {
+      const qBox = document.getElementById('jgame-question-box');
+      const optBox = document.getElementById('jgame-options-box');
+      const statsBox = document.getElementById('jgame-stats');
+
+      statsBox.innerText = `Sai: ${jobGameState.wrongCount}/5 | Lượt còn: ${5 - window.state.dailyWorkCount} | Thưởng hiện tại: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ`;
+
+      if (jobGameState.qIndex >= jobGameState.questions.length || jobGameState.wrongCount >= 5) {
+        finishJobGame();
+        return;
+      }
+
+      const currentQ = jobGameState.questions[jobGameState.qIndex];
+      qBox.innerText = `Câu ${jobGameState.qIndex + 1}: ${currentQ.q}`;
+      optBox.innerHTML = '';
+
+      // Trộn ngẫu nhiên đáp án để tăng độ hay
+      let shuffledOpts = currentQ.opts.map((opt, idx) => ({ text: opt, originalIdx: idx }));
+      shuffledOpts.sort(() => Math.random() - 0.5);
+
+      shuffledOpts.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline';
+        btn.style.padding = '10px';
+        btn.style.fontSize = '0.85rem';
+        btn.innerText = item.text;
+        btn.onclick = () => handleJobAnswer(item.originalIdx === currentQ.ans);
+        optBox.appendChild(btn);
+      });
+    }
+
+    function handleJobAnswer(isCorrect) {
+      const stepBonus = jobGameState.baseSalary * 0.1; // 10% lương cơ bản
+      if (isCorrect) {
+        jobGameState.currentSalary += stepBonus;
+        alert(`✅ Chính xác! +${stepBonus.toLocaleString('vi-VN')} VNĐ vào tiền thưởng.`);
+      } else {
+        jobGameState.wrongCount++;
+        jobGameState.currentSalary = Math.max(0, jobGameState.currentSalary - 10000);
+        alert(`❌ Trả lời sai! -10.000 VNĐ tiền phạt. (Sai ${jobGameState.wrongCount}/5 lần)`);
+      }
+      jobGameState.qIndex++;
+      renderJobGameQuestion();
+    }
+
+    function finishJobGame() {
+      closeModal('modal-job-game');
+      window.state.dailyWorkCount++;
+      window.state.walletBalance = (window.state.walletBalance || 0) + jobGameState.currentSalary;
+      saveStorage();
+      renderLifeModeUI();
+      alert(`🎉 KẾT THÚC CA LÀM VIỆC!\nTổng tiền kiếm được: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ đã cộng vào ví.`);
+    }
+
+    /* MINIGAME SUDOKU 9X9 CHUẨN TRÍ TUỆ */
+    let sudoku9Solution = [
+      [5,3,4,6,7,8,9,1,2],
+      [6,7,2,1,9,5,3,4,8],
+      [1,9,8,3,4,2,5,6,7],
+      [8,5,9,7,6,1,4,2,3],
+      [4,2,6,8,5,3,7,9,1],
+      [7,1,3,9,2,4,8,5,6],
+      [9,6,1,5,3,7,2,8,4],
+      [2,8,7,4,1,9,6,3,5],
+      [3,4,5,2,8,6,1,7,9]
+    ];
+
+    function openSudoku9Minigame() {
+      checkDailyReset();
+      if (window.state.dailyWorkCount >= 5) {
+        return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay!');
+      }
+
+      const grid = document.getElementById('sudoku-grid-9');
+      grid.innerHTML = '';
+
+      // Tạo bảng đề bài (ẩn bớt một số ô)
+      const puzzle = sudoku9Solution.map((row, r) => row.map((val, c) => ((r + c) % 3 === 0 || (r * c) % 5 === 0) ? null : val));
+
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const cell = document.createElement('input');
+          cell.type = 'number'; cell.min = '1'; cell.max = '9';
+          cell.style.width = '100%'; cell.style.height = '36px'; cell.style.textAlign = 'center'; cell.style.fontSize = '0.9rem'; cell.style.fontWeight = 'bold'; cell.style.borderRadius = '4px'; cell.style.border = '1px solid #cbd5e0';
+          cell.dataset.r = r; cell.dataset.c = c;
+          if (puzzle[r][c] !== null) {
+            cell.value = puzzle[r][c];
+            cell.disabled = true;
+            cell.style.background = '#edf2f7';
+          }
+          grid.appendChild(cell);
+        }
+      }
+      openModal('modal-sudoku');
+    }
+
+    function checkSudoku9Result() {
+      const inputs = document.querySelectorAll('#sudoku-grid-9 input');
+      let isAllCorrect = true;
+
+      inputs.forEach(inp => {
+        const r = parseInt(inp.dataset.r);
+        const c = parseInt(inp.dataset.c);
+        const val = parseInt(inp.value) || 0;
+        if (val !== sudoku9Solution[r][c]) isAllCorrect = false;
+      });
+
+      closeModal('modal-sudoku');
+      window.state.dailyWorkCount++;
+
+      if (isAllCorrect) {
+        const reward = 10000000000; // 10 tỷ
+        window.state.walletBalance = (window.state.walletBalance || 0) + reward;
+        saveStorage();
+        renderLifeModeUI();
+        alert('🎉 CHÍNH XÁC TUYỆT ĐỐI! Hacker tài ba đã vượt qua thử thách Sudoku 9x9 và nhận phần thưởng khổng lồ: 10.000.000.000 VNĐ vào ví!');
+      } else {
+        alert('❌ GIẢI MÃ THẤT BẠI! Các con số chưa chính xác theo logic toán học Sudoku 9x9.');
+      }
+    }
+
+    /* SỰ KIỆN POP-UP NGẪU NHIÊN Ở TAB CUỘC SỐNG */
+    function maybeTriggerRandomEvent() {
+      // Xác suất 35% xuất hiện sự kiện ngẫu nhiên khi chuyển sang tab cuộc sống
+      if (Math.random() > 0.35) return;
+
+      const eventsList = [
+        {
+          desc: '🌟 Đang đi dạo phố, bạn bất ngờ bắt gặp một chiếc ví da rơi trên đường bên trong có rất nhiều tiền mặt và giấy tờ quan trọng.',
+          choices: [
+            { text: 'Mang đến đồn cảnh sát (Nhận được 500k tiền thưởng cảm ơn)', action: () => { window.state.walletBalance += 500000; alert('Bạn nhận được 500.000 VNĐ tiền thưởng tốt bụng!'); } },
+            { text: 'Giấu đi làm của riêng (+2.000.000 VNĐ vào ví, giảm nhẹ hảo cảm nhân vật)', action: () => { window.state.walletBalance += 2000000; alert('Bạn lỏm được 2.000.000 VNĐ!'); } }
+          ]
+        },
+        {
+          desc: '☕ Nhân vật chính trong truyện bất ngờ nhắn tin gọi điện gấp: "Đang ở đâu đấy? Ra quán quen ngay với tôi có việc gấp!"',
+          choices: [
+            { text: 'Lập tức phóng xe ra điểm hẹn (Nhảy thẳng về tab Trò Chuyện giải quyết drama)', action: () => { switchStoryTab('chat'); } },
+            { text: 'Nhắn tin từ chối vì đang bận kiếm tiền', action: () => { alert('Nhân vật tỏ ra hờn dỗi và giảm nhẹ độ thân mật.'); } }
+          ]
+        },
+        {
+          desc: '🍀 Bạn ghé vào cửa hàng tiện lợi mua một tờ vé số nhân lúc vận may đang tới.',
+          choices: [
+            { text: 'Cào vé số ngay lập tức', action: () => {
+              const win = Math.random() > 0.5 ? 5000000 : 0;
+              if (win > 0) { window.state.walletBalance += win; alert(`🎉 TRÚNG ĐỘC ĐẮC! Bạn nhận được ${win.toLocaleString('vi-VN')} VNĐ!`); }
+              else { alert('Chúc bạn may mắn lần sau, vé số trật lất.'); }
+            }}
+          ]
+        }
+      ];
+
+      const chosenEvent = eventsList[Math.floor(Math.random() * eventsList.length)];
+      document.getElementById('revent-desc').innerText = chosenEvent.desc;
+      const bContainer = document.getElementById('revent-btns');
+      bContainer.innerHTML = '';
+
+      chosenEvent.choices.forEach(ch => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-pink';
+        btn.style.width = '100%';
+        btn.style.padding = '10px';
+        btn.innerText = ch.text;
+        btn.onclick = () => { closeModal('modal-random-event'); ch.action(); saveStorage(); renderLifeModeUI(); };
+        bContainer.appendChild(btn);
+      });
+
+      openModal('modal-random-event');
     }
 
     /* MENU DẤU CỘNG (➕) */
@@ -896,7 +1131,7 @@
           });
         }
       } else {
-        lblEl.innerText = 'Chọn Nhân Vật Chuyển Cho Bạn:';
+        lblEl.innerText = 'Chọn Nhân Vật Chuyển Cho Bạn (Chu cấp / Tặng tiền):';
         if (story && story.characters && story.characters.length > 0) {
           story.characters.forEach(char => {
             const opt = document.createElement('option');
@@ -1017,6 +1252,20 @@
       sendMessage(giftActionText);
     }
 
+    /* ĐẶT CON TRỎ VÀO GIỮA KHI BẤM LỜI THOẠI HOẶC HÀNH ĐỘNG */
+    function insertInputFormat(type) {
+      const input = document.getElementById('user-input');
+      const val = input.value;
+      const pos = input.selectionStart || val.length;
+      let ins = '';
+      if (type === 'dialogue') ins = '""';
+      else if (type === 'action') ins = '**';
+
+      input.value = val.slice(0, pos) + ins + val.slice(pos);
+      input.focus();
+      input.setSelectionRange(pos + 1, pos + 1);
+    }
+
     function handleChatImageFile(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1123,7 +1372,6 @@
       renderCharacterList(); openModal('modal-story-config');
     }
 
-    /* FIX TRÀN KHUNG & THÊM HIỂN THỊ ĐỘ THÂN MẬT VÀO DANH SÁCH */
     function renderCharacterList() {
       const container = document.getElementById('character-list-container');
       container.innerHTML = '';
@@ -1208,14 +1456,6 @@
         const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
         if (story) { story.characters = story.characters.filter(c => c.id !== charId); saveStorage(); renderCharacterList(); }
       }
-    }
-
-    function insertInputFormat(type) {
-      const input = document.getElementById('user-input');
-      const val = input.value;
-      if (type === 'dialogue') input.value = val + '""';
-      else if (type === 'action') input.value = val + '**';
-      input.focus();
     }
 
     function renderChatHistory() {
@@ -1396,7 +1636,7 @@
 [QUY TẮC NHẬP VAI, DRAMA & TỰ DO 18+]
 1. Bối cảnh: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Nhân vật (phản ứng linh hoạt với chuyển khoản hai chiều, quà tặng, tăng độ thân mật):
+3. Nhân vật (phản ứng linh hoạt với chuyển khoản hai chiều, quà tặng, chu cấp tiền, tăng độ thân mật):
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `\n[TÓM TẮT DIỄN BIẾN TRƯỚC ĐÓ]:\n${summaryText}` : ''}
 
