@@ -68,6 +68,11 @@
     .char-header { display: flex; align-items: center; gap: 10px; flex: 1; }
     .char-avatar-mini { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
 
+    /* TAB CHUYỂN ĐỔI (TRÒ CHUYỆN / CUỘC SỐNG) */
+    .mode-tab-bar { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; padding: 4px; gap: 4px; justify-content: center; }
+    .mode-tab-btn { flex: 1; padding: 8px; text-align: center; font-weight: bold; font-size: 0.85rem; border: none; background: transparent; color: #666; cursor: pointer; border-radius: 12px; transition: all 0.2s; }
+    .mode-tab-btn.active { background: var(--app-green); color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
     /* CHAT STYLES */
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     
@@ -105,7 +110,7 @@
     /* MENU TÍNH NĂNG MỞ RỘNG (NÚT CỘNG) */
     .plus-menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 90; }
     .plus-menu-overlay.active { display: block; }
-    .plus-menu { display: none; position: absolute; bottom: 65px; left: 10px; background: #fff; border: 2px solid #d0ebd8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 95; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 290px; }
+    .plus-menu { display: none; position: absolute; bottom: 65px; left: 10px; background: #fff; border: 2px solid #d0ebd8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 95; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 300px; }
     .plus-menu.active { display: grid; }
     .plus-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #f7faf8; border: 1px solid #d0ebd8; padding: 10px 6px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; color: #333; text-align: center; font-weight: bold; }
     .plus-item:active { transform: scale(0.92); background: #e6fffa; }
@@ -113,6 +118,11 @@
 
     .input-bar { padding: 10px 16px; background: #fff; display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; }
     .input-bar input { flex: 1; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; }
+
+    /* LIFE MODE STYLES (TAB CUỘC SỐNG) */
+    .life-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .life-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 10px; }
+    .shop-item-row { display: flex; justify-content: space-between; align-items: center; background: #f7faf8; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; gap: 8px; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
     .modal.active { display: flex; }
@@ -150,55 +160,113 @@
     <div class="scenarios-container" id="story-list"></div>
   </div>
 
-  <!-- PAGE 2: MÀN HÌNH CHÁT CHÍNH -->
+  <!-- PAGE 2: MÀN HÌNH CHÁT & CUỘC SỐNG -->
   <div id="page-story-detail" class="page">
     <div class="navbar">
       <div style="display: flex; align-items: center; gap: 6px;">
         <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="switchPage('page-home')">⬅ Trở về</button>
-        <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">Tên Truyện</h3>
+        <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">Tên Truyện</h3>
       </div>
-      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt Truyện</button>
+      <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt</button>
     </div>
 
-    <div class="chat-history" id="chat-history"></div>
-
-    <div class="chat-controls">
-      <button class="btn btn-pink plus-btn" onclick="togglePlusMenu()">➕</button>
-      <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại</button>
-      <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động</button>
-      <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
+    <!-- THANH CHUYỂN TAB (TRÒ CHUYỆN / CUỘC SỐNG) -->
+    <div class="mode-tab-bar">
+      <button class="mode-tab-btn active" id="tab-btn-chat" onclick="switchStoryTab('chat')">💬 Trò Chuyện</button>
+      <button class="mode-tab-btn" id="tab-btn-life" onclick="switchStoryTab('life')">🌟 Cuộc Sống</button>
     </div>
 
-    <!-- MENU TÍNH NĂNG ẨN TRONG NÚT CỘNG -->
-    <div class="plus-menu-overlay" id="plus-menu-overlay" onclick="togglePlusMenu()"></div>
-    <div class="plus-menu" id="plus-menu">
-      <div class="plus-item" onclick="handlePlusAction('transfer')">
-        <span class="plus-item-icon">💸</span>
-        <span>Chuyển Khoản</span>
+    <!-- TAB 1: KHUNG CHAT CHÍNH -->
+    <div id="subview-chat" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+      <div class="chat-history" id="chat-history"></div>
+
+      <div class="chat-controls">
+        <button class="btn btn-pink plus-btn" onclick="togglePlusMenu()">➕</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động</button>
+        <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
       </div>
-      <div class="plus-item" onclick="handlePlusAction('image')">
-        <span class="plus-item-icon">🖼️</span>
-        <span>Gửi Ảnh</span>
+
+      <!-- MENU TÍNH NĂNG ẨN TRONG NÚT CỘNG -->
+      <div class="plus-menu-overlay" id="plus-menu-overlay" onclick="togglePlusMenu()"></div>
+      <div class="plus-menu" id="plus-menu">
+        <div class="plus-item" onclick="handlePlusAction('transfer')">
+          <span class="plus-item-icon">💸</span>
+          <span>Chuyển Khoản</span>
+        </div>
+        <div class="plus-item" onclick="handlePlusAction('gift')">
+          <span class="plus-item-icon">🎁</span>
+          <span>Tặng Quà</span>
+        </div>
+        <div class="plus-item" onclick="handlePlusAction('image')">
+          <span class="plus-item-icon">🖼️</span>
+          <span>Gửi Ảnh</span>
+        </div>
+        <div class="plus-item" onclick="handlePlusAction('voice')">
+          <span class="plus-item-icon">🎙️</span>
+          <span>Gửi Voice</span>
+        </div>
+        <div class="plus-item" onclick="handlePlusAction('redo')">
+          <span class="plus-item-icon">🔄</span>
+          <span>Làm Lại</span>
+        </div>
+        <div class="plus-item" onclick="handlePlusAction('clear')">
+          <span class="plus-item-icon">🗑️</span>
+          <span>Xóa Chat</span>
+        </div>
       </div>
-      <div class="plus-item" onclick="handlePlusAction('voice')">
-        <span class="plus-item-icon">🎙️</span>
-        <span>Gửi Voice</span>
-      </div>
-      <div class="plus-item" onclick="handlePlusAction('redo')">
-        <span class="plus-item-icon">🔄</span>
-        <span>Làm Lại</span>
-      </div>
-      <div class="plus-item" onclick="handlePlusAction('clear')">
-        <span class="plus-item-icon">🗑️</span>
-        <span>Xóa Chat</span>
+      <input type="file" id="chat-img-upload-input" accept="image/*" style="display:none;" onchange="handleChatImageFile(event)">
+
+      <div class="input-bar">
+        <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)">
+        <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
       </div>
     </div>
-    <!-- Input file ẩn để nhận lệnh tải ảnh từ máy -->
-    <input type="file" id="chat-img-upload-input" accept="image/*" style="display:none;" onchange="handleChatImageFile(event)">
 
-    <div class="input-bar">
-      <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)">
-      <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
+    <!-- TAB 2: TAB CUỘC SỐNG (ĐI LÀM, MINIGAME, MUA SẮM) -->
+    <div id="subview-life" class="life-container hidden">
+      <!-- Thẻ thông tin ví tiền -->
+      <div class="life-card" style="background: linear-gradient(135deg, #e6fffa 0%, #c6f6d5 100%); border-color: #319795;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="color: #234e52; font-size: 1.1rem;">💰 Ví Tiền Cá Nhân</h3>
+          <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openModal('modal-transfer')">Chuyển Khoản Nhanh</button>
+        </div>
+        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
+      </div>
+
+      <!-- Thẻ Công Việc & Minigame -->
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">👔 Nghề Nghiệp & Đi Làm</h3>
+        <div class="form-group">
+          <label>Chọn Ngành Nghề Hiện Tại:</label>
+          <select id="job-select" onchange="changeJobSelection()">
+            <option value="barista">☕ Nhân Viên Pha Chế Quán Bar</option>
+            <option value="office">💻 Nhân Viên Văn Phòng</option>
+            <option value="gangster">🗡️ Sĩ Quan / Tay Cọc Giang Hồ</option>
+            <option value="teacher">📚 Giáo Viên / Giảng Viên</option>
+            <option value="artist">🎨 Chủ Tiệm / Nghệ Sĩ Tự Do</option>
+          </select>
+        </div>
+        <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
+          Lắc bình shaker pha chế cocktail để kiếm thu nhập (150k - 300k VNĐ/lần).
+        </div>
+        <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">🎮 Bắt Đầu Làm Việc Ngay</button>
+      </div>
+
+      <!-- Thẻ Cửa Hàng Mua Sắm & Túi Đồ -->
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛍️ Cửa Hàng & Túi Đồ Quà Tặng</h3>
+        <div style="font-size: 0.82rem; color: #666;">Mua sắm vật phẩm bằng tiền trong ví, sau đó dùng nút `➕` trong khung chat để tặng quà cho nhân vật!</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container">
+          <!-- Danh sách hàng hóa được render tự động -->
+        </div>
+
+        <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">🎒 Túi Đồ Của Bạn</h4>
+        <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;">
+          <!-- Danh sách vật phẩm đã mua -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -210,18 +278,30 @@
         <button class="btn btn-outline" onclick="closeModal('modal-transfer')">✖</button>
       </div>
       <div style="background: #e6fffa; padding: 10px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
-        <div style="font-size: 0.8rem; color: #234e52;">Số dư ví của bạn:</div>
+        <div style="font-size: 0.8rem; color: #234e52;">Số dư ví hiện tại:</div>
         <div id="wallet-balance-display" style="font-size: 1.2rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
       </div>
       <div class="form-group">
         <label>Số Tiền Chuyển (VNĐ):</label>
-        <input type="number" id="transfer-amount" placeholder="VD: 500000" value="500000">
+        <input type="number" id="transfer-amount" value="500000">
       </div>
       <div class="form-group">
         <label>Nội Dung / Lời Nhắn:</label>
-        <input type="text" id="transfer-note" placeholder="VD: Tiền tiêu vặt / Mua quà..." value="Tiền tiêu vặt">
+        <input type="text" id="transfer-note" value="Tiền tiêu vặt cho anh/em">
       </div>
       <button class="btn btn-pink" onclick="executeTransfer()">Xác Nhận Chuyển Khoản</button>
+    </div>
+  </div>
+
+  <!-- MODAL: TẶNG QUÀ TỪ TÚI ĐỒ -->
+  <div id="modal-gift" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🎁 Chọn Quà Tặng Nhân Vật</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-gift')">✖</button>
+      </div>
+      <div style="font-size: 0.85rem; color: #666;">Chọn món quà trong túi đồ để trao tận tay nhân vật trong đoạn chat cốt truyện:</div>
+      <div id="gift-modal-items" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;"></div>
     </div>
   </div>
 
@@ -370,8 +450,8 @@
         <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
       </div>
       <div class="form-group">
-        <label>Tên Model AI (Mặc định: gemini-3.8-flash):</label>
-        <input type="text" id="cfg-model-select" value="gemini-3.8-flash" placeholder="gemini-3.8-flash">
+        <label>Tên Model AI (Mặc định: gemini-2.5-flash):</label>
+        <input type="text" id="cfg-model-select" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div class="form-group">
@@ -482,7 +562,6 @@
     window.uploadDataToFirebase = async function() {
       const user = auth.currentUser;
       if (!user) return alert("Vui lòng đăng nhập trước!");
-      
       try {
         window.saveStorage();
         const cleanData = JSON.parse(JSON.stringify(window.state));
@@ -523,15 +602,25 @@
 
     window.state = {
       apiKeys: [],
-      currentModel: 'gemini-3.8-flash',
+      currentModel: 'gemini-2.5-flash',
       activeStoryId: null,
       stories: [],
       persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
       walletBalance: 10000000,
+      inventory: [],
+      currentJob: 'barista',
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
     };
+
+    const SHOP_CATALOG = [
+      { id: 'item-1', name: '🌹 Bó Hoa', price: 200000, desc: 'Lấy từ trong túi ra một bó hoa hồng đỏ thắm trao tận tay nhân vật.' },
+      { id: 'item-2', name: '🍷 Rượu Thượng Hạng', price: 1500000, desc: 'Đặt lên bàn một chai rượu ngoại đắt tiền, rót ra ly mời nhân vật cùng thưởng thức.' },
+      { id: 'item-3', name: '💍 Nhẫn Kim Cương', price: 10000000, desc: 'Hé mở chiếc hộp nhung sang trọng, lấy chiếc nhẫn lấp lánh đeo vào tay nhân vật.' },
+      { id: 'item-4', name: '🍫 Hộp Socola', price: 150000, desc: 'Bóc hộp socola thủ công ngọt ngào đưa một viên lên miệng nhân vật.' },
+      { id: 'item-5', name: '🧥 Áo Khoác', price: 800000, desc: 'Nhẹ nhàng khoác chiếc áo ấm lên vai nhân vật giữa tiết trời lạnh.' }
+    ];
 
     window.onload = function() {
       loadStorage();
@@ -547,8 +636,10 @@
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
       if (typeof window.state.walletBalance !== 'number') window.state.walletBalance = 10000000;
+      if (!window.state.inventory) window.state.inventory = [];
+      if (!window.state.currentJob) window.state.currentJob = 'barista';
 
-      if (!window.state.currentModel || window.state.currentModel === 'gemini-2.5-flash') window.state.currentModel = 'gemini-3.8-flash';
+      if (!window.state.currentModel || window.state.currentModel === 'gemini-3.8-flash') window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
         window.state.stories.push({
@@ -571,7 +662,7 @@
       }
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
-      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-3.8-flash';
+      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
       
       if (window.state.persona) {
         document.getElementById('per-name').value = window.state.persona.name || '';
@@ -606,6 +697,142 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+    /* CHUYỂN GIỮA TAB TRÒ CHUYỆN VÀ TAB CUỘC SỐNG */
+    function switchStoryTab(tabName) {
+      const chatView = document.getElementById('subview-chat');
+      const lifeView = document.getElementById('subview-life');
+      const chatBtn = document.getElementById('tab-btn-chat');
+      const lifeBtn = document.getElementById('tab-btn-life');
+
+      if (tabName === 'chat') {
+        chatView.classList.remove('hidden');
+        lifeView.classList.add('hidden');
+        chatBtn.classList.add('active');
+        lifeBtn.classList.remove('active');
+      } else {
+        chatView.classList.add('hidden');
+        lifeView.classList.remove('hidden');
+        chatBtn.classList.remove('active');
+        lifeBtn.classList.add('active');
+        renderLifeModeUI();
+      }
+    }
+
+    /* RENDER GIAO DIỆN TAB CUỘC SỐNG */
+    function renderLifeModeUI() {
+      // Cập nhật số dư ví
+      document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
+      
+      // Cập nhật select nghề
+      const jobSel = document.getElementById('job-select');
+      if (jobSel) jobSel.value = window.state.currentJob || 'barista';
+      updateJobDesc();
+
+      // Render cửa hàng shop
+      const shopContainer = document.getElementById('shop-items-container');
+      shopContainer.innerHTML = '';
+      SHOP_CATALOG.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'shop-item-row';
+        row.innerHTML = `
+          <div>
+            <div style="font-weight: bold; font-size: 0.9rem;">${item.name}</div>
+            <div style="font-size: 0.78rem; color: #e53e3e; font-weight: bold;">${item.price.toLocaleString('vi-VN')} VNĐ</div>
+          </div>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="buyShopItem('${item.id}')">🛒 Mua</button>
+        `;
+        shopContainer.appendChild(row);
+      });
+
+      // Render túi đồ
+      renderInventoryUI();
+    }
+
+    function changeJobSelection() {
+      const jobSel = document.getElementById('job-select');
+      window.state.currentJob = jobSel.value;
+      saveStorage();
+      updateJobDesc();
+    }
+
+    function updateJobDesc() {
+      const box = document.getElementById('job-desc-box');
+      const job = window.state.currentJob;
+      if (job === 'barista') box.innerText = 'Lắc bình shaker pha chế cocktail điêu luyện để thu nhập (150k - 300k VNĐ/lần làm).';
+      else if (job === 'office') box.innerText = 'Gõ phím siêu tốc hoàn thành báo cáo tài chính gấp cho sếp (200k - 400k VNĐ/lần làm).';
+      else if (job === 'gangster') box.innerText = 'Đi thu hộ phí bảo kê tháng tại khu vực Chợ Mới (300k - 600k VNĐ/lần làm).';
+      else if (job === 'teacher') box.innerText = 'Đứng lớp truyền đạt kiến thức và miệt mài chấm xấp bài kiểm tra (350k - 700k VNĐ/lần làm).';
+      else if (job === 'artist') box.innerText = 'Thả hồn vào nét cọ sáng tác tác phẩm nghệ thuật bán cho khách (250k - 500k VNĐ/lần làm).';
+    }
+
+    /* MINIGAME ĐI LÀM */
+    function executeWorkMinigame() {
+      const job = window.state.currentJob;
+      let earned = 0;
+      let msg = '';
+
+      if (job === 'barista') {
+        earned = Math.floor(Math.random() * 150000) + 150000;
+        msg = `🍸 Bạn lắc bình shaker điêu luyện, pha thành công ly cocktail đặc biệt phục vụ khách và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      } else if (job === 'office') {
+        earned = Math.floor(Math.random() * 200000) + 200000;
+        msg = `💻 Bạn chăm chú gõ bàn phím cạch cạch, hoàn thành xuất sắc bản báo cáo gấp và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      } else if (job === 'gangster') {
+        earned = Math.floor(Math.random() * 300000) + 300000;
+        msg = `🗡️ Bạn uy nghiêm đi một vòng Chợ Mới thu hồi thành công khoản tiền bảo kê và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      } else if (job === 'teacher') {
+        earned = Math.floor(Math.random() * 350000) + 350000;
+        msg = `📚 Bạn miệt mài đứng lớp giảng bài và chấm xong xấp bài kiểm tra, nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      } else if (job === 'artist') {
+        earned = Math.floor(Math.random() * 250000) + 250000;
+        msg = `🎨 Bạn hoàn thành bức tranh nghệ thuật độc đáo bán ngay cho khách sưu tầm, nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      }
+
+      window.state.walletBalance = (window.state.walletBalance || 0) + earned;
+      saveStorage();
+      renderLifeModeUI();
+      alert(msg);
+    }
+
+    function buyShopItem(itemId) {
+      const item = SHOP_CATALOG.find(i => i.id === itemId);
+      if (!item) return;
+      if ((window.state.walletBalance || 0) < item.price) {
+        return alert('Số dư ví không đủ để mua món quà này! Hãy sang phần Đi Làm để kiếm thêm tiền.');
+      }
+
+      window.state.walletBalance -= item.price;
+      if (!window.state.inventory) window.state.inventory = [];
+      window.state.inventory.push({ ...item, uniqueId: 'inv-' + Date.now() + Math.random() });
+      saveStorage();
+      renderLifeModeUI();
+      alert(`🎉 Đã mua thành công "${item.name}"! Món đồ đã được chuyển vào Túi Đồ của bạn.`);
+    }
+
+    function renderInventoryUI() {
+      const invContainer = document.getElementById('inventory-list-container');
+      invContainer.innerHTML = '';
+      const inv = window.state.inventory || [];
+      if (inv.length === 0) {
+        invContainer.innerHTML = '<div style="font-size:0.8rem; color:#888; width: 100%; text-align: center;">Túi đồ đang trống. Hãy mua quà trong cửa hàng!</div>';
+        return;
+      }
+
+      inv.forEach(obj => {
+        const badge = document.createElement('div');
+        badge.style.background = '#fff';
+        badge.style.border = '1px solid #90d4b8';
+        badge.style.padding = '4px 8px';
+        badge.style.borderRadius = '8px';
+        badge.style.fontSize = '0.78rem';
+        badge.style.display = 'inline-flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '4px';
+        badge.innerHTML = `<span>${obj.name}</span>`;
+        invContainer.appendChild(badge);
+      });
+    }
+
     /* MENU NÚT CỘNG (➕) */
     function togglePlusMenu() {
       const menu = document.getElementById('plus-menu');
@@ -623,8 +850,10 @@
     function handlePlusAction(action) {
       togglePlusMenu();
       if (action === 'transfer') {
-        document.getElementById('wallet-balance-display').innerText = window.state.walletBalance.toLocaleString('vi-VN') + ' VNĐ';
+        document.getElementById('wallet-balance-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
         openModal('modal-transfer');
+      } else if (action === 'gift') {
+        openGiftModal();
       } else if (action === 'image') {
         document.getElementById('chat-img-upload-input').click();
       } else if (action === 'voice') {
@@ -644,6 +873,57 @@
       } else if (action === 'clear') {
         clearHistory();
       }
+    }
+
+    function openGiftModal() {
+      const container = document.getElementById('gift-modal-items');
+      container.innerHTML = '';
+      const inv = window.state.inventory || [];
+      if (inv.length === 0) {
+        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 15px;">Túi đồ của bạn chưa có món quà nào! Hãy vào tab "Cuộc Sống" để mua quà.</div>';
+        openModal('modal-gift');
+        return;
+      }
+
+      inv.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.background = '#f7faf8';
+        row.style.border = '1px solid #d0ebd8';
+        row.style.padding = '10px';
+        row.style.borderRadius = '12px';
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.innerHTML = `
+          <div>
+            <div style="font-weight: bold; font-size: 0.9rem;">${item.name}</div>
+            <div style="font-size: 0.75rem; color: #666; font-style: italic;">${item.desc}</div>
+          </div>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="sendGiftToChat('${item.uniqueId}')">Tặng Ngay</button>
+        `;
+        container.appendChild(row);
+      });
+      openModal('modal-gift');
+    }
+
+    function sendGiftToChat(uniqueId) {
+      const inv = window.state.inventory || [];
+      const itemIdx = inv.findIndex(i => i.uniqueId === uniqueId);
+      if (itemIdx === -1) return;
+      const giftedItem = inv.splice(itemIdx, 1)[0];
+      saveStorage();
+      closeModal('modal-gift');
+
+      // Tự động chuyển về tab Trò Chuyện để xem phản ứng AI
+      switchStoryTab('chat');
+
+      const giftActionText = `[Hành động tặng quà: Lấy từ trong túi ra "${giftedItem.name}" ${giftedItem.desc}]`;
+      const storyId = window.state.activeStoryId;
+      if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
+      window.state.chatHistories[storyId].push({ sender: 'user', text: giftActionText });
+      saveStorage();
+      renderChatHistory();
+      sendMessage(giftActionText);
     }
 
     /* GỬI ẢNH TRONG CHAT */
@@ -676,6 +956,7 @@
       saveStorage();
       closeModal('modal-transfer');
 
+      switchStoryTab('chat');
       const transferMsg = `[Chuyển khoản thành công: ${amt.toLocaleString('vi-VN')} VNĐ - Nội dung: "${noteInput}" | Số dư ví hiện tại: ${window.state.walletBalance.toLocaleString('vi-VN')} VNĐ]`;
       
       const storyId = window.state.activeStoryId;
@@ -798,6 +1079,7 @@
         }
       }
 
+      switchStoryTab('chat');
       renderChatHistory();
       switchPage('page-story-detail');
 
@@ -1147,7 +1429,7 @@
       sendMessage(null, false, true);
     }
 
-    /* GỬI TIN NHẮN (HỖ TRỢ ẢNH, DRAMA, 18+ TỰ DO KHÔNG BỊ CHẶN) */
+    /* GỬI TIN NHẮN (HỖ TRỢ TỰ ĐỘNG TÓM TẮT & CHỐNG QUÊN CỐT TRUYỆN) */
     async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false, overrideImg = null) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
@@ -1173,22 +1455,22 @@
       const summaryUpto = sumObj ? sumObj.upto : 0;
       const histStart = Math.max(Math.min(histLen - 10, summaryUpto), histLen - 20, 0);
 
-      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}` + (c.firstMsg ? ` | Câu nói mẫu thể hiện giọng điệu: ${c.firstMsg}` : '')).join('\n');
+      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}` + (c.firstMsg ? ` | Câu nói mẫu: ${c.firstMsg}` : '')).join('\n');
       
       const systemInstruction = `
 [QUY TẮC NHẬP VAI, DRAMA & TỰ DO 18+]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Các nhân vật bạn nhập vai (tự chủ động tạo drama, phản ứng linh hoạt theo sát nhân vật mới thêm vào hoặc có sẵn):
+3. Các nhân vật bạn nhập vai (tự chủ động tạo drama, phản ứng linh hoạt với quà tặng, chuyển khoản hoặc nhân vật mới):
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `
 
-[TÓM TẮT DIỄN BIẾN ĐÃ XẢY RA TRƯỚC ĐÓ]
+[TÓM TẮT DIỄN BIẾN ĐÃ XẢY RA TRƯỚC ĐÓ - Cần nhớ kỹ để giữ nhất quán]
 ${summaryText}` : ''}
 
 [NGUYÊN TẮC QUAN TRỌNG & TỰ DO 18+]
-- PHONG CÁCH TỰ DO KHÔNG HẠN CHẾ: Thoải mái sử dụng từ ngữ phong phú, gợi cảm, lãng mạn táo bạo hoặc tự tạo các hoàn cảnh 18+, tình huống cao trào kịch tính, drama sâu sắc khi cốt truyện đẩy đến. Không né tránh hay kiểm duyệt từ ngữ nhạy cảm; hãy nhập vai chân thực, lôi cuốn theo cảm xúc nhân vật.
-- BÁM SÁT CỐT TRUYỆN & TỰ TẠO DRAMA: Diễn biến có thể tự phát triển cao trào, bất ngờ, ghen tuông, tình cảm sâu đậm tùy theo tương tác của người dùng và các nhân vật.
+- BÁM SÁT CỐT TRUYỆN & TỰ TẠO DRAMA: Diễn biến có thể tự phát triển cao trào, bất ngờ, ghen tuông, tình cảm sâu đậm tùy theo tương tác của người dùng, chuyển khoản hoặc tặng quà.
+- PHONG CÁCH TỰ DO KHÔNG HẠN CHẾ: Thoải mái sử dụng từ ngữ phong phú, gợi cảm, lãng mạn táo bạo hoặc tự tạo hoàn cảnh 18+, tình huống cao trào khi cốt truyện đẩy đến.
 - BÁM SÁT NHÂN VẬT: Mỗi nhân vật phải nói và hành động ĐÚNG tính cách, giữ vững cách xưng hô từ đầu đến cuối.
 - BẮT BUỘC: Hành động/cử chỉ đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này".
 - SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy tình huống, có thể nhiều nhân vật cùng tham gia đối thoại qua lại.
@@ -1203,7 +1485,6 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       let recentHistory = window.state.chatHistories[storyId].slice(histStart).map(m => {
         const partsArr = [{ text: m.text }];
         if (m.img) {
-          // Gửi kèm hình ảnh cho model AI đa phương thức đọc được
           const base64Clean = m.img.split(',')[1] || m.img;
           partsArr.push({ inline_data: { mime_type: "image/jpeg", data: base64Clean } });
         }
@@ -1263,7 +1544,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       }
 
       let responseText = null;
-      const selectedModel = (window.state.currentModel || 'gemini-3.8-flash').trim().replace(/^models\//,'');
+      const selectedModel = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
       let lastError = '';
 
       for (const rawKey of window.state.apiKeys) {
@@ -1325,8 +1606,86 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
         window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
         saveStorage();
         renderChatHistory();
+        maybeSummarize(storyId); // chạy ngầm chống quên cốt truyện
       } else {
         alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.\n\nChi tiết: ${lastError || 'không rõ'}`);
+      }
+    }
+
+    /* HỆ THỐNG TÓM TẮT BỘ NHỚ NGẦM (CHỐNG QUÊN CỐT TRUYỆN) */
+    async function maybeSummarize(storyId) {
+      try {
+        window._summarizing = window._summarizing || {};
+        if (window._summarizing[storyId]) return;
+        const hist = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
+        if (!window.state.summaries) window.state.summaries = {};
+        const cur = window.state.summaries[storyId] || { text: '', upto: 0 };
+        const end = hist.length - 10;
+        if (end - cur.upto < 6) return;
+        if (!window.state.apiKeys || window.state.apiKeys.length === 0) return;
+
+        window._summarizing[storyId] = true;
+        const personaName = (window.state.persona && window.state.persona.name) || 'Người dùng';
+        const chunk = hist.slice(cur.upto, end).map(m => {
+          const t = (m.text || '').replace(/\*/g, '').trim();
+          return m.sender === 'user' ? `${personaName}: ${t}` : t;
+        }).join('\n');
+
+        const prompt = `Bạn là người ghi chép diễn biến truyện nhập vai. Hãy viết lại bản TÓM TẮT DIỄN BIẾN hoàn chỉnh bằng tiếng Việt (tối đa khoảng 250 từ), gộp tóm tắt cũ với đoạn hội thoại mới.
+Giữ lại: sự kiện chính theo thứ tự thời gian, địa điểm, quan hệ và thái độ giữa các nhân vật, quà tặng/chuyển khoản đã trao, mâu thuẫn hoặc việc còn dang dở. Chỉ viết nội dung tóm tắt, không giải thích thêm.
+
+[TÓM TẮT CŨ]
+${cur.text || '(chưa có)'}
+
+[ĐOẠN HỘI THOẠI MỚI]
+${chunk}`;
+
+        const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
+        let result = '';
+        for (const rawKey of window.state.apiKeys) {
+          const key = (rawKey || '').trim().replace(/^["']|["']$/g, '');
+          const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingLevel: 'low' } } };
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 60000);
+            let res, data;
+            try {
+              res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                body: JSON.stringify(body),
+                signal: ctrl.signal
+              });
+              data = await res.json().catch(() => ({}));
+            } catch (e) {
+              clearTimeout(timer);
+              await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+              continue;
+            }
+            clearTimeout(timer);
+            if (res.status === 400 && body.generationConfig) { delete body.generationConfig; continue; }
+            if (res.ok) {
+              const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+              result = parts ? parts.map(p => p.text || '').join('').trim() : '';
+              break;
+            }
+            if (![429, 500, 503].includes(res.status)) break;
+            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          }
+          if (result) break;
+        }
+
+        if (result) {
+          const latest = (window.state.chatHistories[storyId] || []).length;
+          if (latest >= end) {
+            window.state.summaries[storyId] = { text: result, upto: end };
+            saveStorage();
+          }
+        }
+      } catch (e) {
+        console.error('Lỗi tóm tắt:', e);
+      } finally {
+        if (window._summarizing) window._summarizing[storyId] = false;
       }
     }
 
@@ -1344,7 +1703,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
     function saveAppSettings() {
       const keysRaw = document.getElementById('cfg-api-keys').value;
       window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
-      window.state.currentModel = (document.getElementById('cfg-model-select').value || '').trim().replace(/^models\//,'') || 'gemini-3.8-flash';
+      window.state.currentModel = (document.getElementById('cfg-model-select').value || '').trim().replace(/^models\//,'') || 'gemini-2.5-flash';
       window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
       window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
       updateThemeColors();
