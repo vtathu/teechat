@@ -64,9 +64,13 @@
     .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); flex-shrink: 0; }
     .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .char-header { display: flex; align-items: center; gap: 10px; flex: 1; }
-    .char-avatar-mini { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
+    /* FIX TRIỆT ĐỂ LỖI TRÀN KHUNG THẺ NHÂN VẬT */
+    .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; overflow: hidden; }
+    .char-header { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden; }
+    .char-avatar-mini { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
+    .char-info-body { flex: 1; min-width: 0; overflow: hidden; }
+    .char-info-body h4 { font-size: 0.88rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 2px; }
+    .char-info-body p { font-size: 0.75rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; line-height: 1.3; }
 
     /* TAB CHUYỂN ĐỔI (TRÒ CHUYỆN / CUỘC SỐNG) */
     .mode-tab-bar { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; padding: 4px; gap: 4px; justify-content: center; }
@@ -223,18 +227,16 @@
       </div>
     </div>
 
-    <!-- TAB 2: TAB CUỘC SỐNG (ĐI LÀM, MINIGAME, MUA SẮM) -->
+    <!-- TAB 2: TAB CUỘC SỐNG -->
     <div id="subview-life" class="life-container hidden">
-      <!-- Thẻ thông tin ví tiền -->
       <div class="life-card" style="background: linear-gradient(135deg, #e6fffa 0%, #c6f6d5 100%); border-color: #319795;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3 style="color: #234e52; font-size: 1.1rem;">💰 Ví Tiền Cá Nhân</h3>
-          <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openModal('modal-transfer')">Chuyển Khoản Nhanh</button>
+          <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handlePlusAction('transfer')">Chuyển Khoản</button>
         </div>
         <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
       </div>
 
-      <!-- Thẻ Công Việc & Minigame -->
       <div class="life-card">
         <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">👔 Nghề Nghiệp & Đi Làm</h3>
         <div class="form-group">
@@ -245,41 +247,44 @@
             <option value="gangster">🗡️ Sĩ Quan / Tay Cọc Giang Hồ</option>
             <option value="teacher">📚 Giáo Viên / Giảng Viên</option>
             <option value="artist">🎨 Chủ Tiệm / Nghệ Sĩ Tự Do</option>
+            <option value="sudoku">⚡ Trùm Tài Chính / Hacker Sudoku (Lương: 10 Tỷ)</option>
           </select>
         </div>
         <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
-          Lắc bình shaker pha chế cocktail để kiếm thu nhập (150k - 300k VNĐ/lần).
+          Lắc bình shaker pha chế cocktail để kiếm thu nhập.
         </div>
         <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">🎮 Bắt Đầu Làm Việc Ngay</button>
       </div>
 
-      <!-- Thẻ Cửa Hàng Mua Sắm & Túi Đồ -->
       <div class="life-card">
         <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛍️ Cửa Hàng & Túi Đồ Quà Tặng</h3>
-        <div style="font-size: 0.82rem; color: #666;">Mua sắm vật phẩm bằng tiền trong ví, sau đó dùng nút `➕` trong khung chat để tặng quà cho nhân vật!</div>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container">
-          <!-- Danh sách hàng hóa được render tự động -->
-        </div>
-
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container"></div>
         <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">🎒 Túi Đồ Của Bạn</h4>
-        <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;">
-          <!-- Danh sách vật phẩm đã mua -->
-        </div>
+        <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: CHUYỂN KHOẢN ẢO -->
+  <!-- MODAL: CHUYỂN KHOẢN HAI CHIỀU (USER & AI) -->
   <div id="modal-transfer" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>💸 Giao Dịch Chuyển Khoản Ảo</h3>
+        <h3>💸 Chuyển Khoản Ngân Hàng</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-transfer')">✖</button>
       </div>
-      <div style="background: #e6fffa; padding: 10px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
-        <div style="font-size: 0.8rem; color: #234e52;">Số dư ví hiện tại:</div>
-        <div id="wallet-balance-display" style="font-size: 1.2rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
+      <div style="background: #e6fffa; padding: 8px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
+        <div style="font-size: 0.8rem; color: #234e52;">Số dư ví hiện tại: <span id="wallet-balance-display" style="font-weight: bold;">10.000.000 VNĐ</span></div>
+      </div>
+      <div class="form-group">
+        <label>Chiều Giao Dịch:</label>
+        <select id="transfer-direction" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;" onchange="updateTransferUI()">
+          <option value="user_to_ai">User chuyển cho Nhân Vật AI</option>
+          <option value="ai_to_user">Nhân Vật AI chuyển cho User</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label id="lbl-transfer-char">Chọn Nhân Vật:</label>
+        <select id="transfer-target-char" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;"></select>
       </div>
       <div class="form-group">
         <label>Số Tiền Chuyển (VNĐ):</label>
@@ -287,21 +292,58 @@
       </div>
       <div class="form-group">
         <label>Nội Dung / Lời Nhắn:</label>
-        <input type="text" id="transfer-note" value="Tiền tiêu vặt cho anh/em">
+        <input type="text" id="transfer-note" value="Chuyển khoản tài trợ">
       </div>
       <button class="btn btn-pink" onclick="executeTransfer()">Xác Nhận Chuyển Khoản</button>
     </div>
   </div>
 
-  <!-- MODAL: TẶNG QUÀ TỪ TÚI ĐỒ -->
+  <!-- MODAL: CHỌN NHÂN VẬT ĐỂ TẶNG QUÀ -->
+  <div id="modal-select-char-gift" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🎁 Tặng Quà Cho Ai?</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">✖</button>
+      </div>
+      <div style="font-size: 0.85rem; color: #666;">Chọn nhân vật bạn muốn trao tặng món quà này:</div>
+      <div id="target-char-list-for-gift" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CHỌN QUÀ TRONG TÚI ĐỒ -->
   <div id="modal-gift" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>🎁 Chọn Quà Tặng Nhân Vật</h3>
+        <h3>🎁 Chọn Quà Trong Túi Đồ</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-gift')">✖</button>
       </div>
-      <div style="font-size: 0.85rem; color: #666;">Chọn món quà trong túi đồ để trao tận tay nhân vật trong đoạn chat cốt truyện:</div>
       <div id="gift-modal-items" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: MINIGAME SUDOKU 10 TỶ -->
+  <div id="modal-sudoku" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h3>⚡ Thử Thách Sudoku 10 Tỷ</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-sudoku')">✖</button>
+      </div>
+      <p style="font-size: 0.85rem; color: #555;">Điền số đúng vào ô trống (Hàng ngang và cột dọc đủ số 1 đến 3 không trùng):</p>
+      <div id="sudoku-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px auto; width: 180px;"></div>
+      <button class="btn btn-pink" onclick="checkSudokuResult()">Xác Nhận Giải Mã</button>
+    </div>
+  </div>
+
+  <!-- MODAL: MINIGAME THÔNG THƯỜNG -->
+  <div id="modal-minigame" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h3 id="mg-title">🎮 Thử Thách Công Việc</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-minigame')">✖</button>
+      </div>
+      <p id="mg-instruction" style="font-size: 0.9rem; color: #555; margin: 10px 0;">Bấm liên tục để hoàn thành công việc!</p>
+      <div id="mg-score" style="font-size: 1.5rem; font-weight: bold; color: var(--app-dark-green); margin: 10px 0;">0 / 5</div>
+      <button class="btn btn-pink" id="mg-action-btn" onclick="handleMinigameClick()">Thực Hiện</button>
     </div>
   </div>
 
@@ -312,24 +354,19 @@
         <h3>⚙️ Cài Đặt Cốt Truyện & Nhân Vật</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
-
       <div class="form-group">
         <label>Cốt Truyện Chính & Drama:</label>
-        <textarea id="story-setting-input" rows="3" placeholder="Mô tả bối cảnh thế giới, cốt truyện chung..."></textarea>
+        <textarea id="story-setting-input" rows="3"></textarea>
       </div>
-
       <div class="form-group">
-        <label>🎬 Bối Cảnh Mở Đầu (Cảnh quay đầu tiên):</label>
-        <textarea id="story-opening-input" rows="3" placeholder="Ví dụ: Đêm khuya tại quán bar..."></textarea>
+        <label>🎬 Bối Cảnh Mở Đầu:</label>
+        <textarea id="story-opening-input" rows="3"></textarea>
       </div>
-
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
         <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
         <button class="btn btn-pink" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
       </div>
-
       <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
-
       <button class="btn" style="margin-top: 10px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
     </div>
   </div>
@@ -342,24 +379,24 @@
         <button class="btn btn-outline" onclick="closeModal('modal-story')">✖</button>
       </div>
       <div class="form-group">
-        <label>Tên Truyện / Kịch Bản:</label>
+        <label>Tên Truyện:</label>
         <input type="text" id="new-story-title" placeholder="VD: Băng Đảng Chợ Mới">
       </div>
       <div class="form-group">
-        <label>Ảnh Đại Diện Truyện:</label>
+        <label>Ảnh Đại Diện:</label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="new-story-avatar" placeholder="Dán URL hoặc chọn ảnh..." style="flex: 1;">
+          <input type="text" id="new-story-avatar" placeholder="URL ảnh..." style="flex: 1;">
           <button class="btn btn-outline" type="button" onclick="document.getElementById('story-file-input').click()">📁 Chọn ảnh</button>
         </div>
         <input type="file" id="story-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'new-story-avatar')">
       </div>
       <div class="form-group">
         <label>Cốt truyện chính:</label>
-        <textarea id="new-story-desc" rows="2" placeholder="Ví dụ: Cuộc tranh giành địa bàn khốc liệt..."></textarea>
+        <textarea id="new-story-desc" rows="2"></textarea>
       </div>
       <div class="form-group">
         <label>Bối Cảnh Mở Đầu:</label>
-        <textarea id="new-story-opening" rows="2" placeholder="Ví dụ: Thư vừa bước vào quán cafe..."></textarea>
+        <textarea id="new-story-opening" rows="2"></textarea>
       </div>
       <button class="btn btn-pink" onclick="createNewStory()">Tạo Truyện</button>
     </div>
@@ -380,65 +417,24 @@
       <div class="form-group">
         <label>Avatar Nhân Vật:</label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="char-avatar" placeholder="Dán URL hoặc chọn ảnh..." style="flex: 1;">
+          <input type="text" id="char-avatar" placeholder="URL ảnh..." style="flex: 1;">
           <button class="btn btn-outline" type="button" onclick="document.getElementById('char-file-input').click()">📁 Chọn ảnh</button>
         </div>
         <input type="file" id="char-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'char-avatar')">
       </div>
       <div class="form-group">
-        <label>Tính Cách & Thuộc Tính Bắt Buộc:</label>
-        <textarea id="char-personality" rows="3" placeholder="Lạnh lùng, trung thành với anh em..."></textarea>
+        <label>Tính Cách & Xưng Hô:</label>
+        <textarea id="char-personality" rows="3" placeholder="Lạnh lùng, xưng hô Anh - Thư..."></textarea>
       </div>
       <div class="form-group">
         <label>Lời Mở Đầu:</label>
-        <textarea id="char-first-msg" rows="2" placeholder='Trần Hạo Nam: "Cô có vẻ... biết chọn món."'></textarea>
+        <textarea id="char-first-msg" rows="2"></textarea>
       </div>
       <button class="btn btn-pink" onclick="saveCharacter()">Lưu Nhân Vật</button>
     </div>
   </div>
 
-  <!-- MODAL: FIREBASE BACKUP -->
-  <div id="modal-auth" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>☁️ Đăng Nhập & Đồng Bộ </h3>
-        <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
-      </div>
-      <div id="auth-status-box" class="status-badge">Đang kết nối Cloud...</div>
-      <div id="auth-form-container">
-        <div class="form-group">
-          <label>Email Tài Khoản:</label>
-          <input type="email" id="fb-email" placeholder="nhapemail@example.com">
-        </div>
-        <div class="form-group">
-          <label>Mật Khẩu:</label>
-          <input type="password" id="fb-password" placeholder="Mật khẩu ít nhất 6 ký tự">
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 6px;">
-          <button class="btn" style="flex:1;" onclick="handleFirebaseLogin()">Đăng Nhập</button>
-          <button class="btn btn-pink" style="flex:1;" onclick="handleFirebaseRegister()">Đăng Ký</button>
-        </div>
-      </div>
-      <div id="cloud-action-container" class="hidden">
-        <div style="display: flex; gap: 8px;">
-          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Lên Cloud</button>
-          <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Cập nhật Cloud</button>
-        </div>
-        <button class="btn btn-outline" style="width: 100%; margin-top: 8px; border-color: #f44336; color: #f44336;" onclick="handleFirebaseLogout()">Đăng Xuất</button>
-      </div>
-      <hr style="border: 0; border-top: 1px solid #eee;">
-      <div style="background: #f0fdf4; padding: 12px; border-radius: 12px; border: 1px solid #bbf7d0;">
-        <h4 style="font-size: 0.9rem; color: var(--app-dark-green); margin-bottom: 6px;">📂 Sao Lưu / Khôi Phục File JSON:</h4>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn" style="flex:1;" onclick="exportToFile()">📤 Xuất File</button>
-          <button class="btn btn-pink" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 Nhập File</button>
-          <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importFromFile(event)">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: SYSTEM SETTINGS -->
+  <!-- MODAL: CÀI ĐẶT HỆ THỐNG -->
   <div id="modal-settings" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -446,28 +442,18 @@
         <button class="btn btn-outline" onclick="closeModal('modal-settings')">✖</button>
       </div>
       <div class="form-group">
-        <label>Danh Sách Gemini API Keys (Mỗi dòng 1 Key):</label>
+        <label>Danh Sách Gemini API Keys:</label>
         <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
       </div>
       <div class="form-group">
-        <label>Tên Model AI (Mặc định: gemini-2.5-flash):</label>
-        <input type="text" id="cfg-model-select" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div class="form-group">
-          <label>Màu Bong Bóng AI:</label>
-          <input type="color" id="cfg-ai-bubble" value="#ffffff" onchange="updateThemeColors()">
-        </div>
-        <div class="form-group">
-          <label>Màu Bong Bóng User:</label>
-          <input type="color" id="cfg-user-bubble" value="#c1ebd9" onchange="updateThemeColors()">
-        </div>
+        <label>Tên Model AI:</label>
+        <input type="text" id="cfg-model-select" value="gemini-2.5-flash">
       </div>
       <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
     </div>
   </div>
 
-  <!-- MODAL: USER PERSONA -->
+  <!-- MODAL: HỒ SƠ NGƯỜI DÙNG -->
   <div id="modal-persona" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -479,22 +465,50 @@
         <input type="text" id="per-name" value="Thư">
       </div>
       <div class="form-group">
-        <label>Ngày Tháng Năm Sinh:</label>
-        <input type="text" id="per-dob" placeholder="15/08/2002">
-      </div>
-      <div class="form-group">
         <label>Avatar Của Bạn:</label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="per-avatar" placeholder="Dán URL hoặc tải từ máy..." style="flex: 1;">
+          <input type="text" id="per-avatar" placeholder="URL ảnh..." style="flex: 1;">
           <button class="btn btn-outline" type="button" onclick="document.getElementById('per-file-input').click()">📁 Chọn ảnh</button>
         </div>
         <input type="file" id="per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'per-avatar')">
       </div>
       <div class="form-group">
-        <label>Sở Thích & Điều Bắt Buộc AI Phải Nhớ:</label>
-        <textarea id="per-memories" rows="3" placeholder="Ví dụ: Ghét ăn hành, thích màu xanh..."></textarea>
+        <label>Sở Thích & Điều AI Cần Nhớ:</label>
+        <textarea id="per-memories" rows="3"></textarea>
       </div>
       <button class="btn" onclick="savePersona()">Lưu Hồ Sơ</button>
+    </div>
+  </div>
+
+  <!-- MODAL AUTH FIREBASE -->
+  <div id="modal-auth" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>☁️ Đồng Bộ Cloud</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
+      </div>
+      <div id="auth-status-box" class="status-badge">Chưa đăng nhập</div>
+      <div id="auth-form-container">
+        <div class="form-group"><label>Email:</label><input type="email" id="fb-email"></div>
+        <div class="form-group"><label>Mật khẩu:</label><input type="password" id="fb-password"></div>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button class="btn" style="flex:1;" onclick="handleFirebaseLogin()">Đăng Nhập</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="handleFirebaseRegister()">Đăng Ký</button>
+        </div>
+      </div>
+      <div id="cloud-action-container" class="hidden">
+        <div style="display:flex; gap:8px;">
+          <button class="btn" style="flex:1;" onclick="uploadDataToFirebase()">☁️ Tải Lên</button>
+          <button class="btn btn-pink" style="flex:1;" onclick="downloadDataFromFirebase()">📥 Tải Về</button>
+        </div>
+        <button class="btn btn-outline" style="width:100%; margin-top:8px; color:#f44336; border-color:#f44336;" onclick="handleFirebaseLogout()">Đăng Xuất</button>
+      </div>
+      <hr style="border:0; border-top:1px solid #eee;">
+      <div style="display:flex; gap:8px;">
+        <button class="btn" style="flex:1;" onclick="exportToFile()">📤 Xuất File JSON</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="document.getElementById('import-file-input').click()">📥 Nhập File</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importFromFile(event)">
+      </div>
     </div>
   </div>
 
@@ -523,15 +537,12 @@
       const statusBox = document.getElementById('auth-status-box');
       const formContainer = document.getElementById('auth-form-container');
       const actionContainer = document.getElementById('cloud-action-container');
-
       if (user) {
         statusBox.innerText = `Đã đăng nhập: ${user.email}`;
-        statusBox.style.background = "#e6fffa";
         formContainer.classList.add('hidden');
         actionContainer.classList.remove('hidden');
       } else {
-        statusBox.innerText = "Trạng thái: Chưa đăng nhập ";
-        statusBox.style.background = "#fff5f5";
+        statusBox.innerText = "Chưa đăng nhập";
         formContainer.classList.remove('hidden');
         actionContainer.classList.add('hidden');
       }
@@ -540,59 +551,29 @@
     window.handleFirebaseRegister = async function() {
       const email = document.getElementById('fb-email').value.trim();
       const pass = document.getElementById('fb-password').value.trim();
-      if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
-      try {
-        await createUserWithEmailAndPassword(auth, email, pass);
-        alert("Đăng ký thành công!");
-      } catch (err) { alert("Lỗi đăng ký: " + err.message); }
+      if (!email || !pass) return alert("Nhập Email và Mật khẩu!");
+      try { await createUserWithEmailAndPassword(auth, email, pass); alert("Đăng ký thành công!"); } catch (err) { alert(err.message); }
     };
-
     window.handleFirebaseLogin = async function() {
       const email = document.getElementById('fb-email').value.trim();
       const pass = document.getElementById('fb-password').value.trim();
-      if (!email || !pass) return alert("Vui lòng nhập Email và Mật khẩu!");
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-        alert("Đăng nhập thành công!");
-      } catch (err) { alert("Lỗi đăng nhập: " + err.message); }
+      if (!email || !pass) return alert("Nhập Email và Mật khẩu!");
+      try { await signInWithEmailAndPassword(auth, email, pass); alert("Đăng nhập thành công!"); } catch (err) { alert(err.message); }
     };
-
     window.handleFirebaseLogout = function() { signOut(auth); };
-
     window.uploadDataToFirebase = async function() {
       const user = auth.currentUser;
-      if (!user) return alert("Vui lòng đăng nhập trước!");
-      try {
-        window.saveStorage();
-        const cleanData = JSON.parse(JSON.stringify(window.state));
-        await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanData);
-        alert("☁️ Đã đồng bộ lên Cloud thành công!");
-      } catch (err) { alert("Lỗi khi tải dữ liệu lên Cloud: " + err.message); }
+      if (!user) return alert("Đăng nhập trước!");
+      try { window.saveStorage(); await set(ref(db, 'users/' + user.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state))); alert("Đã đồng bộ lên Cloud!"); } catch (err) { alert(err.message); }
     };
-
     window.downloadDataFromFirebase = async function() {
       const user = auth.currentUser;
-      if (!user) return alert("Vui lòng đăng nhập trước!");
-      if (!confirm("Tải dữ liệu từ Đám mây sẽ ghi đè lên dữ liệu hiện tại. Bạn có chắc chắn?")) return;
-
+      if (!user) return alert("Đăng nhập trước!");
       try {
-        const snapshot = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
-        if (snapshot.exists()) {
-          window.state = snapshot.val();
-          window.saveStorage();
-          window.loadStorage();
-          window.renderStoryList();
-
-          if (window.state.activeStoryId) {
-            window.openStoryDetail(window.state.activeStoryId);
-          } else {
-            window.switchPage('page-home');
-          }
-
-          alert("📥 Đã cập nhật toàn bộ dữ liệu thành công!");
-          window.closeModal('modal-auth');
-        } else alert("Tài khoản này chưa có dữ liệu nào lưu trên Đám Mây!");
-      } catch (err) { alert("Lỗi khi tải dữ liệu về: " + err.message); }
+        const snap = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
+        if (snap.exists()) { window.state = snap.val(); window.saveStorage(); window.loadStorage(); window.renderStoryList(); if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId); alert("Đã tải về thành công!"); closeModal('modal-auth'); }
+        else alert("Chưa có dữ liệu trên Cloud!");
+      } catch (err) { alert(err.message); }
     };
   </script>
 
@@ -610,16 +591,17 @@
       walletBalance: 10000000,
       inventory: [],
       currentJob: 'barista',
+      affection: {},
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
     };
 
     const SHOP_CATALOG = [
-      { id: 'item-1', name: '🌹 Bó Hoa', price: 200000, desc: 'Lấy từ trong túi ra một bó hoa hồng đỏ thắm trao tận tay nhân vật.' },
-      { id: 'item-2', name: '🍷 Rượu Thượng Hạng', price: 1500000, desc: 'Đặt lên bàn một chai rượu ngoại đắt tiền, rót ra ly mời nhân vật cùng thưởng thức.' },
-      { id: 'item-3', name: '💍 Nhẫn Kim Cương', price: 10000000, desc: 'Hé mở chiếc hộp nhung sang trọng, lấy chiếc nhẫn lấp lánh đeo vào tay nhân vật.' },
-      { id: 'item-4', name: '🍫 Hộp Socola', price: 150000, desc: 'Bóc hộp socola thủ công ngọt ngào đưa một viên lên miệng nhân vật.' },
-      { id: 'item-5', name: '🧥 Áo Khoác', price: 800000, desc: 'Nhẹ nhàng khoác chiếc áo ấm lên vai nhân vật giữa tiết trời lạnh.' }
+      { id: 'item-1', name: '🌹 Bó Hoa Hồng Tươi', price: 200000, desc: 'Tặng bó hoa hồng đỏ thắm.' },
+      { id: 'item-2', name: '🍷 Rượu Ngoại Thượng Hạng', price: 1500000, desc: 'Mời chai rượu ngoại đắt tiền.' },
+      { id: 'item-3', name: '💍 Nhẫn Kim Cương', price: 10000000, desc: 'Trao chiếc nhẫn lấp lánh sang trọng.' },
+      { id: 'item-4', name: '🍫 Hộp Socola Ngọt Ngào', price: 150000, desc: 'Đút viên socola ngọt ngào.' },
+      { id: 'item-5', name: '🧥 Áo Khoác Ấm Áp', price: 800000, desc: 'Khoác áo ấm lên vai nhân vật.' }
     ];
 
     window.onload = function() {
@@ -628,18 +610,16 @@
     };
 
     function loadStorage() {
-      const savedState = localStorage.getItem('teechat_state_v7');
-      if (savedState) {
-        try { window.state = JSON.parse(savedState); } catch(e) { console.error("Cache lỗi:", e); }
-      }
+      const saved = localStorage.getItem('teechat_state_v9');
+      if (saved) { try { window.state = JSON.parse(saved); } catch(e) {} }
 
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
       if (typeof window.state.walletBalance !== 'number') window.state.walletBalance = 10000000;
       if (!window.state.inventory) window.state.inventory = [];
+      if (!window.state.affection) window.state.affection = {};
       if (!window.state.currentJob) window.state.currentJob = 'barista';
-
-      if (!window.state.currentModel || window.state.currentModel === 'gemini-3.8-flash') window.state.currentModel = 'gemini-2.5-flash';
+      if (!window.state.currentModel) window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
         window.state.stories.push({
@@ -649,40 +629,23 @@
           setting: 'Cuộc chiến địa bàn gay cấn tại Chợ Mới giữa các băng nhóm.',
           openingScene: 'Đêm muộn tại quán rượu Chợ Mới, Trần Hạo Nam lặng lẽ ngồi rót rượu. Thư nhẹ nhàng bước qua cửa.',
           characters: [
-            {
-              id: 'char-1',
-              name: 'Trần Hạo Nam',
-              avatar: DEFAULT_LOGO,
-              personality: 'Lạnh lùng, quyết đoán, rất quan tâm đến Thư. Xưng hô: Anh - Thư.',
-              firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."'
-            }
+            { id: 'char-1', name: 'Trần Hạo Nam', avatar: DEFAULT_LOGO, personality: 'Lạnh lùng, quyết đoán. Xưng hô: Anh - Thư.', firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."' }
           ]
         });
         saveStorage();
       }
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
-      document.getElementById('cfg-model-select').value = window.state.currentModel || 'gemini-2.5-flash';
-      
+      document.getElementById('cfg-model-select').value = window.state.currentModel;
       if (window.state.persona) {
         document.getElementById('per-name').value = window.state.persona.name || '';
-        document.getElementById('per-dob').value = window.state.persona.dob || '';
         document.getElementById('per-avatar').value = window.state.persona.avatar || '';
         document.getElementById('per-memories').value = window.state.persona.memories || '';
       }
-
-      if (window.state.aiBubbleBg) document.getElementById('cfg-ai-bubble').value = window.state.aiBubbleBg;
-      if (window.state.userBubbleBg) document.getElementById('cfg-user-bubble').value = window.state.userBubbleBg;
-      updateThemeColors();
     }
 
     function saveStorage() {
-      try {
-        localStorage.setItem('teechat_state_v7', JSON.stringify(window.state));
-      } catch (e) {
-        console.error(e);
-        alert('Bộ nhớ trình duyệt đã đầy nên chưa lưu được. Hãy dùng ảnh nhỏ hơn hoặc xóa bớt dữ liệu cũ.');
-      }
+      try { localStorage.setItem('teechat_state_v9', JSON.stringify(window.state)); } catch(e) {}
     }
 
     function escapeHtml(str) {
@@ -697,7 +660,6 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    /* CHUYỂN GIỮA TAB TRÒ CHUYỆN VÀ TAB CUỘC SỐNG */
     function switchStoryTab(tabName) {
       const chatView = document.getElementById('subview-chat');
       const lifeView = document.getElementById('subview-life');
@@ -705,30 +667,21 @@
       const lifeBtn = document.getElementById('tab-btn-life');
 
       if (tabName === 'chat') {
-        chatView.classList.remove('hidden');
-        lifeView.classList.add('hidden');
-        chatBtn.classList.add('active');
-        lifeBtn.classList.remove('active');
+        chatView.classList.remove('hidden'); lifeView.classList.add('hidden');
+        chatBtn.classList.add('active'); lifeBtn.classList.remove('active');
       } else {
-        chatView.classList.add('hidden');
-        lifeView.classList.remove('hidden');
-        chatBtn.classList.remove('active');
-        lifeBtn.classList.add('active');
+        chatView.classList.add('hidden'); lifeView.classList.remove('hidden');
+        chatBtn.classList.remove('active'); lifeBtn.classList.add('active');
         renderLifeModeUI();
       }
     }
 
-    /* RENDER GIAO DIỆN TAB CUỘC SỐNG */
     function renderLifeModeUI() {
-      // Cập nhật số dư ví
       document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
-      
-      // Cập nhật select nghề
       const jobSel = document.getElementById('job-select');
       if (jobSel) jobSel.value = window.state.currentJob || 'barista';
       updateJobDesc();
 
-      // Render cửa hàng shop
       const shopContainer = document.getElementById('shop-items-container');
       shopContainer.innerHTML = '';
       SHOP_CATALOG.forEach(item => {
@@ -743,181 +696,319 @@
         `;
         shopContainer.appendChild(row);
       });
-
-      // Render túi đồ
       renderInventoryUI();
     }
 
     function changeJobSelection() {
-      const jobSel = document.getElementById('job-select');
-      window.state.currentJob = jobSel.value;
+      window.state.currentJob = document.getElementById('job-select').value;
       saveStorage();
       updateJobDesc();
     }
 
     function updateJobDesc() {
       const box = document.getElementById('job-desc-box');
-      const job = window.state.currentJob;
-      if (job === 'barista') box.innerText = 'Lắc bình shaker pha chế cocktail điêu luyện để thu nhập (150k - 300k VNĐ/lần làm).';
-      else if (job === 'office') box.innerText = 'Gõ phím siêu tốc hoàn thành báo cáo tài chính gấp cho sếp (200k - 400k VNĐ/lần làm).';
-      else if (job === 'gangster') box.innerText = 'Đi thu hộ phí bảo kê tháng tại khu vực Chợ Mới (300k - 600k VNĐ/lần làm).';
-      else if (job === 'teacher') box.innerText = 'Đứng lớp truyền đạt kiến thức và miệt mài chấm xấp bài kiểm tra (350k - 700k VNĐ/lần làm).';
-      else if (job === 'artist') box.innerText = 'Thả hồn vào nét cọ sáng tác tác phẩm nghệ thuật bán cho khách (250k - 500k VNĐ/lần làm).';
+      const j = window.state.currentJob;
+      if (j === 'barista') box.innerText = 'Lắc bình shaker pha chế cocktail (Lương: 150k - 300k VNĐ).';
+      else if (j === 'office') box.innerText = 'Gõ phím siêu tốc hoàn thành báo cáo (Lương: 200k - 400k VNĐ).';
+      else if (j === 'gangster') box.innerText = 'Đi thu hộ phí bảo kê Chợ Mới (Lương: 300k - 600k VNĐ).';
+      else if (j === 'teacher') box.innerText = 'Chấm xấp bài kiểm tra học sinh (Lương: 350k - 700k VNĐ).';
+      else if (j === 'artist') box.innerText = 'Sáng tác tranh nghệ thuật bán khách (Lương: 250k - 500k VNĐ).';
+      else if (j === 'sudoku') box.innerText = '⚡ Giải mã toán học Sudoku thiên tài (Lương khủng: 10.000.000.000 VNĐ).';
     }
 
     /* MINIGAME ĐI LÀM */
+    let activeMinigameData = { job: '', target: 0, current: 0, reward: 0 };
+
     function executeWorkMinigame() {
       const job = window.state.currentJob;
-      let earned = 0;
-      let msg = '';
-
-      if (job === 'barista') {
-        earned = Math.floor(Math.random() * 150000) + 150000;
-        msg = `🍸 Bạn lắc bình shaker điêu luyện, pha thành công ly cocktail đặc biệt phục vụ khách và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
-      } else if (job === 'office') {
-        earned = Math.floor(Math.random() * 200000) + 200000;
-        msg = `💻 Bạn chăm chú gõ bàn phím cạch cạch, hoàn thành xuất sắc bản báo cáo gấp và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
-      } else if (job === 'gangster') {
-        earned = Math.floor(Math.random() * 300000) + 300000;
-        msg = `🗡️ Bạn uy nghiêm đi một vòng Chợ Mới thu hồi thành công khoản tiền bảo kê và nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
-      } else if (job === 'teacher') {
-        earned = Math.floor(Math.random() * 350000) + 350000;
-        msg = `📚 Bạn miệt mài đứng lớp giảng bài và chấm xong xấp bài kiểm tra, nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
-      } else if (job === 'artist') {
-        earned = Math.floor(Math.random() * 250000) + 250000;
-        msg = `🎨 Bạn hoàn thành bức tranh nghệ thuật độc đáo bán ngay cho khách sưu tầm, nhận được ${earned.toLocaleString('vi-VN')} VNĐ!`;
+      if (job === 'sudoku') {
+        openSudokuMinigame();
+        return;
       }
 
-      window.state.walletBalance = (window.state.walletBalance || 0) + earned;
-      saveStorage();
-      renderLifeModeUI();
-      alert(msg);
+      activeMinigameData.job = job;
+      activeMinigameData.current = 0;
+      
+      if (job === 'barista') {
+        activeMinigameData.target = 5;
+        activeMinigameData.reward = Math.floor(Math.random() * 150000) + 150000;
+        document.getElementById('mg-title').innerText = '🍸 Lắc Bình Shaker';
+        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để lắc bình và pha chế cocktail!';
+      } else if (job === 'office') {
+        activeMinigameData.target = 6;
+        activeMinigameData.reward = Math.floor(Math.random() * 200000) + 200000;
+        document.getElementById('mg-title').innerText = '💻 Gõ Phím Báo Cáo';
+        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 6 lần để gõ bàn phím hoàn thành file Excel!';
+      } else if (job === 'gangster') {
+        activeMinigameData.target = 4;
+        activeMinigameData.reward = Math.floor(Math.random() * 300000) + 300000;
+        document.getElementById('mg-title').innerText = '🗡️ Thu Hộ Bảo Kê';
+        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 4 lần để đi thu tiền địa bàn Chợ Mới!';
+      } else if (job === 'teacher') {
+        activeMinigameData.target = 5;
+        activeMinigameData.reward = Math.floor(Math.random() * 350000) + 350000;
+        document.getElementById('mg-title').innerText = '📚 Chấm Bài Kiểm Tra';
+        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để chấm xong xấp bài học sinh!';
+      } else if (job === 'artist') {
+        activeMinigameData.target = 5;
+        activeMinigameData.reward = Math.floor(Math.random() * 250000) + 250000;
+        document.getElementById('mg-title').innerText = '🎨 Sáng Tác Tranh';
+        document.getElementById('mg-instruction').innerText = 'Bấm liên tục 5 lần để hoàn thành bức tranh nghệ thuật!';
+      }
+
+      document.getElementById('mg-score').innerText = `0 / ${activeMinigameData.target}`;
+      openModal('modal-minigame');
+    }
+
+    function handleMinigameClick() {
+      activeMinigameData.current++;
+      document.getElementById('mg-score').innerText = `${activeMinigameData.current} / ${activeMinigameData.target}`;
+      if (activeMinigameData.current >= activeMinigameData.target) {
+        closeModal('modal-minigame');
+        window.state.walletBalance = (window.state.walletBalance || 0) + activeMinigameData.reward;
+        saveStorage();
+        renderLifeModeUI();
+        alert(`🎉 HOÀN THÀNH XUẤT SẮC! Nhận được ${activeMinigameData.reward.toLocaleString('vi-VN')} VNĐ vào ví.`);
+      }
+    }
+
+    // Minigame Sudoku 10 Tỷ
+    function openSudokuMinigame() {
+      const grid = document.getElementById('sudoku-grid');
+      grid.innerHTML = '';
+      const puzzle = [[null, 2, 3], [3, null, 1], [1, 3, null]];
+      puzzle.forEach((row, r) => {
+        row.forEach((val, c) => {
+          const cell = document.createElement('input');
+          cell.type = 'number'; cell.min = '1'; cell.max = '3';
+          cell.style.width = '50px'; cell.style.height = '50px'; cell.style.textAlign = 'center'; cell.style.fontSize = '1.2rem'; cell.style.fontWeight = 'bold'; cell.style.borderRadius = '8px'; cell.style.border = '2px solid #cbd5e0';
+          cell.dataset.r = r; cell.dataset.c = c;
+          if (val !== null) { cell.value = val; cell.disabled = true; cell.style.background = '#edf2f7'; }
+          grid.appendChild(cell);
+        });
+      });
+      openModal('modal-sudoku');
+    }
+
+    function checkSudokuResult() {
+      const inputs = document.querySelectorAll('#sudoku-grid input');
+      let userMatrix = [[0,2,3],[3,0,1],[1,3,0]];
+      inputs.forEach(inp => {
+        userMatrix[parseInt(inp.dataset.r)][parseInt(inp.dataset.c)] = parseInt(inp.value) || 0;
+      });
+      let success = true;
+      for (let i = 0; i < 3; i++) {
+        let rSet = new Set(userMatrix[i]);
+        let cSet = new Set([userMatrix[0][i], userMatrix[1][i], userMatrix[2][i]]);
+        if (rSet.size !== 3 || cSet.size !== 3 || rSet.has(0) || cSet.has(0)) success = false;
+      }
+      closeModal('modal-sudoku');
+      if (success) {
+        const reward = 10000000000;
+        window.state.walletBalance = (window.state.walletBalance || 0) + reward;
+        saveStorage();
+        renderLifeModeUI();
+        alert('🎉 CHÍNH XÁC! Hacker tài ba đã giải mã thành công hệ thống và nhận phần thưởng khủng: 10.000.000.000 VNĐ!');
+      } else {
+        alert('❌ GIẢI MÃ THẤT BẠI! Các con số chưa chính xác theo quy tắc.');
+      }
     }
 
     function buyShopItem(itemId) {
       const item = SHOP_CATALOG.find(i => i.id === itemId);
       if (!item) return;
-      if ((window.state.walletBalance || 0) < item.price) {
-        return alert('Số dư ví không đủ để mua món quà này! Hãy sang phần Đi Làm để kiếm thêm tiền.');
-      }
-
+      if ((window.state.walletBalance || 0) < item.price) return alert('Số dư ví không đủ!');
       window.state.walletBalance -= item.price;
       if (!window.state.inventory) window.state.inventory = [];
       window.state.inventory.push({ ...item, uniqueId: 'inv-' + Date.now() + Math.random() });
       saveStorage();
       renderLifeModeUI();
-      alert(`🎉 Đã mua thành công "${item.name}"! Món đồ đã được chuyển vào Túi Đồ của bạn.`);
+      alert(`Đã mua thành công "${item.name}"!`);
     }
 
     function renderInventoryUI() {
-      const invContainer = document.getElementById('inventory-list-container');
-      invContainer.innerHTML = '';
+      const container = document.getElementById('inventory-list-container');
+      container.innerHTML = '';
       const inv = window.state.inventory || [];
-      if (inv.length === 0) {
-        invContainer.innerHTML = '<div style="font-size:0.8rem; color:#888; width: 100%; text-align: center;">Túi đồ đang trống. Hãy mua quà trong cửa hàng!</div>';
-        return;
-      }
-
+      if (inv.length === 0) { container.innerHTML = '<div style="font-size:0.8rem; color:#888; width:100%; text-align:center;">Túi đồ trống.</div>'; return; }
       inv.forEach(obj => {
         const badge = document.createElement('div');
-        badge.style.background = '#fff';
-        badge.style.border = '1px solid #90d4b8';
-        badge.style.padding = '4px 8px';
-        badge.style.borderRadius = '8px';
-        badge.style.fontSize = '0.78rem';
-        badge.style.display = 'inline-flex';
-        badge.style.alignItems = 'center';
-        badge.style.gap = '4px';
+        badge.style.background = '#fff'; badge.style.border = '1px solid #90d4b8'; badge.style.padding = '4px 8px'; badge.style.borderRadius = '8px'; badge.style.fontSize = '0.78rem';
         badge.innerHTML = `<span>${obj.name}</span>`;
-        invContainer.appendChild(badge);
+        container.appendChild(badge);
       });
     }
 
-    /* MENU NÚT CỘNG (➕) */
+    /* MENU DẤU CỘNG (➕) */
     function togglePlusMenu() {
       const menu = document.getElementById('plus-menu');
       const overlay = document.getElementById('plus-menu-overlay');
       const isActive = menu.classList.contains('active');
-      if (isActive) {
-        menu.classList.remove('active');
-        overlay.classList.remove('active');
-      } else {
-        menu.classList.add('active');
-        overlay.classList.add('active');
-      }
+      if (isActive) { menu.classList.remove('active'); overlay.classList.remove('active'); }
+      else { menu.classList.add('active'); overlay.classList.add('active'); }
     }
 
     function handlePlusAction(action) {
       togglePlusMenu();
       if (action === 'transfer') {
-        document.getElementById('wallet-balance-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
-        openModal('modal-transfer');
+        openTransferModal();
       } else if (action === 'gift') {
         openGiftModal();
       } else if (action === 'image') {
         document.getElementById('chat-img-upload-input').click();
       } else if (action === 'voice') {
-        sendMessage('[Hệ thống ghi nhận người dùng gửi một tin nhắn thoại voice ngắn]');
+        sendMessage('[Hệ thống ghi nhận người dùng gửi tin nhắn thoại voice]');
       } else if (action === 'redo') {
-        const history = window.state.chatHistories[window.state.activeStoryId];
-        if (!history || history.length === 0) return alert('Chưa có tin nhắn nào để làm lại!');
-        let lastAiIndex = -1;
-        for (let i = history.length - 1; i >= 0; i--) {
-          if (history[i].sender === 'ai') { lastAiIndex = i; break; }
-        }
-        if (lastAiIndex !== -1) {
-          regenerateAiResponse(lastAiIndex);
-        } else {
-          sendMessage(null, true);
-        }
+        const h = window.state.chatHistories[window.state.activeStoryId];
+        if (!h || h.length === 0) return alert('Chưa có tin nhắn!');
+        let lastAi = -1;
+        for (let i = h.length - 1; i >= 0; i--) { if (h[i].sender === 'ai') { lastAi = i; break; } }
+        if (lastAi !== -1) regenerateAiResponse(lastAi); else sendMessage(null, true);
       } else if (action === 'clear') {
         clearHistory();
       }
     }
 
+    /* CHUYỂN KHOẢN HAI CHIỀU (USER <-> NHÂN VẬT) */
+    function openTransferModal() {
+      document.getElementById('wallet-balance-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
+      updateTransferUI();
+      openModal('modal-transfer');
+    }
+
+    function updateTransferUI() {
+      const dir = document.getElementById('transfer-direction').value;
+      const selectEl = document.getElementById('transfer-target-char');
+      const lblEl = document.getElementById('lbl-transfer-char');
+      
+      selectEl.innerHTML = '';
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+
+      if (dir === 'user_to_ai') {
+        lblEl.innerText = 'Chọn Nhân Vật Nhận Tiền:';
+        selectEl.innerHTML = '<option value="system">-- Chuyển chung / Không chỉ định nhân vật --</option>';
+        if (story && story.characters) {
+          story.characters.forEach(char => {
+            const opt = document.createElement('option');
+            opt.value = char.name;
+            opt.innerText = `Chuyển cho: ${char.name}`;
+            selectEl.appendChild(opt);
+          });
+        }
+      } else {
+        lblEl.innerText = 'Chọn Nhân Vật Chuyển Cho Bạn:';
+        if (story && story.characters && story.characters.length > 0) {
+          story.characters.forEach(char => {
+            const opt = document.createElement('option');
+            opt.value = char.name;
+            opt.innerText = `Nhân vật: ${char.name}`;
+            selectEl.appendChild(opt);
+          });
+        } else {
+          selectEl.innerHTML = '<option value="Nhân vật">Nhân vật trong truyện</option>';
+        }
+      }
+    }
+
+    function executeTransfer() {
+      const dir = document.getElementById('transfer-direction').value;
+      const amt = parseInt(document.getElementById('transfer-amount').value, 10);
+      const note = document.getElementById('transfer-note').value.trim() || 'Chuyển khoản';
+      const targetChar = document.getElementById('transfer-target-char').value;
+
+      if (isNaN(amt) || amt <= 0) return alert('Nhập số tiền hợp lệ!');
+
+      if (dir === 'user_to_ai') {
+        if (amt > (window.state.walletBalance || 0)) return alert('Số dư ví của bạn không đủ!');
+        window.state.walletBalance -= amt;
+      } else {
+        window.state.walletBalance = (window.state.walletBalance || 0) + amt;
+      }
+
+      saveStorage();
+      closeModal('modal-transfer');
+      switchStoryTab('chat');
+
+      let transferMsg = '';
+      if (dir === 'user_to_ai') {
+        transferMsg = `[GIAO DỊCH KHOẢN: Bạn đã chuyển ${amt.toLocaleString('vi-VN')} VNĐ cho ${targetChar === 'system' ? 'hệ thống' : targetChar} - Lời nhắn: "${note}" | Số dư ví còn lại: ${window.state.walletBalance.toLocaleString('vi-VN')} VNĐ]`;
+      } else {
+        transferMsg = `[GIAO DỊCH CHUYỂN KHOẢN TỰ ĐỘNG: ${targetChar} đã chuyển ${amt.toLocaleString('vi-VN')} VNĐ vào tài khoản ví của bạn! - Nội dung: "${note}" | Số dư ví hiện tại: ${window.state.walletBalance.toLocaleString('vi-VN')} VNĐ]`;
+      }
+
+      const storyId = window.state.activeStoryId;
+      if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
+      window.state.chatHistories[storyId].push({ sender: 'user', text: transferMsg });
+      saveStorage();
+      renderChatHistory();
+      sendMessage(transferMsg);
+    }
+
+    /* TẶNG QUÀ CHỌN NHÂN VẬT & TĂNG ĐỘ THÂN MẬT */
     function openGiftModal() {
       const container = document.getElementById('gift-modal-items');
       container.innerHTML = '';
       const inv = window.state.inventory || [];
-      if (inv.length === 0) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 15px;">Túi đồ của bạn chưa có món quà nào! Hãy vào tab "Cuộc Sống" để mua quà.</div>';
-        openModal('modal-gift');
-        return;
-      }
+      if (inv.length === 0) { container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 15px;">Túi đồ trống! Hãy vào tab Cuộc Sống mua quà.</div>'; openModal('modal-gift'); return; }
 
-      inv.forEach((item, idx) => {
+      inv.forEach((item) => {
         const row = document.createElement('div');
-        row.style.background = '#f7faf8';
-        row.style.border = '1px solid #d0ebd8';
-        row.style.padding = '10px';
-        row.style.borderRadius = '12px';
-        row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
-        row.style.alignItems = 'center';
+        row.style.background = '#f7faf8'; row.style.border = '1px solid #d0ebd8'; row.style.padding = '10px'; row.style.borderRadius = '12px'; row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center';
         row.innerHTML = `
           <div>
             <div style="font-weight: bold; font-size: 0.9rem;">${item.name}</div>
             <div style="font-size: 0.75rem; color: #666; font-style: italic;">${item.desc}</div>
           </div>
-          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="sendGiftToChat('${item.uniqueId}')">Tặng Ngay</button>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openTargetCharForGift('${item.uniqueId}')">Chọn Quà</button>
         `;
         container.appendChild(row);
       });
       openModal('modal-gift');
     }
 
-    function sendGiftToChat(uniqueId) {
+    let pendingGiftUniqueId = null;
+    function openTargetCharForGift(uniqueId) {
+      pendingGiftUniqueId = uniqueId;
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const container = document.getElementById('target-char-list-for-gift');
+      container.innerHTML = '';
+
+      if (!story || !story.characters || story.characters.length === 0) return alert('Truyện chưa có nhân vật nào!');
+
+      story.characters.forEach(char => {
+        if (!window.state.affection) window.state.affection = {};
+        const aff = window.state.affection[char.id] || 20;
+        const row = document.createElement('div');
+        row.style.background = '#f7faf8'; row.style.border = '1px solid #d0ebd8'; row.style.padding = '10px'; row.style.borderRadius = '12px'; row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center';
+        row.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <img src="${char.avatar || DEFAULT_LOGO}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" onerror="this.src='${DEFAULT_LOGO}'">
+            <div>
+              <div style="font-weight: bold; font-size: 0.9rem;">${escapeHtml(char.name)}</div>
+              <div style="font-size: 0.75rem; color: #319795;">❤️ Độ thân mật: ${aff}%</div>
+            </div>
+          </div>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="confirmSendGiftToChar('${char.id}', '${escapeHtml(char.name)}')">Tặng Ngay</button>
+        `;
+        container.appendChild(row);
+      });
+      closeModal('modal-gift');
+      openModal('modal-select-char-gift');
+    }
+
+    function confirmSendGiftToChar(charId, charName) {
       const inv = window.state.inventory || [];
-      const itemIdx = inv.findIndex(i => i.uniqueId === uniqueId);
+      const itemIdx = inv.findIndex(i => i.uniqueId === pendingGiftUniqueId);
       if (itemIdx === -1) return;
       const giftedItem = inv.splice(itemIdx, 1)[0];
+
+      if (!window.state.affection) window.state.affection = {};
+      window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 15);
       saveStorage();
-      closeModal('modal-gift');
+      closeModal('modal-select-char-gift');
 
-      // Tự động chuyển về tab Trò Chuyện để xem phản ứng AI
       switchStoryTab('chat');
-
-      const giftActionText = `[Hành động tặng quà: Lấy từ trong túi ra "${giftedItem.name}" ${giftedItem.desc}]`;
+      const giftActionText = `[Hành động tặng quà: Lấy từ trong túi ra "${giftedItem.name}" ${giftedItem.desc} trao tận tay ${charName}. Độ thân mật tăng lên ${(window.state.affection[charId])}%!]`;
       const storyId = window.state.activeStoryId;
       if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
       window.state.chatHistories[storyId].push({ sender: 'user', text: giftActionText });
@@ -926,7 +1017,6 @@
       sendMessage(giftActionText);
     }
 
-    /* GỬI ẢNH TRONG CHAT */
     function handleChatImageFile(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -937,34 +1027,9 @@
         const storyId = window.state.activeStoryId;
         if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
         window.state.chatHistories[storyId].push({ sender: 'user', text: msgText, img: imgBase64 });
-        saveStorage();
-        renderChatHistory();
-        sendMessage(msgText, false, false, imgBase64);
+        saveStorage(); renderChatHistory(); sendMessage(msgText, false, false, imgBase64);
       };
-      reader.readAsDataURL(file);
-      event.target.value = '';
-    }
-
-    /* THỰC HIỆN CHUYỂN KHOẢN */
-    function executeTransfer() {
-      const amtInput = document.getElementById('transfer-amount').value;
-      const noteInput = document.getElementById('transfer-note').value.trim() || 'Chuyển khoản';
-      const amt = parseInt(amtInput, 10);
-      if (isNaN(amt) || amt <= 0) return alert('Vui lòng nhập số tiền hợp lệ!');
-      
-      window.state.walletBalance = (window.state.walletBalance || 0) - amt;
-      saveStorage();
-      closeModal('modal-transfer');
-
-      switchStoryTab('chat');
-      const transferMsg = `[Chuyển khoản thành công: ${amt.toLocaleString('vi-VN')} VNĐ - Nội dung: "${noteInput}" | Số dư ví hiện tại: ${window.state.walletBalance.toLocaleString('vi-VN')} VNĐ]`;
-      
-      const storyId = window.state.activeStoryId;
-      if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
-      window.state.chatHistories[storyId].push({ sender: 'user', text: transferMsg });
-      saveStorage();
-      renderChatHistory();
-      sendMessage(transferMsg);
+      reader.readAsDataURL(file); event.target.value = '';
     }
 
     function handleImageUpload(event, targetInputId) {
@@ -977,27 +1042,19 @@
           const img = new Image();
           img.onload = function() {
             try {
-              const max = 512;
-              const ratio = Math.min(1, max / Math.max(img.width, img.height));
-              const w = Math.max(1, Math.round(img.width * ratio));
-              const h = Math.max(1, Math.round(img.height * ratio));
-              const canvas = document.createElement('canvas');
-              canvas.width = w; canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, w, h);
-              ctx.drawImage(img, 0, 0, w, h);
+              const max = 512; const ratio = Math.min(1, max / Math.max(img.width, img.height));
+              const w = Math.max(1, Math.round(img.width * ratio)); const h = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
               target.value = canvas.toDataURL('image/jpeg', 0.88);
             } catch (err) { target.value = original; }
           };
-          img.onerror = function() { target.value = original; };
           img.src = original;
         };
         reader.readAsDataURL(file);
       }
     }
 
-    /* RENDER TRANG CHỦ */
     function renderStoryList() {
       const container = document.getElementById('story-list');
       container.innerHTML = '';
@@ -1027,104 +1084,69 @@
       const avatar = document.getElementById('new-story-avatar').value.trim();
       const setting = document.getElementById('new-story-desc').value.trim();
       const openingScene = document.getElementById('new-story-opening').value.trim();
-
-      if (!title) return alert('Vui lòng nhập tên truyện!');
-
-      const newStory = {
-        id: 'story-' + Date.now(),
-        title,
-        avatar: avatar || DEFAULT_LOGO,
-        setting,
-        openingScene,
-        characters: []
-      };
-
+      if (!title) return alert('Nhập tên truyện!');
+      const newStory = { id: 'story-' + Date.now(), title, avatar: avatar || DEFAULT_LOGO, setting, openingScene, characters: [] };
       if (!window.state.stories) window.state.stories = [];
       window.state.stories.push(newStory);
-      saveStorage();
-      renderStoryList();
-      closeModal('modal-story');
-
-      document.getElementById('new-story-title').value = '';
-      document.getElementById('new-story-avatar').value = '';
-      document.getElementById('new-story-desc').value = '';
-      document.getElementById('new-story-opening').value = '';
-
+      saveStorage(); renderStoryList(); closeModal('modal-story');
       openStoryDetail(newStory.id);
     }
 
     function deleteStory(id) {
-      if (confirm('Bạn có chắc muốn xóa truyện này?')) {
+      if (confirm('Xóa truyện này?')) {
         window.state.stories = window.state.stories.filter(s => s.id !== id);
         if (window.state.chatHistories) delete window.state.chatHistories[id];
-        saveStorage();
-        renderStoryList();
+        saveStorage(); renderStoryList();
       }
     }
 
-    /* MỞ TRỰC TIẾP TRÒ CHUYỆN CỦA CÂU TRUYỆN */
     function openStoryDetail(storyId) {
       const story = window.state.stories.find(s => s.id === storyId);
-      if (!story) return alert("Không tìm thấy dữ liệu truyện!");
-
+      if (!story) return;
       window.state.activeStoryId = storyId;
       document.getElementById('active-story-title').innerText = story.title || 'Trò Chuyện';
 
       if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
-        if (story.openingScene) {
-          window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
-        } else if (story.characters && story.characters.length > 0 && story.characters[0].firstMsg) {
-          window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
-        }
+        if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
+        else if (story.characters && story.characters[0] && story.characters[0].firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
       }
 
-      switchStoryTab('chat');
-      renderChatHistory();
-      switchPage('page-story-detail');
-
-      const scrollChatBottom = () => {
-        const box = document.getElementById('chat-history');
-        if (box) box.scrollTop = box.scrollHeight;
-      };
-      scrollChatBottom();
-      requestAnimationFrame(scrollChatBottom);
-      [100, 300, 700].forEach(t => setTimeout(scrollChatBottom, t));
+      switchStoryTab('chat'); renderChatHistory(); switchPage('page-story-detail');
     }
 
-    /* POPUP CÀI ĐẶT RIÊNG CHO TRUYỆN */
     function openStoryConfigModal() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story) return;
-
       document.getElementById('story-setting-input').value = story.setting || '';
       document.getElementById('story-opening-input').value = story.openingScene || '';
-      renderCharacterList();
-      openModal('modal-story-config');
+      renderCharacterList(); openModal('modal-story-config');
     }
 
+    /* FIX TRÀN KHUNG & THÊM HIỂN THỊ ĐỘ THÂN MẬT VÀO DANH SÁCH */
     function renderCharacterList() {
       const container = document.getElementById('character-list-container');
       container.innerHTML = '';
-
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.characters || story.characters.length === 0) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào trong truyện này.</div>';
+        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào.</div>';
         return;
       }
-
       story.characters.forEach(char => {
+        if (!window.state.affection) window.state.affection = {};
+        const aff = window.state.affection[char.id] || 20;
+
         const div = document.createElement('div');
         div.className = 'char-card';
         div.innerHTML = `
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
-            <div style="flex:1; overflow:hidden;">
-              <h4 style="font-size:0.85rem; font-weight:bold; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(char.name)}</h4>
-              <p style="font-size:0.75rem; color:#666; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${escapeHtml(char.personality)}</p>
+            <div class="char-info-body">
+              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ ${aff}%</span></h4>
+              <p>${escapeHtml(char.personality)}</p>
             </div>
           </div>
-          <div style="display:flex; gap:4px;">
+          <div style="display:flex; gap:4px; flex-shrink:0;">
             <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
             <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
           </div>
@@ -1138,19 +1160,15 @@
       if (story) {
         story.setting = document.getElementById('story-setting-input').value.trim();
         story.openingScene = document.getElementById('story-opening-input').value.trim();
-        saveStorage();
-        closeModal('modal-story-config');
-        alert('Đã lưu cài đặt cho câu chuyện!');
+        saveStorage(); closeModal('modal-story-config'); alert('Đã lưu!');
       }
     }
 
     function openAddCharModal() {
-      document.getElementById('char-modal-title').innerText = '🎭 Thêm Nhân Vật Mới';
+      document.getElementById('char-modal-title').innerText = '🎭 Thêm Nhân Vật';
       document.getElementById('char-edit-id').value = '';
-      document.getElementById('char-name').value = '';
-      document.getElementById('char-avatar').value = '';
-      document.getElementById('char-personality').value = '';
-      document.getElementById('char-first-msg').value = '';
+      document.getElementById('char-name').value = ''; document.getElementById('char-avatar').value = '';
+      document.getElementById('char-personality').value = ''; document.getElementById('char-first-msg').value = '';
       openModal('modal-char');
     }
 
@@ -1158,78 +1176,48 @@
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       const char = story ? story.characters.find(c => c.id === charId) : null;
       if (!char) return;
-
-      document.getElementById('char-modal-title').innerText = '✏️ Chỉnh Sửa Nhân Vật';
+      document.getElementById('char-modal-title').innerText = '✏️ Sửa Nhân Vật';
       document.getElementById('char-edit-id').value = char.id;
-      document.getElementById('char-name').value = char.name;
-      document.getElementById('char-avatar').value = char.avatar || '';
-      document.getElementById('char-personality').value = char.personality || '';
-      document.getElementById('char-first-msg').value = char.firstMsg || '';
+      document.getElementById('char-name').value = char.name; document.getElementById('char-avatar').value = char.avatar || '';
+      document.getElementById('char-personality').value = char.personality || ''; document.getElementById('char-first-msg').value = char.firstMsg || '';
       openModal('modal-char');
     }
 
     function saveCharacter() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story) return;
-
       const charId = document.getElementById('char-edit-id').value;
       const name = document.getElementById('char-name').value.trim();
       const avatar = document.getElementById('char-avatar').value.trim();
       const personality = document.getElementById('char-personality').value.trim();
       const firstMsg = document.getElementById('char-first-msg').value.trim();
-
-      if (!name) return alert('Vui lòng nhập tên nhân vật!');
+      if (!name) return alert('Nhập tên nhân vật!');
 
       if (charId) {
-        const char = story.characters.find(c => c.id === charId);
-        if (char) {
-          char.name = name;
-          char.avatar = avatar || DEFAULT_LOGO;
-          char.personality = personality;
-          char.firstMsg = firstMsg;
-        }
+        const c = story.characters.find(x => x.id === charId);
+        if (c) { c.name = name; c.avatar = avatar || DEFAULT_LOGO; c.personality = personality; c.firstMsg = firstMsg; }
       } else {
         if (!story.characters) story.characters = [];
-        story.characters.push({
-          id: 'char-' + Date.now(),
-          name,
-          avatar: avatar || DEFAULT_LOGO,
-          personality,
-          firstMsg
-        });
+        story.characters.push({ id: 'char-' + Date.now(), name, avatar: avatar || DEFAULT_LOGO, personality, firstMsg });
       }
-
-      saveStorage();
-      renderCharacterList();
-      closeModal('modal-char');
+      saveStorage(); renderCharacterList(); closeModal('modal-char');
     }
 
     function deleteCharacter(charId) {
-      if (confirm('Xóa nhân vật này khỏi truyện?')) {
+      if (confirm('Xóa nhân vật này?')) {
         const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-        if (story) {
-          story.characters = story.characters.filter(c => c.id !== charId);
-          saveStorage();
-          renderCharacterList();
-        }
+        if (story) { story.characters = story.characters.filter(c => c.id !== charId); saveStorage(); renderCharacterList(); }
       }
     }
 
-    /* CHÈN ĐỊNH DẠNG VÀO Ô NHẬP LIỆU KHI BẤM NÚT */
     function insertInputFormat(type) {
       const input = document.getElementById('user-input');
       const val = input.value;
-      if (type === 'dialogue') {
-        input.value = val + '""';
-        input.setSelectionRange(input.value.length - 1, input.value.length - 1);
-      } else if (type === 'action') {
-        input.value = val + '**';
-        input.setSelectionRange(input.value.length - 1, input.value.length - 1);
-      }
+      if (type === 'dialogue') input.value = val + '""';
+      else if (type === 'action') input.value = val + '**';
       input.focus();
     }
 
-    /* RENDER LỊCH SỬ CHAT */
     function renderChatHistory() {
       const container = document.getElementById('chat-history');
       container.innerHTML = '';
@@ -1238,10 +1226,7 @@
 
       history.forEach((msg, idx) => {
         if (msg.sender === 'system') {
-          const div = document.createElement('div');
-          div.className = 'narrative-block system-action';
-          div.innerText = msg.text.replace(/[\*\"]/g, '');
-          container.appendChild(div);
+          const div = document.createElement('div'); div.className = 'narrative-block system-action'; div.innerText = msg.text.replace(/[\*\"]/g, ''); container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, msg.img, container, idx);
         } else {
@@ -1254,8 +1239,7 @@
     function renderUserFormattedMessage(rawText, imgData, container, idx) {
       const text = (rawText || '').replace(/[“”]/g, '"');
       const hasQuote = (text.match(/"/g) || []).length >= 2;
-      const segs = [];
-      let m;
+      const segs = []; let m;
       if (hasQuote) {
         const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g;
         while ((m = re.exec(text)) !== null) {
@@ -1271,24 +1255,15 @@
         }
       }
       const filled = segs.filter(sg => sg.text);
-      let lastDialogueIdx = -1;
-      filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
+      let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
 
       filled.forEach((sg, k) => {
         if (sg.type === 'action') {
-          const actionDiv = document.createElement('div');
-          actionDiv.className = 'narrative-block user-action';
-          actionDiv.innerText = sg.text;
-          container.appendChild(actionDiv);
+          const actDiv = document.createElement('div'); actDiv.className = 'narrative-block user-action'; actDiv.innerText = sg.text; container.appendChild(actDiv);
         } else {
-          const bar = (k === lastDialogueIdx) ? `
-            <div class="msg-action-bar">
-              <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
-              <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
-            </div>` : '';
+          const bar = (k === lastDialogueIdx) ? `<div class="msg-action-bar"><button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button></div>` : '';
           const imgHtml = (k === lastDialogueIdx && imgData) ? `<img src="${imgData}" class="msg-img">` : '';
-          const div = document.createElement('div');
-          div.className = 'chat-message user';
+          const div = document.createElement('div'); div.className = 'chat-message user';
           div.innerHTML = `
             <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="msg-bubble-wrap">
@@ -1300,18 +1275,11 @@
         }
       });
       if (filled.length === 0 && imgData) {
-        const div = document.createElement('div');
-        div.className = 'chat-message user';
+        const div = document.createElement('div'); div.className = 'chat-message user';
         div.innerHTML = `
           <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-          <div class="msg-bubble-wrap">
-            <div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div>
-            <div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
-            <div class="msg-action-bar">
-              <button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button>
-              <button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>
-            </div>
-          </div>
+          <div class="msg-bubble-wrap"><div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div><div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
+          <div class="msg-action-bar"><button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button></div></div>
         `;
         container.appendChild(div);
       }
@@ -1319,105 +1287,78 @@
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
-
       lines.forEach(line => {
         const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
+        let speakerRaw = charMatch ? charMatch[1].trim() : '';
+        let speakerName = speakerRaw || 'AI';
+        let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
 
-        {
-          let speakerRaw = charMatch ? charMatch[1].trim() : '';
-          let speakerName = speakerRaw || 'AI';
-          let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
-
-          let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-          let isKnownChar = false;
-          if (story && story.characters && speakerRaw) {
-            const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === speakerRaw.toLowerCase());
-            if (foundChar) {
-              isKnownChar = true;
-              if (foundChar.avatar) matchedAvatar = foundChar.avatar;
-            }
-          }
-
-          if (!isKnownChar) {
-            const narrText = restText.replace(/\*/g, '').trim();
-            if (narrText) {
-              const nDiv = document.createElement('div');
-              nDiv.className = 'narrative-block ai-action';
-              nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
-              container.appendChild(nDiv);
-            }
-            return;
-          }
-
-          restText = restText.replace(/[“”]/g, '"');
-          const hasQuote = (restText.match(/"/g) || []).length >= 2;
-          const segs = [];
-          if (hasQuote) {
-            const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g;
-            let m;
-            while ((m = re.exec(restText)) !== null) {
-              if (m[1] !== undefined) segs.push({ type: 'dialogue', text: m[1].trim() });
-              else if (m[2] !== undefined) segs.push({ type: 'action', text: m[2].trim() });
-              else if (m[3] !== undefined) segs.push({ type: 'action', text: m[3].trim() });
-            }
-          } else {
-            const re = /\*([^*]*)\*|([^*]+)/g;
-            const hasStar = /\*[^*]+\*/.test(restText);
-            let m;
-            while ((m = re.exec(restText)) !== null) {
-              if (m[1] !== undefined) segs.push({ type: 'action', text: m[1].trim() });
-              else if (m[2] !== undefined) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
-            }
-            if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
-          }
-
-          segs.forEach(seg => {
-            if (!seg.text) return;
-            if (seg.type === 'action') {
-              const actDiv = document.createElement('div');
-              actDiv.className = 'narrative-block ai-action';
-              actDiv.innerText = seg.text;
-              container.appendChild(actDiv);
-            } else {
-              const div = document.createElement('div');
-              div.className = 'chat-message ai';
-
-              div.innerHTML = `
-                <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-                <div class="msg-bubble-wrap">
-                  <div class="msg-sender">${escapeHtml(speakerName)}</div>
-                  <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text)}</span></div>
-                  <div class="msg-action-bar">
-                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                  </div>
-                </div>
-              `;
-              container.appendChild(div);
-            }
-          });
+        let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+        let isKnownChar = false;
+        if (story && story.characters && speakerRaw) {
+          const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === speakerRaw.toLowerCase());
+          if (foundChar) { isKnownChar = true; if (foundChar.avatar) matchedAvatar = foundChar.avatar; }
         }
+
+        if (!isKnownChar) {
+          const narrText = restText.replace(/\*/g, '').trim();
+          if (narrText) {
+            const nDiv = document.createElement('div'); nDiv.className = 'narrative-block ai-action'; nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText; container.appendChild(nDiv);
+          }
+          return;
+        }
+
+        restText = restText.replace(/[“”]/g, '"');
+        const hasQuote = (restText.match(/"/g) || []).length >= 2;
+        const segs = [];
+        if (hasQuote) {
+          const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g; let m;
+          while ((m = re.exec(restText)) !== null) {
+            if (m[1] !== undefined) segs.push({ type: 'dialogue', text: m[1].trim() });
+            else if (m[2] !== undefined) segs.push({ type: 'action', text: m[2].trim() });
+            else if (m[3] !== undefined) segs.push({ type: 'action', text: m[3].trim() });
+          }
+        } else {
+          const re = /\*([^*]*)\*|([^*]+)/g; let m;
+          while ((m = re.exec(restText)) !== null) {
+            if (m[1] !== undefined) segs.push({ type: 'action', text: m[1].trim() });
+            else if (m[2] !== undefined) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
+          }
+        }
+
+        segs.forEach(seg => {
+          if (!seg.text) return;
+          if (seg.type === 'action') {
+            const actDiv = document.createElement('div'); actDiv.className = 'narrative-block ai-action'; actDiv.innerText = seg.text; container.appendChild(actDiv);
+          } else {
+            const div = document.createElement('div'); div.className = 'chat-message ai';
+            div.innerHTML = `
+              <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+              <div class="msg-bubble-wrap">
+                <div class="msg-sender">${escapeHtml(speakerName)}</div>
+                <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text)}</span></div>
+                <div class="msg-action-bar">
+                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                </div>
+              </div>
+            `;
+            container.appendChild(div);
+          }
+        });
       });
     }
 
     function editMessage(idx) {
       const history = window.state.chatHistories[window.state.activeStoryId];
       if (!history) return;
-      const newText = prompt('Chỉnh sửa tin nhắn:', history[idx].text);
-      if (newText !== null) {
-        history[idx].text = newText;
-        saveStorage();
-        renderChatHistory();
-      }
+      const newText = prompt('Sửa tin nhắn:', history[idx].text);
+      if (newText !== null) { history[idx].text = newText; saveStorage(); renderChatHistory(); }
     }
 
     function deleteMessage(idx) {
-      if (confirm('Xóa tin nhắn này?')) {
-        window.state.chatHistories[window.state.activeStoryId].splice(idx, 1);
-        saveStorage();
-        renderChatHistory();
-      }
+      if (confirm('Xóa tin nhắn?')) { window.state.chatHistories[window.state.activeStoryId].splice(idx, 1); saveStorage(); renderChatHistory(); }
     }
 
     function regenerateAiResponse(idx) {
@@ -1425,25 +1366,20 @@
       sendMessage(null, true);
     }
 
-    function triggerAutoPlay() {
-      sendMessage(null, false, true);
-    }
+    function triggerAutoPlay() { sendMessage(null, false, true); }
 
-    /* GỬI TIN NHẮN (HỖ TRỢ TỰ ĐỘNG TÓM TẮT & CHỐNG QUÊN CỐT TRUYỆN) */
     async function sendMessage(overrideText = null, isRegen = false, isAutoPlay = false, overrideImg = null) {
       const inputEl = document.getElementById('user-input');
       let text = overrideText || (inputEl ? inputEl.value.trim() : '');
-      
       if (!text && !isRegen && !isAutoPlay && !overrideImg) return;
       if (!overrideText && !isRegen && !isAutoPlay) inputEl.value = '';
 
       const storyId = window.state.activeStoryId;
       const story = window.state.stories.find(s => s.id === storyId);
-
       if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
 
       if (!window.state.apiKeys || window.state.apiKeys.length === 0) {
-        alert('Vui lòng nhập ít nhất 1 API Key trong Cài Đặt!');
+        alert('Vui lòng nhập API Key trong Cài Đặt!');
         return openModal('modal-settings');
       }
 
@@ -1455,71 +1391,26 @@
       const summaryUpto = sumObj ? sumObj.upto : 0;
       const histStart = Math.max(Math.min(histLen - 10, summaryUpto), histLen - 20, 0);
 
-      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}` + (c.firstMsg ? ` | Câu nói mẫu: ${c.firstMsg}` : '')).join('\n');
-      
+      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       const systemInstruction = `
 [QUY TẮC NHẬP VAI, DRAMA & TỰ DO 18+]
-1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
+1. Bối cảnh: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Các nhân vật bạn nhập vai (tự chủ động tạo drama, phản ứng linh hoạt với quà tặng, chuyển khoản hoặc nhân vật mới):
+3. Nhân vật (phản ứng linh hoạt với chuyển khoản hai chiều, quà tặng, tăng độ thân mật):
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `\n[TÓM TẮT DIỄN BIẾN TRƯỚC ĐÓ]:\n${summaryText}` : ''}
 
-[TÓM TẮT DIỄN BIẾN ĐÃ XẢY RA TRƯỚC ĐÓ - Cần nhớ kỹ để giữ nhất quán]
-${summaryText}` : ''}
-
-[NGUYÊN TẮC QUAN TRỌNG & TỰ DO 18+]
-- BÁM SÁT CỐT TRUYỆN & TỰ TẠO DRAMA: Diễn biến có thể tự phát triển cao trào, bất ngờ, ghen tuông, tình cảm sâu đậm tùy theo tương tác của người dùng, chuyển khoản hoặc tặng quà.
-- PHONG CÁCH TỰ DO KHÔNG HẠN CHẾ: Thoải mái sử dụng từ ngữ phong phú, gợi cảm, lãng mạn táo bạo hoặc tự tạo hoàn cảnh 18+, tình huống cao trào khi cốt truyện đẩy đến.
-- BÁM SÁT NHÂN VẬT: Mỗi nhân vật phải nói và hành động ĐÚNG tính cách, giữ vững cách xưng hô từ đầu đến cuối.
-- BẮT BUỘC: Hành động/cử chỉ đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này".
-- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy tình huống, có thể nhiều nhân vật cùng tham gia đối thoại qua lại.
-- TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (VD: *Trần Hạo Nam nhếch môi cười*).
-- TUYỆT ĐỐI KHÔNG viết thay người dùng \"${(window.state.persona && window.state.persona.name) || 'User'}\".
-
-[ĐỊNH DẠNG ĐẦU RA]
-Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
-[Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
-      `;
+- THOẢI MÁI 18+ & DRAMA: Sử dụng từ ngữ phong phú, lãng mạn táo bạo, ghen tuông hoặc hoàn cảnh 18+ khi cốt truyện đẩy đến.
+- BẮT BUỘC: Hành động trong dấu *, lời thoại trong ngoặc ". Mỗi nhân vật phát ngôn trên một dòng dạng [Tên]: *hành động* "lời thoại".
+`;
 
       let recentHistory = window.state.chatHistories[storyId].slice(histStart).map(m => {
         const partsArr = [{ text: m.text }];
-        if (m.img) {
-          const base64Clean = m.img.split(',')[1] || m.img;
-          partsArr.push({ inline_data: { mime_type: "image/jpeg", data: base64Clean } });
-        }
-        return {
-          role: m.sender === 'ai' ? 'model' : 'user',
-          parts: partsArr
-        };
+        if (m.img) partsArr.push({ inline_data: { mime_type: "image/jpeg", data: m.img.split(',')[1] || m.img } });
+        return { role: m.sender === 'ai' ? 'model' : 'user', parts: partsArr };
       });
 
-      if (isAutoPlay) {
-        recentHistory.push({
-          role: 'user',
-          parts: [{ text: 'Hãy tự tiếp tục câu chuyện theo đúng cốt truyện, tạo drama hoặc đẩy tình huống cao trào phù hợp. Dừng lại chờ người dùng khi cần.' }]
-        });
-      }
-
-      {
-        const merged = [];
-        for (const turn of recentHistory) {
-          if (!turn.parts || turn.parts.length === 0) continue;
-          const last = merged[merged.length - 1];
-          if (last && last.role === turn.role && turn.parts.length === 1 && last.parts.length === 1 && typeof last.parts[0].text === 'string' && typeof turn.parts[0].text === 'string') {
-            last.parts[0].text += '\n' + turn.parts[0].text;
-          } else {
-            merged.push(turn);
-          }
-        }
-        if (merged.length === 0 || merged[0].role !== 'user') {
-          merged.unshift({ role: 'user', parts: [{ text: 'Bắt đầu câu chuyện.' }] });
-        }
-        if (merged[merged.length - 1].role !== 'user') {
-          merged.push({ role: 'user', parts: [{ text: 'Hãy tiếp tục diễn biến câu chuyện.' }] });
-        }
-        recentHistory = merged;
-      }
+      if (isAutoPlay) recentHistory.push({ role: 'user', parts: [{ text: 'Tự tiếp tục câu chuyện theo cốt truyện.' }] });
 
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
@@ -1534,227 +1425,61 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       };
 
       const chatBox = document.getElementById('chat-history');
-      let loadingEl = null;
-      if (chatBox) {
-        loadingEl = document.createElement('div');
-        loadingEl.className = 'narrative-block system-action';
-        loadingEl.innerText = 'Đang trả lời...';
-        chatBox.appendChild(loadingEl);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+      let loadingEl = document.createElement('div');
+      loadingEl.className = 'narrative-block system-action'; loadingEl.innerText = 'Đang trả lời...';
+      chatBox.appendChild(loadingEl); chatBox.scrollTop = chatBox.scrollHeight;
 
       let responseText = null;
-      const selectedModel = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
-      let lastError = '';
-
+      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
       for (const rawKey of window.state.apiKeys) {
-        const key = (rawKey || '').trim().replace(/^["']|["']$/g, '');
+        const key = rawKey.trim().replace(/^["']|["']$/g, '');
         try {
-          let res, data;
-          for (let attempt = 0; attempt < 4; attempt++) {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 60000);
-            try {
-              res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-                body: JSON.stringify(payload),
-                signal: ctrl.signal
-              });
-              data = await res.json().catch(() => ({}));
-            } catch (fe) {
-              clearTimeout(timer);
-              if (fe.name === 'AbortError') throw new Error('Quá thời gian chờ (60 giây)');
-              if (attempt < 3) { await new Promise(r => setTimeout(r, 1500 * (attempt + 1))); continue; }
-              throw fe;
-            } finally { clearTimeout(timer); }
-            if (res.status === 400 && payload.generationConfig) { delete payload.generationConfig; continue; }
-            if (res.ok || ![429, 500, 503].includes(res.status) || attempt === 3) break;
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-          }
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => ({}));
           if (res.ok) {
-            const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
-            const txt = parts ? parts.map(p => p.text || '').join('') : '';
-            if (txt) { responseText = txt; break; }
-            lastError = (data.promptFeedback && data.promptFeedback.blockReason) ? 'Nội dung bị chặn: ' + data.promptFeedback.blockReason : 'AI không trả về nội dung';
-          } else {
-            lastError = 'HTTP ' + res.status + ': ' + ((data.error && data.error.message) || res.statusText);
+            const parts = data.candidates?.[0]?.content?.parts;
+            responseText = parts ? parts.map(p => p.text || '').join('') : '';
+            if (responseText) break;
           }
-        } catch (e) { console.error(e); lastError = 'Không kết nối được mạng/API: ' + e.message; }
+        } catch (e) {}
       }
 
-      if (loadingEl && loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
-
+      if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
       if (responseText) {
-        try {
-          const pn = ((window.state.persona && window.state.persona.name) || '').trim().toLowerCase();
-          if (pn) {
-            const charNames = ((story && story.characters) || []).map(c => (c.name || '').trim().toLowerCase());
-            const kept = [];
-            for (const ln of responseText.split('\n')) {
-              const mm = ln.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:/);
-              if (mm) {
-                const sp = mm[1].trim().toLowerCase();
-                if (sp && !charNames.includes(sp) && (sp === pn || pn.split(/\s+/).includes(sp) || sp.split(/\s+/).includes(pn))) break;
-              }
-              kept.push(ln);
-            }
-            const trimmed = kept.join('\n').trim();
-            if (trimmed) responseText = trimmed;
-          }
-        } catch (e) { console.error(e); }
         window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
-        saveStorage();
-        renderChatHistory();
-        maybeSummarize(storyId); // chạy ngầm chống quên cốt truyện
+        saveStorage(); renderChatHistory();
       } else {
-        alert(`Lỗi kết nối API! Vui lòng kiểm tra lại API Key trong phần Cài đặt.\n\nChi tiết: ${lastError || 'không rõ'}`);
-      }
-    }
-
-    /* HỆ THỐNG TÓM TẮT BỘ NHỚ NGẦM (CHỐNG QUÊN CỐT TRUYỆN) */
-    async function maybeSummarize(storyId) {
-      try {
-        window._summarizing = window._summarizing || {};
-        if (window._summarizing[storyId]) return;
-        const hist = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
-        if (!window.state.summaries) window.state.summaries = {};
-        const cur = window.state.summaries[storyId] || { text: '', upto: 0 };
-        const end = hist.length - 10;
-        if (end - cur.upto < 6) return;
-        if (!window.state.apiKeys || window.state.apiKeys.length === 0) return;
-
-        window._summarizing[storyId] = true;
-        const personaName = (window.state.persona && window.state.persona.name) || 'Người dùng';
-        const chunk = hist.slice(cur.upto, end).map(m => {
-          const t = (m.text || '').replace(/\*/g, '').trim();
-          return m.sender === 'user' ? `${personaName}: ${t}` : t;
-        }).join('\n');
-
-        const prompt = `Bạn là người ghi chép diễn biến truyện nhập vai. Hãy viết lại bản TÓM TẮT DIỄN BIẾN hoàn chỉnh bằng tiếng Việt (tối đa khoảng 250 từ), gộp tóm tắt cũ với đoạn hội thoại mới.
-Giữ lại: sự kiện chính theo thứ tự thời gian, địa điểm, quan hệ và thái độ giữa các nhân vật, quà tặng/chuyển khoản đã trao, mâu thuẫn hoặc việc còn dang dở. Chỉ viết nội dung tóm tắt, không giải thích thêm.
-
-[TÓM TẮT CŨ]
-${cur.text || '(chưa có)'}
-
-[ĐOẠN HỘI THOẠI MỚI]
-${chunk}`;
-
-        const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
-        let result = '';
-        for (const rawKey of window.state.apiKeys) {
-          const key = (rawKey || '').trim().replace(/^["']|["']$/g, '');
-          const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { thinkingConfig: { thinkingLevel: 'low' } } };
-          for (let attempt = 0; attempt < 3; attempt++) {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 60000);
-            let res, data;
-            try {
-              res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-                body: JSON.stringify(body),
-                signal: ctrl.signal
-              });
-              data = await res.json().catch(() => ({}));
-            } catch (e) {
-              clearTimeout(timer);
-              await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
-              continue;
-            }
-            clearTimeout(timer);
-            if (res.status === 400 && body.generationConfig) { delete body.generationConfig; continue; }
-            if (res.ok) {
-              const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
-              result = parts ? parts.map(p => p.text || '').join('').trim() : '';
-              break;
-            }
-            if (![429, 500, 503].includes(res.status)) break;
-            await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
-          }
-          if (result) break;
-        }
-
-        if (result) {
-          const latest = (window.state.chatHistories[storyId] || []).length;
-          if (latest >= end) {
-            window.state.summaries[storyId] = { text: result, upto: end };
-            saveStorage();
-          }
-        }
-      } catch (e) {
-        console.error('Lỗi tóm tắt:', e);
-      } finally {
-        if (window._summarizing) window._summarizing[storyId] = false;
+        alert('Lỗi kết nối API!');
       }
     }
 
     function clearHistory() {
-      if (confirm('Xóa lịch sử chat kịch bản này?')) {
-        window.state.chatHistories[window.state.activeStoryId] = [];
-        if (window.state.summaries) delete window.state.summaries[window.state.activeStoryId];
-        saveStorage();
-        renderChatHistory();
-      }
+      if (confirm('Xóa lịch sử chat?')) { window.state.chatHistories[window.state.activeStoryId] = []; saveStorage(); renderChatHistory(); }
     }
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-
     function saveAppSettings() {
-      const keysRaw = document.getElementById('cfg-api-keys').value;
-      window.state.apiKeys = keysRaw.split('\n').map(k => k.trim()).filter(k => k !== '');
-      window.state.currentModel = (document.getElementById('cfg-model-select').value || '').trim().replace(/^models\//,'') || 'gemini-2.5-flash';
-      window.state.aiBubbleBg = document.getElementById('cfg-ai-bubble').value;
-      window.state.userBubbleBg = document.getElementById('cfg-user-bubble').value;
-      updateThemeColors();
-      saveStorage();
-      closeModal('modal-settings');
-      alert('Đã lưu cài đặt!');
+      window.state.apiKeys = document.getElementById('cfg-api-keys').value.split('\n').map(k => k.trim()).filter(Boolean);
+      window.state.currentModel = document.getElementById('cfg-model-select').value.trim() || 'gemini-2.5-flash';
+      saveStorage(); closeModal('modal-settings'); alert('Đã lưu!');
     }
-
-    function updateThemeColors() {
-      document.documentElement.style.setProperty('--ai-bubble-bg', document.getElementById('cfg-ai-bubble').value);
-      document.documentElement.style.setProperty('--user-bubble-bg', document.getElementById('cfg-user-bubble').value);
-    }
-
     function savePersona() {
-      if (!window.state.persona) window.state.persona = {};
       window.state.persona.name = document.getElementById('per-name').value;
-      window.state.persona.dob = document.getElementById('per-dob').value;
       window.state.persona.avatar = document.getElementById('per-avatar').value;
       window.state.persona.memories = document.getElementById('per-memories').value;
-      saveStorage();
-      closeModal('modal-persona');
-      if (window.state.activeStoryId && document.getElementById('chat-history')) renderChatHistory();
-      alert('Đã lưu hồ sơ!');
+      saveStorage(); closeModal('modal-persona'); alert('Đã lưu!');
     }
-
     function exportToFile() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.state, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `teechat_backup_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+      const a = document.createElement('a'); a.href = dataStr; a.download = `teechat_backup_${Date.now()}.json`; document.body.appendChild(a); a.click(); a.remove();
     }
-
     function importFromFile(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = function(evt) {
-        try {
-          const importedData = JSON.parse(evt.target.result);
-          if (importedData && typeof importedData === 'object') {
-            window.state = importedData;
-            saveStorage();
-            loadStorage();
-            renderStoryList();
-            alert('Khôi phục thành công!');
-            closeModal('modal-auth');
-          }
-        } catch (err) { alert('File JSON không hợp lệ!'); }
+        try { window.state = JSON.parse(evt.target.result); saveStorage(); loadStorage(); renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth'); } catch(err) { alert('File không hợp lệ!'); }
       };
       reader.readAsText(file);
     }
