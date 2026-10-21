@@ -1829,9 +1829,16 @@
     }
 
     function regenerateAiResponse(idx) {
-      window.state.chatHistories[window.state.activeStoryId].splice(idx);
-      sendMessage(null, true);
+      const history = window.state.chatHistories[window.state.activeStoryId];
+      if (!history) return;
+  // Cắt bỏ từ vị trí tin nhắn cần tạo lại trở về sau
+      history.splice(idx);
+      saveStorage();
+      renderChatHistory();
+  // Gửi tín hiệu để AI tự động sinh lại câu trả lời tiếp theo
+      sendMessage(null, false, true);
     }
+
 
     function triggerAutoPlay() { sendMessage(null, false, true); }
 
