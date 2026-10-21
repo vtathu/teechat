@@ -41,7 +41,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); }
-    body { background-color: var(--bg-color); background-size: cover; background-position: center; color: #2d3748; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    body { background-color: var(--bg-color); background-size: cover; background-position: center; color: #2d3748; height: 100vh; overflow: hidden; display: flex; flex-direction: column; transition: background-color 0.3s; }
 
     h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: normal; }
 
@@ -53,31 +53,32 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    .navbar { background: rgba(255, 255, 255, 0.9); padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 4px; z-index: 10; }
+    /* 1. Đồng bộ màu sắc Header, Navbar, Tab, Thanh nhập liệu theo Theme */
+    .navbar { background: color-mix(in srgb, var(--bg-color) 85%, white); padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--app-green); gap: 4px; z-index: 10; }
     .app-logo-title { display: flex; align-items: center; gap: 4px; }
     .app-logo-title img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
     .app-logo-title h1 { font-size: 1.1rem; color: var(--app-dark-green); white-space: nowrap; }
 
     .scenarios-container { padding: 16px; overflow-y: auto; flex: 1; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-    .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
+    .scenario-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid var(--app-green); box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; }
     .scenario-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .scenario-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); flex-shrink: 0; }
     .scenario-desc { font-size: 0.9rem; color: #718096; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .char-card { background: #fff; border: 1px solid #d0ebd8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; overflow: hidden; }
+    .char-card { background: #fff; border: 1px solid var(--app-green); border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; overflow: hidden; }
     .char-header { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden; }
     .char-avatar-mini { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
     .char-info-body { flex: 1; min-width: 0; overflow: hidden; }
     .char-info-body h4 { font-size: 0.88rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 2px; }
     .char-info-body p { font-size: 0.75rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; line-height: 1.3; }
 
-    .mode-tab-bar { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; padding: 4px; gap: 4px; justify-content: center; z-index: 10; }
-    .mode-tab-btn { flex: 1; padding: 8px; text-align: center; font-weight: bold; font-size: 0.85rem; border: none; background: transparent; color: #666; cursor: pointer; border-radius: 12px; transition: all 0.2s; }
+    .mode-tab-bar { display: flex; background: color-mix(in srgb, var(--bg-color) 85%, white); border-bottom: 2px solid var(--app-green); padding: 4px; gap: 4px; justify-content: center; z-index: 10; }
+    .mode-tab-btn { flex: 1; padding: 8px; text-align: center; font-weight: bold; font-size: 0.85rem; border: none; background: transparent; color: var(--app-dark-green); cursor: pointer; border-radius: 12px; transition: all 0.2s; }
     .mode-tab-btn.active { background: var(--app-green); color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
     .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background-color: var(--bg-color); background-image: var(--chat-bg-image); background-size: cover; background-position: center; }
     
-    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.85); border-radius: 10px; margin: 4px 0; max-width: 88%; }
+    .narrative-block { color: var(--app-dark-green); font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.85); border-radius: 10px; margin: 4px 0; max-width: 88%; }
     .narrative-block.ai-action { align-self: flex-start; text-align: left; }
     .narrative-block.user-action { align-self: flex-end; text-align: right; }
     .narrative-block.system-action { align-self: center; text-align: center; width: 100%; background: rgba(255,255,255,0.7); }
@@ -103,23 +104,23 @@
     .user .msg-action-bar { justify-content: flex-end; }
     .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
 
-    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.9); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid #d0ebd8; align-items: center; z-index: 10; }
+    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: color-mix(in srgb, var(--bg-color) 85%, white); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid var(--app-green); align-items: center; z-index: 10; }
     .chat-controls .btn { padding: 4px 8px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
     .plus-btn { width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 
     .plus-menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 90; }
     .plus-menu-overlay.active { display: block; }
-    .plus-menu { display: none; position: absolute; bottom: 65px; left: 10px; background: #fff; border: 2px solid #d0ebd8; border-radius: 16px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 95; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 260px; }
+    .plus-menu { display: none; position: absolute; bottom: 65px; left: 10px; background: #fff; border: 2px solid var(--app-green); border-radius: 16px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 95; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 260px; }
     .plus-menu.active { display: grid; }
-    .plus-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #f7faf8; border: 1px solid #d0ebd8; padding: 10px 6px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; color: #333; text-align: center; font-weight: bold; }
+    .plus-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: #f7faf8; border: 1px solid var(--app-green); padding: 10px 6px; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; color: #333; text-align: center; font-weight: bold; }
     .plus-item:active { transform: scale(0.92); background: #e6fffa; }
     .plus-item-icon { font-size: 1.3rem; }
 
-    .input-bar { padding: 8px 12px; background: rgba(255,255,255,0.95); display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; width: 100%; box-sizing: border-box; z-index: 10; }
-    .input-bar input { flex: 1; min-width: 0; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; text-overflow: clip; overflow-x: auto; white-space: nowrap; background: #fff; }
+    .input-bar { padding: 8px 12px; background: color-mix(in srgb, var(--bg-color) 92%, white); display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--app-green); width: 100%; box-sizing: border-box; z-index: 10; }
+    .input-bar input { flex: 1; min-width: 0; border: 2px solid var(--app-green); padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; text-overflow: clip; overflow-x: auto; white-space: nowrap; background: #fff; }
 
     .life-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-    .life-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 10px; }
+    .life-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid var(--app-green); box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 10px; }
     .shop-item-row { display: flex; justify-content: space-between; align-items: center; background: #f7faf8; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; gap: 8px; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
@@ -127,7 +128,7 @@
     .modal-content { background: #fff; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 20px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
     
-    .modal-tab-bar { display: flex; gap: 4px; background: #f0fdf4; padding: 4px; border-radius: 12px; border: 1px solid #d0ebd8; }
+    .modal-tab-bar { display: flex; gap: 4px; background: #f0fdf4; padding: 4px; border-radius: 12px; border: 1px solid var(--app-green); }
     .modal-tab-btn { flex: 1; border: none; background: transparent; padding: 6px 4px; font-weight: bold; font-size: 0.78rem; color: #4a5568; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
     .modal-tab-btn.active { background: var(--app-green); color: #fff; }
 
@@ -202,7 +203,7 @@
           <span>Ảnh</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('voice')">
-          <span class="plus-item-icon">၊၊||၊</span>
+          <span class="plus-item-icon">၊|,||၊</span>
           <span>Gửi Voice</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('redo')">
@@ -339,9 +340,7 @@
         <h3 id="jgame-title">📋 Hoàn thành công việc</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
       </div>
-      <!-- Hiển thị điểm và số lần sai trực tiếp trên tab -->
       <div style="font-size: 0.85rem; color: #e53e3e; font-weight: bold; background: #fff5f5; padding: 6px; border-radius: 8px;" id="jgame-stats">Sếp đang giao việc...</div>
-      <!-- Xuống hàng chữ rõ ràng, không tràn khung -->
       <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
       <div id="jgame-options-box" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
     </div>
@@ -358,7 +357,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN, GIAO DIỆN & NHÂN VẬT (CHIA 3 TAB) -->
+  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN, GIAO DIỆN & NHÂN VẬT -->
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -899,8 +898,8 @@
       });
     }
 
-    // CHẾ ĐỘ VÔ TẬN - AI SINH TỪNG CÂU LIÊN TỤC ĐẾN KHI SAI 5 LẦN
-    let jobGameState = { job: '', rewardPerCorrect: 0, currentSessionEarned: 0, wrongCount: 0, currentQuestion: null };
+    // 2. CHẾ ĐỘ VÔ TẬN & CHỐNG LẶP CÂU HỎI MINIGAME
+    let jobGameState = { job: '', rewardPerCorrect: 0, currentSessionEarned: 0, wrongCount: 0, currentQuestion: null, askedQuestionsHistory: [] };
 
     async function executeWorkMinigame() {
       checkDailyReset();
@@ -922,6 +921,7 @@
       jobGameState.job = job;
       jobGameState.wrongCount = 0;
       jobGameState.currentSessionEarned = 0;
+      jobGameState.askedQuestionsHistory = []; // Reset lịch sử câu hỏi trong phiên
       
       if (job === 'barista') jobGameState.rewardPerCorrect = 40000;
       else if (job === 'office') jobGameState.rewardPerCorrect = 60000;
@@ -944,7 +944,14 @@
       }
 
       const jobNames = { barista: 'Nhân viên pha chế cocktail', office: 'Nhân viên văn phòng/kiểm toán', gangster: 'Tay anh chị giang hồ', teacher: 'Giáo viên/Giảng viên', artist: 'Họa sĩ/Nghệ sĩ tự do' };
-      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm hoàn toàn mới lạ, độc đáo về ngành nghề "${jobNames[jobGameState.job]}". 
+      
+      // Truyền danh sách lịch sử câu hỏi đã hỏi để AI tuyệt đối không lặp lại
+      const historyContext = jobGameState.askedQuestionsHistory.length > 0 
+        ? `\nCác câu hỏi đã hỏi trước đó (TUYỆT ĐỐI KHÔNG LẶP LẠI NỘI DUNG NÀY):\n- ${jobGameState.askedQuestionsHistory.join('\n- ')}` 
+        : '';
+
+      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm HOÀN TOÀN MỚI LẠ, ĐỘC ĐÁO khác biệt hoàn toàn về ngành nghề "${jobNames[jobGameState.job]}". 
+      ${historyContext}
       Có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
       Yêu cầu trả về cấu trúc JSON thuần túy (không kèm markdown rườm rà) theo định dạng mẫu sau:
       {
@@ -956,13 +963,17 @@
 
       let qData = null;
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
+      const randomSeed = Math.floor(Math.random() * 1000000);
       
       for (const rawKey of window.state.apiKeys) {
         const key = rawKey.trim().replace(/^["']|["']$/g, '');
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, 
-            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ 
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.9, seed: randomSeed }
+            })
           });
           const data = await res.json().catch(() => ({}));
           if (res.ok) {
@@ -973,7 +984,11 @@
             const endIdx = rawText.lastIndexOf('}');
             if (startIdx !== -1 && endIdx !== -1) {
               qData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
-              if (qData && qData.q && qData.opts) break;
+              if (qData && qData.q && qData.opts) {
+                // Lưu lại câu hỏi vào lịch sử chống lặp
+                jobGameState.askedQuestionsHistory.push(qData.q);
+                break;
+              }
             }
           }
         } catch (e) {}
@@ -1025,13 +1040,11 @@
 
       if (isCorrect) {
         jobGameState.currentSessionEarned += jobGameState.rewardPerCorrect;
-        // Cộng thẳng vào ví ngay lập tức, hiển thị trực tiếp trên tab không pop-up
         window.state.walletBalance = (window.state.walletBalance || 0) + jobGameState.rewardPerCorrect;
         saveStorage();
         renderLifeModeUI();
 
         statsBox.innerText = `✅ Đúng! +${jobGameState.rewardPerCorrect.toLocaleString('vi-VN')} VNĐ vào ví | Sai: ${jobGameState.wrongCount}/5`;
-        qBoxText = 'Đang tải câu tiếp theo...';
         document.getElementById('jgame-question-box').innerText = '✨ Đang tải câu hỏi mới tiếp theo...';
         document.getElementById('jgame-options-box').innerHTML = '';
         
@@ -1704,10 +1717,27 @@
       }
       const filled = segs.filter(sg => sg.text);
       let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
+      if (lastDialogueIdx === -1 && filled.length > 0) lastDialogueIdx = filled.length - 1; // Hỗ trợ khối hành động đơn lẻ hiển thị nút
 
       filled.forEach((sg, k) => {
         if (sg.type === 'action') {
-          const actDiv = document.createElement('div'); actDiv.className = 'narrative-block user-action'; actDiv.innerText = sg.text; container.appendChild(actDiv);
+          const actDiv = document.createElement('div'); 
+          actDiv.className = 'narrative-block user-action'; 
+          actDiv.innerText = sg.text; 
+          
+          // 4. Bổ sung nút Sửa/Xóa cho khối hành động đơn lẻ phía User nếu là phần tử cuối
+          if (k === lastDialogueIdx) {
+            const wrapDiv = document.createElement('div');
+            wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
+            wrapDiv.appendChild(actDiv);
+            const bar = document.createElement('div');
+            bar.className = 'msg-action-bar';
+            bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
+            wrapDiv.appendChild(bar);
+            container.appendChild(wrapDiv);
+          } else {
+            container.appendChild(actDiv);
+          }
         } else {
           const bar = (k === lastDialogueIdx) ? `<div class="msg-action-bar"><button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button></div>` : '';
           const imgHtml = (k === lastDialogueIdx && imgData) ? `<img src="${imgData}" class="msg-img">` : '';
@@ -1736,7 +1766,7 @@
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
-      lines.forEach(line => {
+      lines.forEach((line, lineIdx) => {
         const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
 
         {
@@ -1760,7 +1790,20 @@
               const nDiv = document.createElement('div');
               nDiv.className = 'narrative-block ai-action';
               nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
-              container.appendChild(nDiv);
+              
+              // 4. Bổ sung nút Sửa/Tạo lại/Xóa cho khối hành động đơn lẻ phía AI
+              if (lineIdx === lines.length - 1) {
+                const wrapDiv = document.createElement('div');
+                wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-start'; wrapDiv.style.width = '100%';
+                wrapDiv.appendChild(nDiv);
+                const bar = document.createElement('div');
+                bar.className = 'msg-action-bar';
+                bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button><button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button><button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>`;
+                wrapDiv.appendChild(bar);
+                container.appendChild(wrapDiv);
+              } else {
+                container.appendChild(nDiv);
+              }
             }
             return;
           }
@@ -1787,27 +1830,44 @@
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
-          segs.forEach(seg => {
+          segs.forEach((seg, segIdx) => {
             if (!seg.text) return;
+            const isLastSeg = (lineIdx === lines.length - 1 && segIdx === segs.length - 1);
+
             if (seg.type === 'action') {
               const actDiv = document.createElement('div');
               actDiv.className = 'narrative-block ai-action';
               actDiv.innerText = seg.text;
-              container.appendChild(actDiv);
+
+              if (isLastSeg) {
+                const wrapDiv = document.createElement('div');
+                wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-start'; wrapDiv.style.width = '100%';
+                wrapDiv.appendChild(actDiv);
+                const bar = document.createElement('div');
+                bar.className = 'msg-action-bar';
+                bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button><button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button><button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>`;
+                wrapDiv.appendChild(bar);
+                container.appendChild(wrapDiv);
+              } else {
+                container.appendChild(actDiv);
+              }
             } else {
               const div = document.createElement('div');
               div.className = 'chat-message ai';
+
+              const bar = isLastSeg ? `
+                <div class="msg-action-bar">
+                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                </div>` : '';
 
               div.innerHTML = `
                 <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
                 <div class="msg-bubble-wrap">
                   <div class="msg-sender">${escapeHtml(speakerName)}</div>
                   <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text)}</span></div>
-                  <div class="msg-action-bar">
-                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                  </div>
+                  ${bar}
                 </div>
               `;
               container.appendChild(div);
@@ -1828,17 +1888,17 @@
       if (confirm('Xóa tin nhắn?')) { window.state.chatHistories[window.state.activeStoryId].splice(idx, 1); saveStorage(); renderChatHistory(); }
     }
 
+    // 3. SỬA LỖI API KHI BẤM "TẠO LẠI" (REGENERATE)
     function regenerateAiResponse(idx) {
       const history = window.state.chatHistories[window.state.activeStoryId];
       if (!history) return;
-  // Cắt bỏ từ vị trí tin nhắn cần tạo lại trở về sau
+      // Cắt lịch sử chính xác đến trước tin nhắn AI cần tạo lại
       history.splice(idx);
       saveStorage();
       renderChatHistory();
-  // Gửi tín hiệu để AI tự động sinh lại câu trả lời tiếp theo
+      // Gửi yêu cầu tiếp tục lượt thoại liền trước một cách mượt mà
       sendMessage(null, false, true);
     }
-
 
     function triggerAutoPlay() { sendMessage(null, false, true); }
 
@@ -1868,6 +1928,7 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
+      // 5. CHỐNG NHẦM LẪN THỜI GIAN & MÂU THUẪN MỐI QUAN HỆ NHÂN VẬT
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -1876,14 +1937,15 @@
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[NGUYÊN TẮC QUAN TRỌNG]
-- BÁM SÁT CỐT TRUYỆN (BẮT BUỘC): mọi diễn biến, lời thoại và hành động phải phù hợp với bối cảnh/cốt truyện ở mục 1 và cảnh mở đầu ở mục 2; không tự bịa ra tình tiết mâu thuẫn với chúng, không bỏ qua hay đảo lộn các sự kiện đã xảy ra trong đoạn chat. Khi người dùng chỉ bảo tiếp tục (không đưa chỉ dẫn mới), hãy tự đẩy câu chuyện đi tiếp theo đúng hướng cốt truyện: để các nhân vật hành động hợp lý theo mục tiêu và tính cách của họ, nhưng chỉ tiến một bước nhỏ mỗi lượt. Nếu người dùng đưa hành động hoặc lời thoại mới thì phản ứng theo đó nhưng vẫn giữ mạch cốt truyện.
-- BÁM SÁT NHÂN VẬT (BẮT BUỘC): mỗi nhân vật phải nói và hành động ĐÚNG với tính cách, thuộc tính đã cho ở mục 3: giọng điệu, thái độ, cách ứng xử, mức độ nói nhiều hay ít. Tuyệt đối giữ đúng CÁCH XƯNG HÔ đã ghi (cách nhân vật tự xưng và cách gọi người khác, kể cả cách gọi người dùng), không tự đổi sang xưng hô khác và giữ nhất quán từ đầu đến cuối. Không để nhân vật nói hay làm trái tính cách; nếu thuộc tính không ghi rõ xưng hô thì chọn cách xưng hô hợp lý theo bối cảnh và giữ cố định. Mỗi nhân vật chỉ biết những gì họ có thể biết trong truyện.
-- BÁM SÁT: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
-- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy vào tình huống và tính cách từng nhân vật để quyết định ai lên tiếng. Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại sẽ nói thì mới có lời thoại; nhân vật nào theo tính cách sẽ im lặng, ít nói hoặc không muốn nói thì chỉ viết hành động/biểu cảm (không có lời thoại), hoặc không xuất hiện trong lượt đó. Không ép nhân vật nào phải nói. Khi người dùng gọi chung như "mọi người", chỉ những nhân vật phù hợp mới đáp lời.
-- TÊN TRONG HÀNH ĐỘNG: mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Sào Bì cười tít mắt, xua tay*), không được viết hành động mà thiếu tên chủ thể, vì giao diện sẽ không hiển thị tên riêng ở dòng hành động.
-- TUYỆT ĐỐI KHÔNG viết lời thoại, hành động, suy nghĩ hay quyết định thay cho người dùng "${(window.state.persona && window.state.persona.name) || 'User'}" và không để dòng nào bắt đầu bằng tên người dùng. Khi tình huống đến lúc người dùng cần phản hồi, trả lời hoặc hành động, hãy DỪNG lại và chờ người dùng.
-- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
+[NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
+- GIỮ VỮNG MỐC THỜI GIAN (BẮT BUỘC): Tuyệt đối không tự ý nhảy cóc mốc thời gian (ví dụ sang phần 2, sang năm mới hoặc qua một khoảng thời gian dài) trừ khi có sự kiện hệ thống hoặc người dùng chủ động yêu cầu đổi thời gian. Phải giữ mốc thời gian hiện tại xuyên suốt.
+- KIỂM TRA MỐI QUAN HỆ NHÂN VẬT (BẮT BUỘC): Kiểm tra kỹ quan hệ giữa từng nhân vật và User. Nếu cốt truyện chưa thiết lập quan hệ quen biết giữa nhân vật B và User, nhân vật B phải ứng xử như người lạ/vừa gặp, TUYỆT ĐỐI CẤM tự bịa ra quan hệ quen thân, bạn bè cũ hay người yêu khi chưa được thiết lập.
+- BÁM SÁT CỐT TRUYỆN: Mọi diễn biến, lời thoại và hành động phải phù hợp với bối cảnh/cốt truyện ở mục 1 và cảnh mở đầu ở mục 2; không tự bịa ra tình tiết mâu thuẫn. Khi người dùng chỉ bảo tiếp tục, hãy tự đẩy câu chuyện đi tiếp theo đúng hướng cốt truyện, chỉ tiến một bước nhỏ mỗi lượt.
+- BÁM SÁT NHÂN VẬT: Mỗi nhân vật phải nói và hành động ĐÚNG với tính cách, thuộc tính đã cho ở mục 3: giọng điệu, thái độ, cách xưng hô cố định từ đầu đến cuối.
+- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại mới nói; nhân vật không liên quan sẽ im lặng hoặc chỉ hành động.
+- TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Hạo Nam cười mỉm, nâng ly*).
+- TUYỆT ĐỐI KHÔNG viết lời thoại, hành động hay quyết định thay cho người dùng "${(window.state.persona && window.state.persona.name) || 'User'}".
+- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến cực kỳ chậm rãi, từng bước một.
 
 [ĐỊNH DẠNG ĐẦU RA]
 Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
