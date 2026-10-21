@@ -149,8 +149,8 @@
       </div>
       <div style="display: flex; gap: 3px;">
         <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-auth')">☁️ Cloud</button>
-        <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-persona')">👤 User</button>
-        <button class="btn" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-settings')">⚙ Cài đặt</button>
+        <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-persona')">🪪 User</button>
+        <button class="btn" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-settings')">⚙️ Cài đặt</button>
       </div>
     </div>
 
@@ -173,8 +173,8 @@
     </div>
 
     <div class="mode-tab-bar">
-      <button class="mode-tab-btn active" id="tab-btn-chat" onclick="switchStoryTab('chat')">💬 Trò Chuyện</button>
-      <button class="mode-tab-btn" id="tab-btn-life" onclick="switchStoryTab('life')">🌟 Cuộc Sống</button>
+      <button class="mode-tab-btn active" id="tab-btn-chat" onclick="switchStoryTab('chat')">🗪 Trò Chuyện</button>
+      <button class="mode-tab-btn" id="tab-btn-life" onclick="switchStoryTab('life')">🏫 Cuộc Sống</button>
     </div>
 
     <div id="subview-chat" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
@@ -182,31 +182,31 @@
 
       <div class="chat-controls">
         <button class="btn btn-pink plus-btn" onclick="togglePlusMenu()">➕</button>
-        <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">💬 Lời thoại</button>
-        <button class="btn btn-outline" onclick="insertInputFormat('action')">🎭 Hành động</button>
-        <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">🗣 Lời thoại</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('action')">✦ Hành động</button>
+        <button class="btn btn-outline" onclick="triggerAutoPlay()">⌯⌲Tiếp tục</button>
       </div>
 
       <div class="plus-menu-overlay" id="plus-menu-overlay" onclick="togglePlusMenu()"></div>
       <div class="plus-menu" id="plus-menu">
         <div class="plus-item" onclick="handlePlusAction('transfer')">
-          <span class="plus-item-icon">💸</span>
+          <span class="plus-item-icon">💳</span>
           <span>Chuyển Khoản</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('gift')">
-          <span class="plus-item-icon">🎁</span>
+          <span class="plus-item-icon">🧧</span>
           <span>Tặng Quà</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('image')">
-          <span class="plus-item-icon">🖼️</span>
-          <span>Gửi Ảnh</span>
+          <span class="plus-item-icon">🏞️</span>
+          <span>Ảnh</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('voice')">
-          <span class="plus-item-icon">🎙️</span>
+          <span class="plus-item-icon">၊၊||၊</span>
           <span>Gửi Voice</span>
         </div>
         <div class="plus-item" onclick="handlePlusAction('redo')">
-          <span class="plus-item-icon">🔄</span>
+          <span class="plus-item-icon">↺</span>
           <span>Làm Lại</span>
         </div>
       </div>
@@ -214,43 +214,43 @@
 
       <div class="input-bar">
         <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)" oninput="this.scrollLeft = this.scrollWidth;">
-        <button class="btn btn-pink" onclick="sendMessage()">Gửi</button>
+        <button class="btn btn-pink" onclick="sendMessage()">➤ Gửi</button>
       </div>
     </div>
 
     <div id="subview-life" class="life-container hidden">
       <div class="life-card" style="background: linear-gradient(135deg, #e6fffa 0%, #c6f6d5 100%); border-color: #319795;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="color: #234e52; font-size: 1.1rem;">💰 Ví Tiền Cá Nhân</h3>
+          <h3 style="color: #234e52; font-size: 1.1rem;">💲 Ví</h3>
           <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handlePlusAction('transfer')">Chuyển Khoản</button>
         </div>
-        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
+        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">100.000.000 VNĐ</div>
         <div style="font-size: 0.78rem; color: #2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 5/5 | Thời gian đổi nghề: Có thể đổi ngay</div>
       </div>
 
       <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">👔 Nghề Nghiệp & Đi Làm</h3>
+        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">💼 Nghề Nghiệp & Đi Làm</h3>
         <div class="form-group">
           <label>Chọn Ngành Nghề Hiện Tại:</label>
           <select id="job-select" onchange="changeJobSelection()">
-            <option value="barista">☕ Nhân Viên Pha Chế Quán Bar</option>
+            <option value="barista">🥂 Nhân Viên Pha Chế </option>
             <option value="office">💻 Nhân Viên Văn Phòng</option>
-            <option value="gangster">🗡️ Sĩ Quan / Tay Cọc Giang Hồ</option>
-            <option value="teacher">📚 Giáo Viên / Giảng Viên</option>
-            <option value="artist">🎨 Chủ Tiệm / Nghệ Sĩ Tự Do</option>
-            <option value="sudoku">⚡ Trùm Tài Chính / Hacker Sudoku (Lương: 10 Tỷ)</option>
+            <option value="gangster">⚔️ Sĩ Quan</option>
+            <option value="teacher">🎓 Giáo Viên</option>
+            <option value="artist">🎨 Nghệ Sĩ Tự Do</option>
+            <option value="sudoku">🌐 Công nghệ</option>
           </select>
         </div>
         <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
-          Pha chế cocktail qua minigame ghép công thức.
+          Pha chế cocktail.
         </div>
-        <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">🎮 Bắt Đầu Làm Việc Ngay</button>
+        <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
       </div>
 
       <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛍️ Cửa Hàng & Túi Đồ Quà Tặng</h3>
+        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛒 Cửa Hàng & Túi Đồ Quà Tặng</h3>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container"></div>
-        <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">🎒 Túi Đồ Của Bạn</h4>
+        <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">📦 Tài sản</h4>
         <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
       </div>
     </div>
@@ -264,25 +264,25 @@
         <button class="btn btn-outline" onclick="closeModal('modal-transfer')">✖</button>
       </div>
       <div style="background: #e6fffa; padding: 8px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
-        <div style="font-size: 0.8rem; color: #234e52;">Số dư ví hiện tại: <span id="wallet-balance-display" style="font-weight: bold;">10.000.000 VNĐ</span></div>
+        <div style="font-size: 0.8rem; color: #234e52;">Số dư: <span id="wallet-balance-display" style="font-weight: bold;">100.000.000 VNĐ</span></div>
       </div>
       <div class="form-group">
-        <label>Chiều Giao Dịch:</label>
+        <label>Giao Dịch:</label>
         <select id="transfer-direction" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;" onchange="updateTransferUI()">
-          <option value="user_to_ai">User chuyển cho Nhân Vật AI</option>
-          <option value="ai_to_user">Nhân Vật AI chuyển cho User (Theo tình huống)</option>
+          <option value="user_to_ai">Chuyển đi</option>
+          <option value="ai_to_user">Nhận tiền</option>
         </select>
       </div>
       <div class="form-group">
-        <label id="lbl-transfer-char">Chọn Nhân Vật:</label>
+        <label id="lbl-transfer-char">Người nhận:</label>
         <select id="transfer-target-char" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;"></select>
       </div>
       <div class="form-group">
-        <label>Số Tiền Chuyển (VNĐ):</label>
+        <label>Số Tiền (VNĐ):</label>
         <input type="number" id="transfer-amount" value="500000">
       </div>
       <div class="form-group">
-        <label>Nội Dung / Lời Nhắn:</label>
+        <label>Lời Nhắn:</label>
         <input type="text" id="transfer-note" value="Chuyển khoản tài trợ">
       </div>
       <button class="btn btn-pink" onclick="executeTransfer()">Xác Nhận Chuyển Khoản</button>
@@ -292,21 +292,21 @@
   <div id="modal-buy-detail" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="buy-modal-title">🛍️ Chọn Phân Loại Vật Phẩm</h3>
+        <h3 id="buy-modal-title">🏷️ Loại Vật Phẩm</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-buy-detail')">✖</button>
       </div>
       <div id="buy-modal-body" class="form-group"></div>
-      <button class="btn btn-pink" onclick="confirmBuyItem()">Xác Nhận Mua Sắm</button>
+      <button class="btn btn-pink" onclick="confirmBuyItem()">Xác Nhận Mua</button>
     </div>
   </div>
 
   <div id="modal-select-char-gift" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>🎁 Tặng Quà Cho Ai?</h3>
+        <h3>⭐ Người nhận?</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">✖</button>
       </div>
-      <div style="font-size: 0.85rem; color: #666;">Chọn nhân vật bạn muốn trao tặng món quà này:</div>
+      <div style="font-size: 0.85rem; color: #666;">Chọn người bạn muốn tặng món quà này:</div>
       <div id="target-char-list-for-gift" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
     </div>
   </div>
@@ -314,7 +314,7 @@
   <div id="modal-gift" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>🎁 Chọn Quà Trong Túi Đồ</h3>
+        <h3>🔥 Chọn Quà Trong Túi</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-gift')">✖</button>
       </div>
       <div id="gift-modal-items" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;"></div>
@@ -324,23 +324,23 @@
   <div id="modal-sudoku" class="modal">
     <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header">
-        <h3>⚡ Hacker Sudoku 9x9 (Thưởng 10 Tỷ)</h3>
+        <h3>⚡ Hacker</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-sudoku')">✖</button>
       </div>
-      <p style="font-size: 0.8rem; color: #555;">Điền số từ 1 đến 9 vào bảng ngẫu nhiên:</p>
+      <p style="font-size: 0.8rem; color: #555;">Điền số từ 1 đến 9 vào bảng:</p>
       <div id="sudoku-grid-9" style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; margin: 8px auto; width: 100%; max-width: 420px;"></div>
-      <button class="btn btn-pink" onclick="checkSudoku9Result()">Xác Nhận Giải Mã</button>
+      <button class="btn btn-pink" onclick="checkSudoku9Result()">Xác Nhận</button>
     </div>
   </div>
 
   <div id="modal-job-game" class="modal">
     <div class="modal-content" style="max-width: 440px; text-align: center;">
       <div class="modal-header">
-        <h3 id="jgame-title">🎮 Thử Thách Vô Tận (Sai 5 lần dừng)</h3>
+        <h3 id="jgame-title">📋 Hoàn thành công việc</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
       </div>
       <!-- Hiển thị điểm và số lần sai trực tiếp trên tab -->
-      <div style="font-size: 0.85rem; color: #e53e3e; font-weight: bold; background: #fff5f5; padding: 6px; border-radius: 8px;" id="jgame-stats">Đang tải câu hỏi từ AI...</div>
+      <div style="font-size: 0.85rem; color: #e53e3e; font-weight: bold; background: #fff5f5; padding: 6px; border-radius: 8px;" id="jgame-stats">Sếp đang giao việc...</div>
       <!-- Xuống hàng chữ rõ ràng, không tràn khung -->
       <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
       <div id="jgame-options-box" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
@@ -350,7 +350,7 @@
   <div id="modal-random-event" class="modal">
     <div class="modal-content" style="max-width: 420px; text-align: center;">
       <div class="modal-header">
-        <h3 style="color: #d69e2e;">⚡ Sự Kiện Ngẫu Nhiên!</h3>
+        <h3 style="color: #d69e2e;">⚡ Có biến!</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-random-event')">✖</button>
       </div>
       <p id="revent-desc" style="font-size: 0.92rem; color: #4a5568; margin: 10px 0; line-height: 1.4;"></p>
@@ -369,7 +369,7 @@
       <div class="modal-tab-bar">
         <button class="modal-tab-btn active" id="cfg-tab-btn-story" onclick="switchConfigTab('story')">📖 Cốt Truyện</button>
         <button class="modal-tab-btn" id="cfg-tab-btn-theme" onclick="switchConfigTab('theme')">🎨 Giao Diện</button>
-        <button class="modal-tab-btn" id="cfg-tab-btn-chars" onclick="switchConfigTab('chars')">🎭 Nhân Vật</button>
+        <button class="modal-tab-btn" id="cfg-tab-btn-chars" onclick="switchConfigTab('chars')">👥 Nhân Vật</button>
       </div>
 
       <!-- TAB 1: CỐT TRUYỆN -->
@@ -386,7 +386,7 @@
 
       <!-- TAB 2: GIAO DIỆN CHAT -->
       <div id="cfg-tab-view-theme" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
-        <h4 style="font-size: 0.88rem; color: var(--app-dark-green);">🎨 Gợi Ý Mẫu Giao Diện (Templates)</h4>
+        <h4 style="font-size: 0.88rem; color: var(--app-dark-green);">🎨 Mẫu Giao Diện</h4>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('mint')">🌿 Xanh Mint</button>
           <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('pink')">🌸 Hồng Pastel</button>
@@ -414,12 +414,12 @@
         </div>
 
         <div class="form-group">
-          <label>Màu Nền Chat (Mã Hex hoặc Màu):</label>
+          <label>Màu Nền Chat:</label>
           <input type="text" id="cfg-chat-bg-color" placeholder="VD: #e7f5ee hoặc #121212">
         </div>
 
         <div class="form-group">
-          <label>Ảnh Nền Chat (URL hoặc Tải Ảnh):</label>
+          <label>Ảnh Nền Chat:</label>
           <div style="display: flex; gap: 8px;">
             <input type="text" id="cfg-chat-bg-img" placeholder="https://..." style="flex: 1;">
             <button class="btn btn-outline" type="button" onclick="document.getElementById('bg-file-input').click()">📁 Chọn ảnh</button>
