@@ -1524,38 +1524,31 @@
       const lines = (fullText || '').split('\n').filter(p => p.trim() !== '');
       
       lines.forEach(line => {
-        // Tách tên nhân vật, tự động loại bỏ dấu ngoặc vuông [] nếu AI có lỡ trả về
+        // Tách tiền tố tên nhân vật ở đầu câu dạng "Tên:", "[Tên]:", "*Tên*:"
         const charMatch = line.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
         
         let speakerRaw = charMatch ? charMatch[1].trim() : '';
-        let speakerName = speakerRaw.replace(/[\[\]]/g, '').trim() || 'AI';
+        let speakerName = speakerRaw.replace(/[\[\]\*]/g, '').trim() || 'AI';
         let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
 
         let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
         let isKnownChar = false;
         
         if (story && story.characters && speakerRaw) {
-          const cleanSearchName = speakerRaw.replace(/[\[\]]/g, '').trim().toLowerCase();
+          const cleanSearchName = speakerRaw.replace(/[\[\]\*]/g, '').trim().toLowerCase();
           const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === cleanSearchName);
           if (foundChar) { 
             isKnownChar = true; 
-            speakerName = foundChar.name.replace(/[\[\]]/g, ''); // Lấy tên sạch không có dấu ngoặc
+            speakerName = foundChar.name.replace(/[\[\]\*]/g, ''); 
             if (foundChar.avatar) matchedAvatar = foundChar.avatar; 
           }
         }
 
-        if (!isKnownChar && !charMatch) {
-          // Dọn sạch dấu ngoặc vuông [] và dấu sao cho toàn bộ các đoạn tường thuật cốt truyện
-          const narrText = restText.replace(/[\[\]\*]/g, '').trim();
-          if (narrText) {
-            const nDiv = document.createElement('div'); 
-            nDiv.className = 'narrative-block ai-action'; 
-            nDiv.innerText = speakerRaw ? `${speakerRaw.replace(/[\[\]]/g, '')}: ${narrText}` : narrText; 
-            container.appendChild(nDiv);
-          }
-          return;
+        if (!isKnownChar && speakerRaw) {
+          speakerName = speakerRaw.replace(/[\[\]\*]/g, '').trim();
         }
 
+        // Tách Lời thoại trong ngoặc kép ("...") và Hành động bên ngoài
         restText = restText.replace(/[“”]/g, '"');
         const hasQuote = (restText.match(/"/g) || []).length >= 2;
         const segs = [];
@@ -1563,31 +1556,50 @@
         if (hasQuote) {
           const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g; let m;
           while ((m = re.exec(restText)) !== null) {
-            if (m[1] !== undefined) segs.push({ type: 'dialogue', text: m[1].trim() });
-            else if (m[2] !== undefined) segs.push({ type: 'action', text: m[2].trim() });
-            else if (m[3] !== undefined) segs.push({ type: 'action', text: m[3].trim() });
+            if (m[1] !== undefined) {
+              if (m[1].trim()) segs.push({ type: 'dialogue', text: m[1].trim() });
+            } else if (m[2] !== undefined) {
+              if (m[2].trim()) segs.push({ type: 'action', text: m[2].trim() });
+            } else if (m[3] !== undefined) {
+              if (m[3].trim()) segs.push({ type: 'action', text: m[3].trim() });
+            }
           }
         } else {
           const re = /\*([^*]*)\*|([^*]+)/g; let m;
           while ((m = re.exec(restText)) !== null) {
-            if (m[1] !== undefined) segs.push({ type: 'action', text: m[1].trim() });
-            else if (m[2] !== undefined) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
+            if (m[1] !== undefined) {
+              if (m[1].trim()) segs.push({ type: 'action', text: m[1].trim() });
+            } else if (m[2] !== undefined) {
+              if (m[2].trim()) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
+            }
           }
         }
 
         if (segs.length === 0 && restText) {
-          segs.push({ type: 'action', text: restText.replace(/[\[\]\*"]/g, '') });
+          segs.push({ type: 'action', text: restText.replace(/[\[\]\*]/g, '') });
         }
 
+        // Hiển thị ra màn hình
         segs.forEach(seg => {
           if (!seg.text) return;
+          
           if (seg.type === 'action') {
+            // Phần HÀNH ĐỘNG: Bỏ dấu [] và :, ghép thành "Trần Hạo Nam đưa tay ra"
             const actDiv = document.createElement('div'); 
             actDiv.className = 'narrative-block ai-action'; 
-            // Xóa sạch dấu ngoặc vuông trong phần hành động mô tả
-            actDiv.innerText = seg.text.replace(/[\[\]]/g, ''); 
+            
+            let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
+            
+            // Nếu câu hành động chưa bắt đầu bằng tên nhân vật, tự động thêm Tên vào đầu câu
+            if (speakerRaw && !cleanAction.toLowerCase().startsWith(speakerName.toLowerCase())) {
+              actDiv.innerText = `${speakerName} ${cleanAction}`;
+            } else {
+              actDiv.innerText = cleanAction;
+            }
+            
             container.appendChild(actDiv);
           } else {
+            // Phần LỜI THOẠI: Hiện dưới dạng bong bóng chat có Thẻ Tên Nhân Vật ở trên
             const div = document.createElement('div'); 
             div.className = 'chat-message ai';
             div.innerHTML = `
