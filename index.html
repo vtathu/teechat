@@ -1521,112 +1521,89 @@
     }
 
         function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
-      if (!fullText) return;
-
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
-        let lineStr = line.trim();
+        // Tách "Tên: nội dung" (chấp nhận cả dạng [Tên]: hoặc **Tên**: ), nếu không có tên thì speakerRaw = ''
+        const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
 
-        // 1. Nhận diện chính xác tên nhân vật ở đầu dòng này (Gà Rừng, Trần Hạo Nam,...)
-        const charMatch = lineStr.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
+        {
+          let speakerRaw = charMatch ? charMatch[1].trim() : '';
+          let speakerName = speakerRaw || 'AI';
+          let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
 
-        let speakerRaw = charMatch ? charMatch[1].trim() : '';
-        let restText = charMatch ? (charMatch[2] || '').trim() : lineStr;
-
-        let currentSpeaker = speakerRaw.replace(/[\[\]\*]/g, '').trim();
-        let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-
-        if (story && story.characters && currentSpeaker) {
-          const cleanSearchName = currentSpeaker.toLowerCase();
-          const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === cleanSearchName);
-          if (foundChar) {
-            currentSpeaker = foundChar.name.replace(/[\[\]\*]/g, '');
-            if (foundChar.avatar) matchedAvatar = foundChar.avatar;
-          }
-        }
-
-        if (!currentSpeaker || currentSpeaker.toLowerCase() === 'ai') {
-          if (story && story.characters && story.characters.length > 0) {
-            currentSpeaker = story.characters[0].name;
-            if (story.characters[0].avatar) matchedAvatar = story.characters[0].avatar;
-          } else {
-            currentSpeaker = 'Nhân vật';
-          }
-        }
-
-        // 2. Làm sạch hiển thị: Xóa bỏ thẻ [Tên]: thừa ở đầu đoạn nội dung
-        restText = restText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/g, '');
-
-        // 3. Phân tách Lời thoại ("...") và Hành động (*...*)
-        restText = restText.replace(/[“”]/g, '"');
-        const hasQuote = (restText.match(/"/g) || []).length >= 2;
-        const segs = [];
-
-        if (hasQuote) {
-          const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g; let m;
-          while ((m = re.exec(restText)) !== null) {
-            if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'dialogue', text: m[1].trim() });
-            else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'action', text: m[2].trim() });
-            else if (m[3] !== undefined && m[3].trim()) segs.push({ type: 'action', text: m[3].trim() });
-          }
-        } else {
-          const re = /\*([^*]*)\*|([^*]+)/g;
-          const hasStar = /\*[^*]+\*/.test(restText); let m;
-          while ((m = re.exec(restText)) !== null) {
-            if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'action', text: m[1].trim() });
-            else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
-          }
-          if (!hasStar && segs.length === 0 && restText) {
-            segs.push({ type: 'action', text: restText.replace(/[\[\]\*]/g, '').trim() });
-          }
-        }
-
-        // 4. Render ra màn hình đúng chủ nhân của từng dòng
-        segs.forEach(seg => {
-          if (!seg.text) return;
-
-          if (seg.type === 'action') {
-            const actDiv = document.createElement('div');
-            actDiv.className = 'narrative-block ai-action';
-            let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
-
-            // CHỈ GÉP TÊN NẾU CÂU HÀNH ĐỘNG BỊ THIẾU TÊN (tránh bị lặp hoặc nhận diện nhầm người)
-            const lowerAction = cleanAction.toLowerCase();
-            const lowerSpeaker = currentSpeaker.toLowerCase();
-            
-            // Kiểm tra xem câu hành động đã có tên nhân vật ở đầu chưa
-            const hasNameAtStart = lowerAction.startsWith(lowerSpeaker) || 
-                                   lowerAction.startsWith('anh ') || 
-                                   lowerAction.startsWith('cô ') || 
-                                   lowerAction.startsWith('hắn ') || 
-                                   lowerAction.startsWith('cậu ');
-
-            if (currentSpeaker && !hasNameAtStart) {
-              cleanAction = `${currentSpeaker} ${cleanAction}`;
+          let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+          let isKnownChar = false;
+          if (story && story.characters && speakerRaw) {
+            const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === speakerRaw.toLowerCase());
+            if (foundChar) {
+              isKnownChar = true;
+              if (foundChar.avatar) matchedAvatar = foundChar.avatar;
             }
-
-            actDiv.innerText = cleanAction;
-            container.appendChild(actDiv);
-          } else {
-            // Bong bóng thoại gán đúng chuẩn tên và avatar của nhân vật dòng đó
-            const div = document.createElement('div');
-            div.className = 'chat-message ai';
-            div.innerHTML = `
-              <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-              <div class="msg-bubble-wrap">
-                <div class="msg-sender">${escapeHtml(currentSpeaker)}</div>
-                <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text.replace(/[\[\]]/g, ''))}</span></div>
-                <div class="msg-action-bar">
-                  <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
-                  <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
-                  <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
-                </div>
-              </div>
-            `;
-            container.appendChild(div);
           }
-        });
+
+          // Nhân vật chưa được tạo (hoặc dòng không có tên): giữ nguyên tên, hành động + "thoại" chung 1 hàng, không tạo khung chat
+          if (!isKnownChar) {
+            const narrText = restText.replace(/\*/g, '').trim();
+            if (narrText) {
+              const nDiv = document.createElement('div');
+              nDiv.className = 'narrative-block ai-action';
+              nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
+              container.appendChild(nDiv);
+            }
+            return;
+          }
+
+          // Tách theo thứ tự: *hành động* -> dòng hành động riêng, "lời thoại" -> khung chat (ẩn dấu * và ")
+          restText = restText.replace(/[“”]/g, '"');
+          const hasQuote = (restText.match(/"/g) || []).length >= 2;
+          const segs = []; // {type:'action'|'dialogue', text}
+          if (hasQuote) {
+            const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g;
+            let m;
+            while ((m = re.exec(restText)) !== null) {
+              if (m[1] !== undefined) segs.push({ type: 'dialogue', text: m[1].trim() });
+              else if (m[2] !== undefined) segs.push({ type: 'action', text: m[2].trim() });
+              else if (m[3] !== undefined) segs.push({ type: 'action', text: m[3].trim() });
+            }
+          } else {
+            const re = /\*([^*]*)\*|([^*]+)/g;
+            const hasStar = /\*[^*]+\*/.test(restText);
+            let m;
+            while ((m = re.exec(restText)) !== null) {
+              if (m[1] !== undefined) segs.push({ type: 'action', text: m[1].trim() });
+              else if (m[2] !== undefined) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
+            }
+            if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
+          }
+
+          segs.forEach(seg => {
+            if (!seg.text) return;
+            if (seg.type === 'action') {
+              const actDiv = document.createElement('div');
+              actDiv.className = 'narrative-block ai-action';
+              actDiv.innerText = seg.text;
+              container.appendChild(actDiv);
+            } else {
+              const div = document.createElement('div');
+              div.className = 'chat-message ai';
+
+              div.innerHTML = `
+                <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+                <div class="msg-bubble-wrap">
+                  <div class="msg-sender">${escapeHtml(speakerName)}</div>
+                  <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text)}</span></div>
+                  <div class="msg-action-bar">
+                    <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
+                    <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+                    <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+                  </div>
+                </div>
+              `;
+              container.appendChild(div);
+            }
+          });
+        }
       });
     }
     function editMessage(idx) {
@@ -1674,23 +1651,28 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       const systemInstruction = `
-[QUY TẮC NHẬP VAI & CẤU TRÚC VĂN PHONG QUAN TRỌNG]
-1. Bối cảnh: "${(story && story.setting) || ''}".
+[QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
+1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Nhân vật:
+3. Các nhân vật bạn nhập vai (AI phải điều phối nhiều nhân vật cùng tham gia khi user gọi chung như "mọi người", "tất cả"):
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}".
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).${summaryText ? `
 
-[QUY TẮC ĐỊNH DẠNG BẮT BUỘC DÀNH CHO AI]:
-- Thẻ [Tên Nhân Vật]: ở đầu dòng CHỈ DÙNG ĐỂ HỆ THỐNG NHẬN DIỆN. Nó KHÔNG NẰM TRONG CÂU VĂN.
-- Câu hành động đằng sau BẮT BUỘC phải là một câu hoàn chỉnh CÓ ĐẦY ĐỦ CHỦ NGỮ (Tên nhân vật).
-- MẪU CHUẨN AI PHẢI VIẾT:
-  [Trần Hạo Nam]: Trần Hạo Nam đứng chết lặng giữa màn mưa, bàn tay run run... "Thư... sống cho thật tốt đấy."
-  (Thẻ [Trần Hạo Nam]: để hệ thống đọc, còn câu đằng sau "Trần Hạo Nam đứng chết lặng..." là câu văn hoàn chỉnh).
+[TÓM TẮT DIỄN BIẾN ĐÃ XẢY RA TRƯỚC ĐÓ - phải nhớ và giữ nhất quán]
+${summaryText}` : ''}
 
-- LỜI THOẠI: Đặt trong ngoặc kép "...".
+[NGUYÊN TẮC QUAN TRỌNG]
+- BÁM SÁT CỐT TRUYỆN (BẮT BUỘC): mọi diễn biến, lời thoại và hành động phải phù hợp với bối cảnh/cốt truyện ở mục 1 và cảnh mở đầu ở mục 2; không tự bịa ra tình tiết mâu thuẫn với chúng, không bỏ qua hay đảo lộn các sự kiện đã xảy ra trong đoạn chat. Khi người dùng chỉ bảo tiếp tục (không đưa chỉ dẫn mới), hãy tự đẩy câu chuyện đi tiếp theo đúng hướng cốt truyện: để các nhân vật hành động hợp lý theo mục tiêu và tính cách của họ, nhưng chỉ tiến một bước nhỏ mỗi lượt. Nếu người dùng đưa hành động hoặc lời thoại mới thì phản ứng theo đó nhưng vẫn giữ mạch cốt truyện.
+- BÁM SÁT NHÂN VẬT (BẮT BUỘC): mỗi nhân vật phải nói và hành động ĐÚNG với tính cách, thuộc tính đã cho ở mục 3: giọng điệu, thái độ, cách ứng xử, mức độ nói nhiều hay ít. Tuyệt đối giữ đúng CÁCH XƯNG HÔ đã ghi (cách nhân vật tự xưng và cách gọi người khác, kể cả cách gọi người dùng), không tự đổi sang xưng hô khác và giữ nhất quán từ đầu đến cuối. Không để nhân vật nói hay làm trái tính cách; nếu thuộc tính không ghi rõ xưng hô thì chọn cách xưng hô hợp lý theo bối cảnh và giữ cố định. Mỗi nhân vật chỉ biết những gì họ có thể biết trong truyện.
+- BẮT BUỘC: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
+- SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy vào tình huống và tính cách từng nhân vật để quyết định ai lên tiếng. Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại sẽ nói thì mới có lời thoại; nhân vật nào theo tính cách sẽ im lặng, ít nói hoặc không muốn nói thì chỉ viết hành động/biểu cảm (không có lời thoại), hoặc không xuất hiện trong lượt đó. Không ép nhân vật nào phải nói. Khi người dùng gọi chung như "mọi người", chỉ những nhân vật phù hợp mới đáp lời.
+- TÊN TRONG HÀNH ĐỘNG: mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Sào Bì cười tít mắt, xua tay*), không được viết hành động mà thiếu tên chủ thể, vì giao diện sẽ không hiển thị tên riêng ở dòng hành động.\n- TUYỆT ĐỐI KHÔNG viết lời thoại, hành động, suy nghĩ hay quyết định thay cho người dùng \"${(window.state.persona && window.state.persona.name) || 'User'}\" và không để dòng nào bắt đầu bằng tên người dùng. Khi tình huống đến lúc người dùng cần phản hồi, trả lời hoặc hành động, hãy DỪNG lại và chờ người dùng.\n- KHÔNG ĐƯỢC TIẾN TRIỂN CỐT TRUYỆN QUÁ NHANH. Diễn biến câu chuyện phải cực kỳ chậm rãi, từng bước một.
+
+[ĐỊNH DẠNG ĐẦU RA]
+Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
+[Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
 - THOẢI MÁI 18+ & DRAMA: Tự do phát triển kịch tính và cảm xúc.
-`;
+      `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];
 
