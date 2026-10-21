@@ -1528,7 +1528,7 @@
       lines.forEach(line => {
         let lineStr = line.trim();
 
-        // 1. Nhận diện tên nhân vật ở đầu câu để lấy Avatar và Thẻ tên đúng chuẩn
+        // 1. Nhận diện chính xác tên nhân vật ở đầu dòng này (Gà Rừng, Trần Hạo Nam,...)
         const charMatch = lineStr.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
 
         let speakerRaw = charMatch ? charMatch[1].trim() : '';
@@ -1555,7 +1555,7 @@
           }
         }
 
-        // 2. LÀM SẠCH HIỂN THỊ: Tự động xóa bỏ hoàn toàn các dạng [Tên]: hoặc Tên: thừa thãi ở đầu nội dung văn bản
+        // 2. Làm sạch hiển thị: Xóa bỏ thẻ [Tên]: thừa ở đầu đoạn nội dung
         restText = restText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/g, '');
 
         // 3. Phân tách Lời thoại ("...") và Hành động (*...*)
@@ -1582,7 +1582,7 @@
           }
         }
 
-        // 4. Render mượt mà ra màn hình
+        // 4. Render ra màn hình đúng chủ nhân của từng dòng
         segs.forEach(seg => {
           if (!seg.text) return;
 
@@ -1591,14 +1591,25 @@
             actDiv.className = 'narrative-block ai-action';
             let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
 
-            // Nếu câu hành động chưa có tên ở đầu, tự động thêm tên vào cho đủ nghĩa mượt mà
-            if (currentSpeaker && !cleanAction.toLowerCase().startsWith(currentSpeaker.toLowerCase())) {
+            // CHỈ GÉP TÊN NẾU CÂU HÀNH ĐỘNG BỊ THIẾU TÊN (tránh bị lặp hoặc nhận diện nhầm người)
+            const lowerAction = cleanAction.toLowerCase();
+            const lowerSpeaker = currentSpeaker.toLowerCase();
+            
+            // Kiểm tra xem câu hành động đã có tên nhân vật ở đầu chưa
+            const hasNameAtStart = lowerAction.startsWith(lowerSpeaker) || 
+                                   lowerAction.startsWith('anh ') || 
+                                   lowerAction.startsWith('cô ') || 
+                                   lowerAction.startsWith('hắn ') || 
+                                   lowerAction.startsWith('cậu ');
+
+            if (currentSpeaker && !hasNameAtStart) {
               cleanAction = `${currentSpeaker} ${cleanAction}`;
             }
 
             actDiv.innerText = cleanAction;
             container.appendChild(actDiv);
           } else {
+            // Bong bóng thoại gán đúng chuẩn tên và avatar của nhân vật dòng đó
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
