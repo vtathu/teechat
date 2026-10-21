@@ -127,6 +127,10 @@
     .modal-content { background: #fff; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 20px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
     
+    .modal-tab-bar { display: flex; gap: 4px; background: #f0fdf4; padding: 4px; border-radius: 12px; border: 1px solid #d0ebd8; }
+    .modal-tab-btn { flex: 1; border: none; background: transparent; padding: 6px 4px; font-weight: bold; font-size: 0.78rem; color: #4a5568; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+    .modal-tab-btn.active { background: var(--app-green); color: #fff; }
+
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 0.85rem; font-weight: bold; color: #4a5568; }
     .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 8px; outline: none; font-size: 0.9rem; }
@@ -352,72 +356,87 @@
     </div>
   </div>
 
-  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN & GIAO DIỆN CHAT -->
+  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN, GIAO DIỆN & NHÂN VẬT (CHIA 3 TAB) -->
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ Cài Đặt Cốt Truyện & Giao Diện</h3>
+        <h3>⚙️ Cài Đặt Truyện</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
-      <div class="form-group">
-        <label>Cốt Truyện Chính & Drama:</label>
-        <textarea id="story-setting-input" rows="3"></textarea>
-      </div>
-      <div class="form-group">
-        <label>🎬 Bối Cảnh Mở Đầu:</label>
-        <textarea id="story-opening-input" rows="3"></textarea>
+
+      <!-- THANH TAB NGUYÊN BẢN CHIA 3 MỤC RÕ RÀNG -->
+      <div class="modal-tab-bar">
+        <button class="modal-tab-btn active" id="cfg-tab-btn-story" onclick="switchConfigTab('story')">📖 Cốt Truyện</button>
+        <button class="modal-tab-btn" id="cfg-tab-btn-theme" onclick="switchConfigTab('theme')">🎨 Giao Diện</button>
+        <button class="modal-tab-btn" id="cfg-tab-btn-chars" onclick="switchConfigTab('chars')">🎭 Nhân Vật</button>
       </div>
 
-      <!-- PHẦN TÙY CHỈNH MÀU SẮC & GIAO DIỆN CHAT -->
-      <hr style="border:0; border-top:1px solid #eee; margin: 4px 0;">
-      <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">🎨 Gợi Ý Mẫu Giao Diện (Templates)</h4>
-      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('mint')">🌿 Xanh Mint</button>
-        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('pink')">🌸 Hồng Pastel</button>
-        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('dark')">🌙 Dark Mode</button>
-        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('minimal')">☁️ Trắng Sữa</button>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+      <!-- TAB 1: CỐT TRUYỆN -->
+      <div id="cfg-tab-view-story" style="display: flex; flex-direction: column; gap: 12px;">
         <div class="form-group">
-          <label>Bong Bóng User:</label>
-          <input type="color" id="cfg-user-bg" value="#c1ebd9" style="height:36px; padding:2px; width:100%;">
+          <label>Cốt Truyện Chính & Drama:</label>
+          <textarea id="story-setting-input" rows="4"></textarea>
         </div>
         <div class="form-group">
-          <label>Chữ User:</label>
-          <input type="color" id="cfg-user-text" value="#1b4332" style="height:36px; padding:2px; width:100%;">
+          <label>🎬 Bối Cảnh Mở Đầu:</label>
+          <textarea id="story-opening-input" rows="4"></textarea>
         </div>
+      </div>
+
+      <!-- TAB 2: GIAO DIỆN CHAT -->
+      <div id="cfg-tab-view-theme" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+        <h4 style="font-size: 0.88rem; color: var(--app-dark-green);">🎨 Gợi Ý Mẫu Giao Diện (Templates)</h4>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('mint')">🌿 Xanh Mint</button>
+          <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('pink')">🌸 Hồng Pastel</button>
+          <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('dark')">🌙 Dark Mode</button>
+          <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('minimal')">☁️ Trắng Sữa</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+          <div class="form-group">
+            <label>Bong Bóng User:</label>
+            <input type="color" id="cfg-user-bg" value="#c1ebd9" style="height:36px; padding:2px; width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Chữ User:</label>
+            <input type="color" id="cfg-user-text" value="#1b4332" style="height:36px; padding:2px; width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Bong Bóng AI:</label>
+            <input type="color" id="cfg-ai-bg" value="#ffffff" style="height:36px; padding:2px; width:100%;">
+          </div>
+          <div class="form-group">
+            <label>Chữ AI:</label>
+            <input type="color" id="cfg-ai-text" value="#333333" style="height:36px; padding:2px; width:100%;">
+          </div>
+        </div>
+
         <div class="form-group">
-          <label>Bong Bóng AI:</label>
-          <input type="color" id="cfg-ai-bg" value="#ffffff" style="height:36px; padding:2px; width:100%;">
+          <label>Màu Nền Chat (Mã Hex hoặc Màu):</label>
+          <input type="text" id="cfg-chat-bg-color" placeholder="VD: #e7f5ee hoặc #121212">
         </div>
+
         <div class="form-group">
-          <label>Chữ AI:</label>
-          <input type="color" id="cfg-ai-text" value="#333333" style="height:36px; padding:2px; width:100%;">
+          <label>Ảnh Nền Chat (URL hoặc Tải Ảnh):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="cfg-chat-bg-img" placeholder="https://..." style="flex: 1;">
+            <button class="btn btn-outline" type="button" onclick="document.getElementById('bg-file-input').click()">📁 Chọn ảnh</button>
+          </div>
+          <input type="file" id="bg-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'cfg-chat-bg-img')">
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Màu Nền Chat (Mã Hex hoặc Màu):</label>
-        <input type="text" id="cfg-chat-bg-color" placeholder="VD: #e7f5ee hoặc #121212">
-      </div>
-
-      <div class="form-group">
-        <label>Ảnh Nền Chat (URL hoặc Tải Ảnh):</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="cfg-chat-bg-img" placeholder="https://..." style="flex: 1;">
-          <button class="btn btn-outline" type="button" onclick="document.getElementById('bg-file-input').click()">📁 Chọn ảnh</button>
+      <!-- TAB 3: DANH SÁCH NHÂN VẬT -->
+      <div id="cfg-tab-view-chars" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 0.92rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
         </div>
-        <input type="file" id="bg-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'cfg-chat-bg-img')">
+        <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;"></div>
       </div>
-      <!-- HẾT PHẦN TÙY CHỈNH MÀU SẮC -->
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-        <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
-        <button class="btn btn-pink" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
-      </div>
-      <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
-      <button class="btn" style="margin-top: 10px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
+      <button class="btn" style="margin-top: 10px; width:100%; font-size:0.85rem; padding:8px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
     </div>
   </div>
 
@@ -741,6 +760,28 @@
         chatBtn.classList.remove('active'); lifeBtn.classList.add('active');
         renderLifeModeUI();
         maybeTriggerRandomEvent();
+      }
+    }
+
+    function switchConfigTab(tabName) {
+      document.getElementById('cfg-tab-view-story').classList.add('hidden');
+      document.getElementById('cfg-tab-view-theme').classList.add('hidden');
+      document.getElementById('cfg-tab-view-chars').classList.add('hidden');
+
+      document.getElementById('cfg-tab-btn-story').classList.remove('active');
+      document.getElementById('cfg-tab-btn-theme').classList.remove('active');
+      document.getElementById('cfg-tab-btn-chars').classList.remove('active');
+
+      if (tabName === 'story') {
+        document.getElementById('cfg-tab-view-story').classList.remove('hidden');
+        document.getElementById('cfg-tab-btn-story').classList.add('active');
+      } else if (tabName === 'theme') {
+        document.getElementById('cfg-tab-view-theme').classList.remove('hidden');
+        document.getElementById('cfg-tab-btn-theme').classList.add('active');
+      } else if (tabName === 'chars') {
+        document.getElementById('cfg-tab-view-chars').classList.remove('hidden');
+        document.getElementById('cfg-tab-btn-chars').classList.add('active');
+        renderCharacterList();
       }
     }
 
@@ -1436,7 +1477,8 @@
         document.getElementById('cfg-chat-bg-img').value = story.theme.chatBgImg || '';
       }
 
-      renderCharacterList(); openModal('modal-story-config');
+      switchConfigTab('story');
+      openModal('modal-story-config');
     }
 
     function saveStorySettings() {
@@ -1456,7 +1498,7 @@
         saveStorage();
         applyActiveStoryTheme();
         closeModal('modal-story-config');
-        alert('Đã lưu cài đặt giao diện & cốt truyện thành công!');
+        alert('Đã lưu cài đặt truyện thành công!');
       }
     }
 
@@ -1465,7 +1507,7 @@
       container.innerHTML = '';
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.characters || story.characters.length === 0) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 10px;">Chưa có nhân vật nào.</div>';
+        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 15px;">Chưa có nhân vật nào trong truyện này.</div>';
         return;
       }
       story.characters.forEach(char => {
