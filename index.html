@@ -1651,17 +1651,17 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       const systemInstruction = `
-[QUY TẮC NHẬP VAI, DRAMA & TỰ DO 18+]
+[QUY TẮC NHẬP VAI, DRAMA & VĂN PHONG TỰ NHIÊN]
 1. Bối cảnh: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Nhân vật (phản ứng linh hoạt với chuyển khoản hai chiều, quà tặng, chu cấp tiền, tăng độ thân mật):
+3. Nhân vật:
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}".
 
-- THOẢI MÁI 18+ & DRAMA: Sử dụng từ ngữ phong phú, lãng mạn táo bạo, ghen tuông hoặc hoàn cảnh 18+ khi cốt truyện đẩy đến.
-- BẮT BUỘC: Hành động trong dấu *, lời thoại trong ngoặc ". Mỗi nhân vật phát ngôn trên một dòng dạng [Tên]: *hành động* "lời thoại".
+- VĂN PHONG MÔ TẢ (RẤT QUAN TRỌNG): Khi viết hành động hoặc biểu cảm của nhân vật, PHẢI viết lách uyển chuyển, tự nhiên như tiểu thuyết. Tuyệt đối không viết kiểu liệt kê máy móc. Hãy lồng tên nhân vật vào thẳng trong câu văn mô tả (VD: "Lực bàn tay Trần Hạo Nam đang siết chặt..." hoặc "Trần Hạo Nam chậm rãi đưa tay..."). Dùng [Tên Nhân Vật]: ở đầu dòng chỉ để hệ thống nhận diện người nói, sau đó phần hành động phải là câu văn hoàn chỉnh mượt mà.
+- LỜI THOẠI: Đặt trong ngoặc kép "..." ở bên dưới phần hành động.
+- THOẢI MÁI 18+ & DRAMA: Tự do phát triển cốt truyện lãng mạn, chiều sâu cảm xúc, kịch tính.
 `;
-
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];
 
