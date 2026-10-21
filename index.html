@@ -35,6 +35,7 @@
       --ai-text-color: #333333;
       --user-bubble-bg: #c1ebd9;
       --user-text-color: #1b4332;
+      --chat-bg-image: none;
       --font-heading: 'Pacifico', cursive, sans-serif;
       --font-body: 'CeCe', sans-serif;
     }
@@ -52,7 +53,7 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    .navbar { background: rgba(255, 255, 255, 0.9); padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 4px; }
+    .navbar { background: rgba(255, 255, 255, 0.9); padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d0ebd8; gap: 4px; z-index: 10; }
     .app-logo-title { display: flex; align-items: center; gap: 4px; }
     .app-logo-title img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--app-green); }
     .app-logo-title h1 { font-size: 1.1rem; color: var(--app-dark-green); white-space: nowrap; }
@@ -70,16 +71,16 @@
     .char-info-body h4 { font-size: 0.88rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 2px; }
     .char-info-body p { font-size: 0.75rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; line-height: 1.3; }
 
-    .mode-tab-bar { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; padding: 4px; gap: 4px; justify-content: center; }
+    .mode-tab-bar { display: flex; background: rgba(255,255,255,0.9); border-bottom: 2px solid #d0ebd8; padding: 4px; gap: 4px; justify-content: center; z-index: 10; }
     .mode-tab-btn { flex: 1; padding: 8px; text-align: center; font-weight: bold; font-size: 0.85rem; border: none; background: transparent; color: #666; cursor: pointer; border-radius: 12px; transition: all 0.2s; }
     .mode-tab-btn.active { background: var(--app-green); color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-    .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-history { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background-color: var(--bg-color); background-image: var(--chat-bg-image); background-size: cover; background-position: center; }
     
-    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.5); border-radius: 10px; margin: 4px 0; max-width: 88%; }
+    .narrative-block { color: #5a6b5c; font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.85); border-radius: 10px; margin: 4px 0; max-width: 88%; }
     .narrative-block.ai-action { align-self: flex-start; text-align: left; }
     .narrative-block.user-action { align-self: flex-end; text-align: right; }
-    .narrative-block.system-action { align-self: center; text-align: center; width: 100%; }
+    .narrative-block.system-action { align-self: center; text-align: center; width: 100%; background: rgba(255,255,255,0.7); }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
@@ -102,7 +103,7 @@
     .user .msg-action-bar { justify-content: flex-end; }
     .action-text-btn { background: var(--ai-bubble-bg); color: var(--app-dark-green); border: 1px solid var(--app-green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
 
-    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.7); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid #d0ebd8; align-items: center; }
+    .chat-controls { display: flex; gap: 4px; padding: 6px 8px; background: rgba(255,255,255,0.9); flex-wrap: nowrap; overflow-x: auto; border-top: 1px solid #d0ebd8; align-items: center; z-index: 10; }
     .chat-controls .btn { padding: 4px 8px; font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
     .plus-btn { width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 
@@ -114,8 +115,8 @@
     .plus-item:active { transform: scale(0.92); background: #e6fffa; }
     .plus-item-icon { font-size: 1.3rem; }
 
-    .input-bar { padding: 8px 12px; background: #fff; display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; width: 100%; box-sizing: border-box; }
-    .input-bar input { flex: 1; min-width: 0; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; text-overflow: clip; overflow-x: auto; white-space: nowrap; }
+    .input-bar { padding: 8px 12px; background: rgba(255,255,255,0.95); display: flex; gap: 8px; align-items: center; border-top: 1px solid #d0ebd8; width: 100%; box-sizing: border-box; z-index: 10; }
+    .input-bar input { flex: 1; min-width: 0; border: 2px solid #d0ebd8; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; text-overflow: clip; overflow-x: auto; white-space: nowrap; background: #fff; }
 
     .life-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
     .life-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid #d0ebd8; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 10px; }
@@ -182,7 +183,6 @@
         <button class="btn btn-outline" onclick="triggerAutoPlay()">✨Tiếp tục</button>
       </div>
 
-      <!-- MENU TÍNH NĂNG TRONG NÚT CỘNG (ĐÃ XÓA NÚT XÓA CHAT) -->
       <div class="plus-menu-overlay" id="plus-menu-overlay" onclick="togglePlusMenu()"></div>
       <div class="plus-menu" id="plus-menu">
         <div class="plus-item" onclick="handlePlusAction('transfer')">
@@ -352,10 +352,11 @@
     </div>
   </div>
 
+  <!-- MODAL: CÀI ĐẶT CỐT TRUYỆN & GIAO DIỆN CHAT -->
   <div id="modal-story-config" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ Cài Đặt Cốt Truyện & Nhân Vật</h3>
+        <h3>⚙️ Cài Đặt Cốt Truyện & Giao Diện</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
       <div class="form-group">
@@ -366,6 +367,51 @@
         <label>🎬 Bối Cảnh Mở Đầu:</label>
         <textarea id="story-opening-input" rows="3"></textarea>
       </div>
+
+      <!-- PHẦN TÙY CHỈNH MÀU SẮC & GIAO DIỆN CHAT -->
+      <hr style="border:0; border-top:1px solid #eee; margin: 4px 0;">
+      <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">🎨 Gợi Ý Mẫu Giao Diện (Templates)</h4>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('mint')">🌿 Xanh Mint</button>
+        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('pink')">🌸 Hồng Pastel</button>
+        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('dark')">🌙 Dark Mode</button>
+        <button class="btn btn-outline" type="button" onclick="applyThemeTemplate('minimal')">☁️ Trắng Sữa</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+        <div class="form-group">
+          <label>Bong Bóng User:</label>
+          <input type="color" id="cfg-user-bg" value="#c1ebd9" style="height:36px; padding:2px; width:100%;">
+        </div>
+        <div class="form-group">
+          <label>Chữ User:</label>
+          <input type="color" id="cfg-user-text" value="#1b4332" style="height:36px; padding:2px; width:100%;">
+        </div>
+        <div class="form-group">
+          <label>Bong Bóng AI:</label>
+          <input type="color" id="cfg-ai-bg" value="#ffffff" style="height:36px; padding:2px; width:100%;">
+        </div>
+        <div class="form-group">
+          <label>Chữ AI:</label>
+          <input type="color" id="cfg-ai-text" value="#333333" style="height:36px; padding:2px; width:100%;">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Màu Nền Chat (Mã Hex hoặc Màu):</label>
+        <input type="text" id="cfg-chat-bg-color" placeholder="VD: #e7f5ee hoặc #121212">
+      </div>
+
+      <div class="form-group">
+        <label>Ảnh Nền Chat (URL hoặc Tải Ảnh):</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="cfg-chat-bg-img" placeholder="https://..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('bg-file-input').click()">📁 Chọn ảnh</button>
+        </div>
+        <input type="file" id="bg-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'cfg-chat-bg-img')">
+      </div>
+      <!-- HẾT PHẦN TÙY CHỈNH MÀU SẮC -->
+
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
         <h4 style="font-size: 0.95rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
         <button class="btn btn-pink" style="padding: 3px 8px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
@@ -657,6 +703,8 @@
         document.getElementById('per-avatar').value = window.state.persona.avatar || '';
         document.getElementById('per-memories').value = window.state.persona.memories || '';
       }
+
+      applyActiveStoryTheme();
     }
 
     function saveStorage() {
@@ -1063,7 +1111,6 @@
       } else if (action === 'voice') {
         sendMessage('[Hệ thống ghi nhận người dùng gửi tin nhắn thoại voice]');
       } else if (action === 'redo') {
-        // NÚT LÀM LẠI: RESET HỘI THOẠI VỀ TỪ ĐẦU (BỐI CẢNH MỞ ĐẦU)
         if (confirm('Bạn có chắc muốn reset lại toàn bộ cuộc trò chuyện về từ đầu không?')) {
           const storyId = window.state.activeStoryId;
           const story = window.state.stories.find(s => s.id === storyId);
@@ -1292,7 +1339,19 @@
       const setting = document.getElementById('new-story-desc').value.trim();
       const openingScene = document.getElementById('new-story-opening').value.trim();
       if (!title) return alert('Nhập tên truyện!');
-      const newStory = { id: 'story-' + Date.now(), title, avatar: avatar || DEFAULT_LOGO, setting, openingScene, characters: [] };
+      const newStory = { 
+        id: 'story-' + Date.now(), 
+        title, 
+        avatar: avatar || DEFAULT_LOGO, 
+        setting, 
+        openingScene, 
+        characters: [],
+        theme: {
+          userBg: '#c1ebd9', userText: '#1b4332',
+          aiBg: '#ffffff', aiText: '#333333',
+          chatBgColor: '#e7f5ee', chatBgImg: ''
+        }
+      };
       if (!window.state.stories) window.state.stories = [];
       window.state.stories.push(newStory);
       saveStorage(); renderStoryList(); closeModal('modal-story');
@@ -1313,13 +1372,53 @@
       window.state.activeStoryId = storyId;
       document.getElementById('active-story-title').innerText = story.title || 'Trò Chuyện';
 
+      if (!story.theme) {
+        story.theme = { userBg: '#c1ebd9', userText: '#1b4332', aiBg: '#ffffff', aiText: '#333333', chatBgColor: '#e7f5ee', chatBgImg: '' };
+      }
+
       if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
         if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
         else if (story.characters && story.characters[0] && story.characters[0].firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
       }
 
+      applyActiveStoryTheme();
       switchStoryTab('chat'); renderChatHistory(); switchPage('page-story-detail');
+    }
+
+    function applyActiveStoryTheme() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (!story || !story.theme) return;
+      const root = document.documentElement;
+      root.style.setProperty('--user-bubble-bg', story.theme.userBg || '#c1ebd9');
+      root.style.setProperty('--user-text-color', story.theme.userText || '#1b4332');
+      root.style.setProperty('--ai-bubble-bg', story.theme.aiBg || '#ffffff');
+      root.style.setProperty('--ai-text-color', story.theme.aiText || '#333333');
+      root.style.setProperty('--bg-color', story.theme.chatBgColor || '#e7f5ee');
+      if (story.theme.chatBgImg) {
+        root.style.setProperty('--chat-bg-image', `url('${story.theme.chatBgImg}')`);
+      } else {
+        root.style.setProperty('--chat-bg-image', 'none');
+      }
+    }
+
+    function applyThemeTemplate(type) {
+      let t = {};
+      if (type === 'mint') {
+        t = { userBg: '#c1ebd9', userText: '#1b4332', aiBg: '#ffffff', aiText: '#333333', chatBgColor: '#e7f5ee', chatBgImg: '' };
+      } else if (type === 'pink') {
+        t = { userBg: '#ffd1dc', userText: '#5a2a27', aiBg: '#ffffff', aiText: '#444444', chatBgColor: '#fff0f3', chatBgImg: '' };
+      } else if (type === 'dark') {
+        t = { userBg: '#2d3748', userText: '#edf2f7', aiBg: '#1a202c', aiText: '#e2e8f0', chatBgColor: '#0f172a', chatBgImg: '' };
+      } else if (type === 'minimal') {
+        t = { userBg: '#f1f5f9', userText: '#0f172a', aiBg: '#ffffff', aiText: '#334155', chatBgColor: '#f8fafc', chatBgImg: '' };
+      }
+      document.getElementById('cfg-user-bg').value = t.userBg;
+      document.getElementById('cfg-user-text').value = t.userText;
+      document.getElementById('cfg-ai-bg').value = t.aiBg;
+      document.getElementById('cfg-ai-text').value = t.aiText;
+      document.getElementById('cfg-chat-bg-color').value = t.chatBgColor;
+      document.getElementById('cfg-chat-bg-img').value = t.chatBgImg;
     }
 
     function openStoryConfigModal() {
@@ -1327,7 +1426,38 @@
       if (!story) return;
       document.getElementById('story-setting-input').value = story.setting || '';
       document.getElementById('story-opening-input').value = story.openingScene || '';
+      
+      if (story.theme) {
+        document.getElementById('cfg-user-bg').value = story.theme.userBg || '#c1ebd9';
+        document.getElementById('cfg-user-text').value = story.theme.userText || '#1b4332';
+        document.getElementById('cfg-ai-bg').value = story.theme.aiBg || '#ffffff';
+        document.getElementById('cfg-ai-text').value = story.theme.aiText || '#333333';
+        document.getElementById('cfg-chat-bg-color').value = story.theme.chatBgColor || '#e7f5ee';
+        document.getElementById('cfg-chat-bg-img').value = story.theme.chatBgImg || '';
+      }
+
       renderCharacterList(); openModal('modal-story-config');
+    }
+
+    function saveStorySettings() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      if (story) {
+        story.setting = document.getElementById('story-setting-input').value.trim();
+        story.openingScene = document.getElementById('story-opening-input').value.trim();
+        
+        if (!story.theme) story.theme = {};
+        story.theme.userBg = document.getElementById('cfg-user-bg').value;
+        story.theme.userText = document.getElementById('cfg-user-text').value;
+        story.theme.aiBg = document.getElementById('cfg-ai-bg').value;
+        story.theme.aiText = document.getElementById('cfg-ai-text').value;
+        story.theme.chatBgColor = document.getElementById('cfg-chat-bg-color').value.trim() || '#e7f5ee';
+        story.theme.chatBgImg = document.getElementById('cfg-chat-bg-img').value.trim();
+
+        saveStorage();
+        applyActiveStoryTheme();
+        closeModal('modal-story-config');
+        alert('Đã lưu cài đặt giao diện & cốt truyện thành công!');
+      }
     }
 
     function renderCharacterList() {
@@ -1359,15 +1489,6 @@
         `;
         container.appendChild(div);
       });
-    }
-
-    function saveStorySettings() {
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      if (story) {
-        story.setting = document.getElementById('story-setting-input').value.trim();
-        story.openingScene = document.getElementById('story-opening-input').value.trim();
-        saveStorage(); closeModal('modal-story-config'); alert('Đã lưu!');
-      }
     }
 
     function openAddCharModal() {
@@ -1489,7 +1610,6 @@
       }
     }
 
-    /* GIỮ NGUYÊN HÀM PARSE CHUẨN XÁC ĐÃ ĐƯỢC CHỊ ƯNG Ý */
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -1618,7 +1738,6 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      /* GIỮ NGUYÊN SYSTEM INSTRUCTION CHUẨN XÁC ĐÃ ĐƯỢC CHỊ ƯNG Ý */
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
