@@ -1651,16 +1651,22 @@
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       const systemInstruction = `
-[QUY TẮC NHẬP VAI, DRAMA & VĂN PHONG TỰ NHIÊN]
+[QUY TẮC NHẬP VAI & CẤU TRÚC VĂN PHONG QUAN TRỌNG]
 1. Bối cảnh: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Nhân vật:
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}".
 
-- VĂN PHONG MÔ TẢ (RẤT QUAN TRỌNG): Khi viết hành động hoặc biểu cảm của nhân vật, PHẢI viết lách uyển chuyển, tự nhiên như tiểu thuyết. Tuyệt đối không viết kiểu liệt kê máy móc. Hãy lồng tên nhân vật vào thẳng trong câu văn mô tả (VD: "Lực bàn tay Trần Hạo Nam đang siết chặt..." hoặc "Trần Hạo Nam chậm rãi đưa tay..."). Dùng [Tên Nhân Vật]: ở đầu dòng chỉ để hệ thống nhận diện người nói, sau đó phần hành động phải là câu văn hoàn chỉnh mượt mà.
-- LỜI THOẠI: Đặt trong ngoặc kép "..." ở bên dưới phần hành động.
-- THOẢI MÁI 18+ & DRAMA: Tự do phát triển cốt truyện lãng mạn, chiều sâu cảm xúc, kịch tính.
+[QUY TẮC ĐỊNH DẠNG BẮT BUỘC DÀNH CHO AI]:
+- Thẻ [Tên Nhân Vật]: ở đầu dòng CHỈ DÙNG ĐỂ HỆ THỐNG NHẬN DIỆN. Nó KHÔNG NẰM TRONG CÂU VĂN.
+- Câu hành động đằng sau BẮT BUỘC phải là một câu hoàn chỉnh CÓ ĐẦY ĐỦ CHỦ NGỮ (Tên nhân vật).
+- MẪU CHUẨN AI PHẢI VIẾT:
+  [Trần Hạo Nam]: Trần Hạo Nam đứng chết lặng giữa màn mưa, bàn tay run run... "Thư... sống cho thật tốt đấy."
+  (Thẻ [Trần Hạo Nam]: để hệ thống đọc, còn câu đằng sau "Trần Hạo Nam đứng chết lặng..." là câu văn hoàn chỉnh).
+
+- LỜI THOẠI: Đặt trong ngoặc kép "...".
+- THOẢI MÁI 18+ & DRAMA: Tự do phát triển kịch tính và cảm xúc.
 `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];
