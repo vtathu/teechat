@@ -1524,7 +1524,6 @@
       const lines = (fullText || '').split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
-        // Nhận diện thẻ [Tên]: ở đầu câu
         const charMatch = line.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
         
         let speakerRaw = charMatch ? charMatch[1].trim() : '';
@@ -1545,7 +1544,12 @@
           speakerName = (story && story.characters && story.characters[0]) ? story.characters[0].name : 'Nhân vật';
         }
 
-        // Tách lời thoại ("...") và hành động
+        // TRƯỜNG HỢP AI CỐ TÌNH GỬI DÒNG TRỐNG CHỈ CÓ TÊN [Trần Hạo Nam]: Ở DÒNG TRÊN
+        if (!restText) {
+          return; // Bỏ qua dòng thẻ tên mồ côi, không cho nó hiện ra cái khung xám độc lập nữa!
+        }
+
+        // Xử lý tách lời thoại ("...") và hành động
         restText = restText.replace(/[“”]/g, '"');
         const hasQuote = (restText.match(/"/g) || []).length >= 2;
         const segs = [];
@@ -1575,13 +1579,19 @@
           if (!seg.text) return;
 
           if (seg.type === 'action') {
-            // Hiển thị phần câu văn hành động hoàn chỉnh (Đã có sẵn tên do AI viết)
+            // TỰ ĐỘNG GÉP TÊN NHÂN VẬT VÀO ĐẦU CÂU HÀNH ĐỘNG ĐỂ ĐỦ NGHĨA 100%
             const actDiv = document.createElement('div');
             actDiv.className = 'narrative-block ai-action';
-            actDiv.innerText = seg.text.replace(/[\[\]\*]/g, '').trim();
+            let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
+            
+            if (speakerName && !cleanAction.toLowerCase().startsWith(speakerName.toLowerCase())) {
+              actDiv.innerText = `${speakerName} ${cleanAction}`;
+            } else {
+              actDiv.innerText = cleanAction;
+            }
             container.appendChild(actDiv);
           } else {
-            // Hiển thị khung lời thoại kèm Thẻ tên + Avatar chuẩn
+            // Khối lời thoại hiển thị bong bóng chat chuẩn kèm thẻ tên và avatar
             const div = document.createElement('div');
             div.className = 'chat-message ai';
 
