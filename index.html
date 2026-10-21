@@ -1523,23 +1523,20 @@
         function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       if (!fullText) return;
 
-      // Tách theo từng dòng tin nhắn để nhận diện đúng từng nhân vật riêng biệt
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach(line => {
         let lineStr = line.trim();
 
-        // 1. Nhận diện tên nhân vật ở ĐẦU DÒNG NÀY (VD: [Gà Rừng]: hoặc Gà Rừng:)
+        // 1. Nhận diện tên nhân vật ở đầu câu để lấy Avatar và Thẻ tên đúng chuẩn
         const charMatch = lineStr.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
 
         let speakerRaw = charMatch ? charMatch[1].trim() : '';
         let restText = charMatch ? (charMatch[2] || '').trim() : lineStr;
 
-        // Nếu dòng này không có tên nhân vật riêng, tìm tên mặc định
         let currentSpeaker = speakerRaw.replace(/[\[\]\*]/g, '').trim();
         let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
 
-        // 2. Tra cứu Nhân vật trong danh sách Story để lấy Avatar & Tên chuẩn
         if (story && story.characters && currentSpeaker) {
           const cleanSearchName = currentSpeaker.toLowerCase();
           const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === cleanSearchName);
@@ -1549,7 +1546,6 @@
           }
         }
 
-        // Nếu không có tên ở dòng này, lấy nhân vật đầu tiên
         if (!currentSpeaker || currentSpeaker.toLowerCase() === 'ai') {
           if (story && story.characters && story.characters.length > 0) {
             currentSpeaker = story.characters[0].name;
@@ -1559,7 +1555,10 @@
           }
         }
 
-        // 3. Tách Hành động & Lời thoại cho riêng dòng này
+        // 2. LÀM SẠCH HIỂN THỊ: Tự động xóa bỏ hoàn toàn các dạng [Tên]: hoặc Tên: thừa thãi ở đầu nội dung văn bản
+        restText = restText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/g, '');
+
+        // 3. Phân tách Lời thoại ("...") và Hành động (*...*)
         restText = restText.replace(/[“”]/g, '"');
         const hasQuote = (restText.match(/"/g) || []).length >= 2;
         const segs = [];
@@ -1583,16 +1582,16 @@
           }
         }
 
-        // 4. Render ra màn hình cho ĐÚNG NHÂN VẬT DÒNG NÀY
+        // 4. Render mượt mà ra màn hình
         segs.forEach(seg => {
           if (!seg.text) return;
 
           if (seg.type === 'action') {
-            // Nối tên nhân vật đúng của dòng đó vào đầu câu hành động
             const actDiv = document.createElement('div');
             actDiv.className = 'narrative-block ai-action';
             let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
 
+            // Nếu câu hành động chưa có tên ở đầu, tự động thêm tên vào cho đủ nghĩa mượt mà
             if (currentSpeaker && !cleanAction.toLowerCase().startsWith(currentSpeaker.toLowerCase())) {
               cleanAction = `${currentSpeaker} ${cleanAction}`;
             }
@@ -1600,7 +1599,6 @@
             actDiv.innerText = cleanAction;
             container.appendChild(actDiv);
           } else {
-            // Bong bóng thoại hiện đúng Avatar và Tên của dòng này (Gà Rừng ra Gà Rừng)
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
