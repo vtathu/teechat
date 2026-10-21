@@ -327,21 +327,22 @@
         <h3>⚡ Hacker Sudoku 9x9 (Thưởng 10 Tỷ)</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-sudoku')">✖</button>
       </div>
-      <p style="font-size: 0.8rem; color: #555;">Điền số từ 1 đến 9 vào bảng:</p>
+      <p style="font-size: 0.8rem; color: #555;">Điền số từ 1 đến 9 vào bảng ngẫu nhiên:</p>
       <div id="sudoku-grid-9" style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; margin: 8px auto; width: 100%; max-width: 420px;"></div>
       <button class="btn btn-pink" onclick="checkSudoku9Result()">Xác Nhận Giải Mã</button>
     </div>
   </div>
 
   <div id="modal-job-game" class="modal">
-    <div class="modal-content" style="max-width: 420px; text-align: center;">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
       <div class="modal-header">
-        <h3 id="jgame-title">🎮 Thử Thách Công Việc</h3>
+        <h3 id="jgame-title">🎮 Thử Thách Công Việc (AI Sinh Câu Hỏi)</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
       </div>
-      <div style="font-size: 0.82rem; color: #e53e3e; font-weight: bold;" id="jgame-stats">Sai: 0/5 | Lượt còn: 5/5</div>
-      <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green);">Câu hỏi thử thách...</div>
-      <div id="jgame-options-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;"></div>
+      <div style="font-size: 0.82rem; color: #e53e3e; font-weight: bold;" id="jgame-stats">Đang tải câu hỏi từ AI...</div>
+      <!-- Xuống hàng chữ rõ ràng, không bị tràn khung -->
+      <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
+      <div id="jgame-options-box" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
     </div>
   </div>
 
@@ -364,7 +365,6 @@
         <button class="btn btn-outline" onclick="closeModal('modal-story-config')">✖</button>
       </div>
 
-      <!-- THANH TAB NGUYÊN BẢN CHIA 3 MỤC RÕ RÀNG -->
       <div class="modal-tab-bar">
         <button class="modal-tab-btn active" id="cfg-tab-btn-story" onclick="switchConfigTab('story')">📖 Cốt Truyện</button>
         <button class="modal-tab-btn" id="cfg-tab-btn-theme" onclick="switchConfigTab('theme')">🎨 Giao Diện</button>
@@ -838,12 +838,12 @@
     function updateJobDesc() {
       const box = document.getElementById('job-desc-box');
       const j = window.state.currentJob;
-      if (j === 'barista') box.innerText = 'Pha chế cocktail qua minigame ghép công thức đúng (Lương cơ bản: 200.000 VNĐ).';
-      else if (j === 'office') box.innerText = 'Giải bài toán kiểm toán tài chính Excel nhanh (Lương cơ bản: 300.000 VNĐ).';
-      else if (j === 'gangster') box.innerText = 'Phản xạ nhanh né đòn và phản công giang hồ (Lương cơ bản: 400.000 VNĐ).';
-      else if (j === 'teacher') box.innerText = 'Chấm bài kiểm tra trắc nghiệm kiến thức (Lương cơ bản: 350.000 VNĐ).';
-      else if (j === 'artist') box.innerText = 'Phối màu sắc hoàn thành bức tranh nghệ thuật (Lương cơ bản: 300.000 VNĐ).';
-      else if (j === 'sudoku') box.innerText = '⚡ Giải mã bảng Sudoku 9x9 thiên tài (Lương khủng: 10.000.000.000 VNĐ).';
+      if (j === 'barista') box.innerText = 'AI tự tạo câu hỏi chuyên môn pha chế ngẫu nhiên (Lương cơ bản: 200.000 VNĐ).';
+      else if (j === 'office') box.innerText = 'AI tự tạo bài toán kiểm toán tài chính văn phòng ngẫu nhiên (Lương cơ bản: 300.000 VNĐ).';
+      else if (j === 'gangster') box.innerText = 'AI tự sinh tình huống giang hồ phản xạ nhanh ngẫu nhiên (Lương cơ bản: 400.000 VNĐ).';
+      else if (j === 'teacher') box.innerText = 'AI tự tạo câu hỏi kiến thức học thuật ngẫu nhiên (Lương cơ bản: 350.000 VNĐ).';
+      else if (j === 'artist') box.innerText = 'AI tự tạo câu hỏi mỹ thuật phối màu ngẫu nhiên (Lương cơ bản: 300.000 VNĐ).';
+      else if (j === 'sudoku') box.innerText = '⚡ Giải mã bảng Sudoku 9x9 sinh ngẫu nhiên vô tận (Lương khủng: 10.000.000.000 VNĐ).';
     }
 
     let selectedShopItem = null;
@@ -898,9 +898,10 @@
       });
     }
 
-    let jobGameState = { job: '', baseSalary: 0, currentSalary: 0, wrongCount: 0, qIndex: 0, questions: [] };
+    let jobGameState = { job: '', baseSalary: 0, currentSalary: 0, wrongCount: 0, qIndex: 0, currentQuestions: [] };
 
-    function executeWorkMinigame() {
+    // GỌI AI ĐỂ TỰ ĐỘNG TẠO 5 CÂU HỎI NGẪU NHIÊN CHO NGHỀ NGHIỆP
+    async function executeWorkMinigame() {
       checkDailyReset();
       if (window.state.dailyWorkCount >= 5) {
         return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay! Hãy quay lại vào ngày mai.');
@@ -912,60 +913,73 @@
         return;
       }
 
+      if (!window.state.apiKeys || window.state.apiKeys.length === 0) {
+        alert('Vui lòng nhập API Key trong Cài Đặt để AI tạo câu hỏi làm việc!');
+        return openModal('modal-settings');
+      }
+
       jobGameState.job = job;
       jobGameState.wrongCount = 0;
       jobGameState.qIndex = 0;
-
-      if (job === 'barista') {
-        jobGameState.baseSalary = 200000;
-        jobGameState.questions = [
-          { q: 'Pha ly Mojito cần nguyên liệu chính nào?', opts: ['Rượu Rum & Bạc Hà', 'Sữa tươi & Trân châu', 'Nước mắm & Đường', 'Cà phê đen'], ans: 0 },
-          { q: 'Tỷ lệ pha chuẩn ly Blue Lagoon gồm Vodka và gì?', opts: ['Curacao xanh & Sprite', 'Mật ong nguyên chất', 'Nước cam tươi', 'Sữa đặc có đường'], ans: 0 },
-          { q: 'Khi lắc bình Shaker, động tác chuẩn là gì?', opts: ['Lắc dứt khoát theo chiều ngang/dọc', 'Khuấy nhẹ bằng đũa', 'Đặt yên trong tủ lạnh', 'Đun sôi trên bếp'], ans: 0 },
-          { q: 'Ly Cocktail nào thường trang trí vỏ cam xoắn?', opts: ['Old Fashioned', 'Bia hơi', 'Trà đá chanh', 'Sữa chua dầm'], ans: 0 },
-          { q: 'Nhiệt độ đá lý tưởng trong ly cocktail là bao nhiêu?', opts: ['Đá lạnh sâu từ -10°C', 'Đá đun sôi', 'Đá tan chảy', 'Nước ấm'], ans: 0 }
-        ];
-      } else if (job === 'office') {
-        jobGameState.baseSalary = 300000;
-        jobGameState.questions = [
-          { q: 'Hàm Excel tính tổng dãy ô từ A1 đến A10 là gì?', opts: ['=SUM(A1:A10)', '=TOTAL(A1:A10)', '=ADD(A1:A10)', '=COUNT(A1:A10)'], ans: 0 },
-          { q: 'Doanh thu 500tr, chi phí 200tr, lợi nhuận là bao nhiêu?', opts: ['300 triệu', '700 triệu', '500 triệu', '200 triệu'], ans: 0 },
-          { q: 'Hàm VLOOKUP dùng để làm gì trong bảng tính?', opts: ['Tìm kiếm giá trị theo cột', 'Vẽ biểu đồ hình tròn', 'Tô màu tự động', 'Đếm số lượng chữ'], ans: 0 },
-          { q: 'Thuế thu nhập doanh nghiệp cơ bản hiện hành là bao nhiêu?', opts: ['20%', '10%', '50%', '5%'], ans: 0 },
-          { q: 'Phím tắt sao chép (Copy) nhanh trong Windows là gì?', opts: ['Ctrl + C', 'Ctrl + V', 'Ctrl + X', 'Ctrl + Z'], ans: 0 }
-        ];
-      } else if (job === 'gangster') {
-        jobGameState.baseSalary = 400000;
-        jobGameState.questions = [
-          { q: 'Khi đối thủ bất ngờ tấn công diện hẹp, phản xạ đầu tiên?', opts: ['Né đòn và phản công nhanh', 'Đứng im chịu trận', 'Ngồi xuống khóc', 'Bỏ chạy mất dạng'], ans: 0 },
-          { q: 'Khu vực Chợ Mới do ai quản lý bảo kê chính?', opts: ['Băng nhóm của bạn', 'Cảnh sát khu vực', 'Khách du lịch', 'Hội người cao tuổi'], ans: 0 },
-          { q: 'Khi thu tiền bảo kê hàng tháng gặp hộ chống đối?', opts: ['Uy nghiêm dằn mặt theo luật giang hồ', 'Tặng quà tri ân', 'Báo công an bắt', 'Đóng tiền thay cho họ'], ans: 0 },
-          { q: 'Vũ khí cận chiến ưa thích của tay anh chị là gì?', opts: ['Gậy sắt / Dao găm giấu túi', 'Cây chổi quét nhà', 'Quạt giấy mùa hè', 'Bút bi thiên long'], ans: 0 },
-          { q: 'Nguyên tắc vàng sống trong giới giang hồ là gì?', opts: ['Trọng chữ tín và trung thành', 'Phản bội anh em', 'Khai hết với đối thủ', 'Trốn nợ trền đầu'], ans: 0 }
-        ];
-      } else if (job === 'teacher') {
-        jobGameState.baseSalary = 350000;
-        jobGameState.questions = [
-          { q: 'Nước sôi ở điều kiện tiêu chuẩn bao nhiêu độ C?', opts: ['100°C', '50°C', '0°C', '200°C'], ans: 0 },
-          { q: 'Công thức tính diện tích hình chữ nhật là gì?', opts: ['Dài nhân Rộng', 'Cạnh nhân 4', 'Bán kính bình phương', 'Đáy nhân cao chia 2'], ans: 0 },
-          { q: 'Thủ đô của Việt Nam là gì?', opts: ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng'], ans: 0 },
-          { q: '1 năm có bao nhiêu tháng có 28 ngày?', opts: ['Cả 12 tháng', 'Chỉ 1 tháng', '6 tháng', 'Không tháng nào'], ans: 0 },
-          { q: 'Nguyên tố hóa học ký hiệu là H là gì?', opts: ['Hydro', 'Oxy', 'Cacbon', 'Nitơ'], ans: 0 }
-        ];
-      } else if (job === 'artist') {
-        jobGameState.baseSalary = 300000;
-        jobGameState.questions = [
-          { q: 'Pha màu Đỏ và màu Xanh Dương ra màu gì?', opts: ['Màu Tím', 'Màu Cam', 'Màu Xanh Lá', 'Màu Nâu'], ans: 0 },
-          { q: 'Màu nào biểu trưng cho sự lãng mạn và tình yêu?', opts: ['Màu Hồng / Đỏ thắm', 'Màu Đen xám', 'Màu Xám tro', 'Màu Xâu đậm'], ans: 0 },
-          { q: 'Dụng cụ không thể thiếu của họa sĩ vẽ tranh sơn dầu?', opts: ['Cọ vẽ và Bảng pha màu', 'Búa đinh sắt', 'Máy hàn điện', 'Kìm cắt dây'], ans: 0 },
-          { q: 'Pha màu Vàng và Xanh Dương ra màu gì?', opts: ['Màu Xanh Lá', 'Màu Hồng', 'Màu Tím', 'Màu Cam'], ans: 0 },
-          { q: 'Bức tranh trường phái trừu tượng đòi hỏi điều gì?', opts: ['Sự sáng tạo và cảm xúc thăng hoa', 'Vẽ giống y đúc chụp ảnh', 'Chỉ dùng một màu đen', 'Không cần suy nghĩ'], ans: 0 }
-        ];
-      }
+      
+      if (job === 'barista') jobGameState.baseSalary = 200000;
+      else if (job === 'office') jobGameState.baseSalary = 300000;
+      else if (job === 'gangster') jobGameState.baseSalary = 400000;
+      else if (job === 'teacher') jobGameState.baseSalary = 350000;
+      else if (job === 'artist') jobGameState.baseSalary = 300000;
 
       jobGameState.currentSalary = jobGameState.baseSalary;
-      renderJobGameQuestion();
+      
+      document.getElementById('jgame-stats').innerText = 'AI đang tự động sáng tạo bộ 5 câu hỏi mới tinh cho bạn...';
+      document.getElementById('jgame-question-box').innerText = 'Đang kết nối AI...';
+      document.getElementById('jgame-options-box').innerHTML = '';
       openModal('modal-job-game');
+
+      const jobNames = { barista: 'Nhân viên pha chế cocktail', office: 'Nhân viên văn phòng/kiểm toán', gangster: 'Tay anh chị giang hồ', teacher: 'Giáo viên/Giảng viên', artist: 'Họa sĩ/Nghệ sĩ tự do' };
+      const prompt = `Hãy tạo ra một danh sách gồm đúng 5 câu hỏi trắc nghiệm hoàn toàn mới lạ, độc đáo về ngành nghề "${jobNames[job]}". 
+      Mỗi câu hỏi có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
+      Yêu cầu trả về cấu trúc JSON thuần túy (không kèm markdown rườm rà) theo định dạng mẫu sau:
+      [
+        {
+          "q": "Nội dung câu hỏi...",
+          "opts": ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
+          "ans": 0
+        }
+      ]
+      Trong đó "ans" là số thứ tự từ 0 đến 3 ứng với đáp án đúng trong mảng opts.`;
+
+      let questionsData = null;
+      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
+      
+      for (const rawKey of window.state.apiKeys) {
+        const key = rawKey.trim().replace(/^["']|["']$/g, '');
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, 
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            const parts = data.candidates?.[0]?.content?.parts;
+            let rawText = parts ? parts.map(p => p.text || '').join('') : '';
+            rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const startIdx = rawText.indexOf('[');
+            const endIdx = rawText.lastIndexOf(']');
+            if (startIdx !== -1 && endIdx !== -1) {
+              questionsData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
+              if (Array.isArray(questionsData) && questionsData.length > 0) break;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (questionsData && questionsData.length > 0) {
+        jobGameState.currentQuestions = questionsData;
+        renderJobGameQuestion();
+      } else {
+        closeModal('modal-job-game');
+        alert('AI không tạo được câu hỏi, vui lòng thử lại!');
+      }
     }
 
     function renderJobGameQuestion() {
@@ -975,12 +989,12 @@
 
       statsBox.innerText = `Sai: ${jobGameState.wrongCount}/5 | Lượt còn: ${5 - window.state.dailyWorkCount} | Thưởng hiện tại: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ`;
 
-      if (jobGameState.qIndex >= jobGameState.questions.length || jobGameState.wrongCount >= 5) {
+      if (jobGameState.qIndex >= jobGameState.currentQuestions.length || jobGameState.wrongCount >= 5) {
         finishJobGame();
         return;
       }
 
-      const currentQ = jobGameState.questions[jobGameState.qIndex];
+      const currentQ = jobGameState.currentQuestions[jobGameState.qIndex];
       qBox.innerText = `Câu ${jobGameState.qIndex + 1}: ${currentQ.q}`;
       optBox.innerHTML = '';
 
@@ -990,8 +1004,13 @@
       shuffledOpts.forEach(item => {
         const btn = document.createElement('button');
         btn.className = 'btn btn-outline';
-        btn.style.padding = '10px';
+        // Xuống hàng tự động, chữ dài không tràn khung
+        btn.style.padding = '10px 12px';
         btn.style.fontSize = '0.85rem';
+        btn.style.textAlign = 'left';
+        btn.style.whiteSpace = 'normal';
+        btn.style.wordBreak = 'break-word';
+        btn.style.width = '100%';
         btn.innerText = item.text;
         btn.onclick = () => handleJobAnswer(item.originalIdx === currentQ.ans);
         optBox.appendChild(btn);
@@ -1000,16 +1019,20 @@
 
     function handleJobAnswer(isCorrect) {
       const stepBonus = jobGameState.baseSalary * 0.1;
+      const statsBox = document.getElementById('jgame-stats');
+
       if (isCorrect) {
         jobGameState.currentSalary += stepBonus;
-        alert(`✅ Chính xác! +${stepBonus.toLocaleString('vi-VN')} VNĐ vào tiền thưởng.`);
+        statsBox.innerText = `✅ Chính xác! +${stepBonus.toLocaleString('vi-VN')} VNĐ (Thưởng: ${jobGameState.currentSalary.toLocaleString('vi-VN')})`;
       } else {
         jobGameState.wrongCount++;
         jobGameState.currentSalary = Math.max(0, jobGameState.currentSalary - 10000);
-        alert(`❌ Trả lời sai! -10.000 VNĐ tiền phạt. (Sai ${jobGameState.wrongCount}/5 lần)`);
+        statsBox.innerText = `❌ Trả lời sai! -10.000 VNĐ. (Sai ${jobGameState.wrongCount}/5 lần)`;
       }
       jobGameState.qIndex++;
-      renderJobGameQuestion();
+      setTimeout(() => {
+        renderJobGameQuestion();
+      }, 700);
     }
 
     function finishJobGame() {
@@ -1021,17 +1044,53 @@
       alert(`🎉 KẾT THÚC CA LÀM VIỆC!\nTổng tiền kiếm được: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ đã cộng vào ví.`);
     }
 
-    let sudoku9Solution = [
-      [5,3,4,6,7,8,9,1,2],
-      [6,7,2,1,9,5,3,4,8],
-      [1,9,8,3,4,2,5,6,7],
-      [8,5,9,7,6,1,4,2,3],
-      [4,2,6,8,5,3,7,9,1],
-      [7,1,3,9,2,4,8,5,6],
-      [9,6,1,5,3,7,2,8,4],
-      [2,8,7,4,1,9,6,3,5],
-      [3,4,5,2,8,6,1,7,9]
-    ];
+    let currentSudokuSolution = [];
+    let currentSudokuPuzzle = [];
+
+    function generateRandomSudoku() {
+      let grid = Array(9).fill(0).map(() => Array(9).fill(0));
+      
+      function isValid(g, r, c, num) {
+        for (let i = 0; i < 9; i++) {
+          if (g[r][i] === num || g[i][c] === num) return false;
+          let boxR = 3 * Math.floor(r / 3) + Math.floor(i / 3);
+          let boxC = 3 * Math.floor(c / 3) + (i % 3);
+          if (g[boxR][boxC] === num) return false;
+        }
+        return true;
+      }
+
+      function fillGrid(r, c) {
+        if (r === 9) return true;
+        let nextR = c === 8 ? r + 1 : r;
+        let nextC = c === 8 ? 0 : c + 1;
+        
+        let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+        for (let num of nums) {
+          if (isValid(grid, r, c, num)) {
+            grid[r][c] = num;
+            if (fillGrid(nextR, nextC)) return true;
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+
+      fillGrid(0, 0);
+      currentSudokuSolution = grid.map(row => [...row]);
+
+      let puzzle = grid.map(row => [...row]);
+      let holes = 42;
+      while (holes > 0) {
+        let r = Math.floor(Math.random() * 9);
+        let c = Math.floor(Math.random() * 9);
+        if (puzzle[r][c] !== null) {
+          puzzle[r][c] = null;
+          holes--;
+        }
+      }
+      currentSudokuPuzzle = puzzle;
+    }
 
     function openSudoku9Minigame() {
       checkDailyReset();
@@ -1039,9 +1098,10 @@
         return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay!');
       }
 
+      generateRandomSudoku();
+
       const grid = document.getElementById('sudoku-grid-9');
       grid.innerHTML = '';
-      const puzzle = sudoku9Solution.map((row, r) => row.map((val, c) => ((r + c) % 3 === 0 || (r * c) % 5 === 0) ? null : val));
 
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
@@ -1049,8 +1109,9 @@
           cell.type = 'number'; cell.min = '1'; cell.max = '9';
           cell.style.width = '100%'; cell.style.height = '36px'; cell.style.textAlign = 'center'; cell.style.fontSize = '0.9rem'; cell.style.fontWeight = 'bold'; cell.style.borderRadius = '4px'; cell.style.border = '1px solid #cbd5e0';
           cell.dataset.r = r; cell.dataset.c = c;
-          if (puzzle[r][c] !== null) {
-            cell.value = puzzle[r][c];
+          
+          if (currentSudokuPuzzle[r][c] !== null) {
+            cell.value = currentSudokuPuzzle[r][c];
             cell.disabled = true;
             cell.style.background = '#edf2f7';
           }
@@ -1068,7 +1129,7 @@
         const r = parseInt(inp.dataset.r);
         const c = parseInt(inp.dataset.c);
         const val = parseInt(inp.value) || 0;
-        if (val !== sudoku9Solution[r][c]) isAllCorrect = false;
+        if (val !== currentSudokuSolution[r][c]) isAllCorrect = false;
       });
 
       closeModal('modal-sudoku');
@@ -1079,9 +1140,9 @@
         window.state.walletBalance = (window.state.walletBalance || 0) + reward;
         saveStorage();
         renderLifeModeUI();
-        alert('🎉 CHÍNH XÁC TUYỆT ĐỐI! Hacker tài ba đã vượt qua thử thách Sudoku 9x9 và nhận phần thưởng khổng lồ: 10.000.000.000 VNĐ vào ví!');
+        alert('🎉 CHÍNH XÁC TUYỆT ĐỐI! Hacker tài ba đã vượt qua bảng Sudoku ngẫu nhiên và nhận phần thưởng khổng lồ: 10.000.000.000 VNĐ vào ví!');
       } else {
-        alert('❌ GIẢI MÃ THẤT BẠI! Các con số chưa chính xác theo logic toán học Sudoku 9x9.');
+        alert('❌ GIẢI MÃ THẤT BẠI! Các con số chưa chính xác theo logic toán học Sudoku.');
       }
     }
 
