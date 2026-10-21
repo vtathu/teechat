@@ -1523,86 +1523,90 @@
         function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       if (!fullText) return;
 
-      // 1. Tách phần [Tên Nhân Vật]: ở đầu chuỗi (nếu có)
-      const globalMatch = fullText.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*([\s\S]*)$/);
+      // Tách theo từng dòng tin nhắn để nhận diện đúng từng nhân vật riêng biệt
+      const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
-      let speakerRaw = globalMatch ? globalMatch[1].trim() : '';
-      let speakerName = speakerRaw.replace(/[\[\]\*]/g, '').trim();
-      let restText = globalMatch ? globalMatch[2].trim() : fullText.trim();
+      lines.forEach(line => {
+        let lineStr = line.trim();
 
-      // 2. Tìm Avatar chuẩn của nhân vật trong Cài đặt
-      let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-      if (story && story.characters && speakerName) {
-        const cleanSearchName = speakerName.toLowerCase();
-        const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === cleanSearchName);
-        if (foundChar) {
-          speakerName = foundChar.name.replace(/[\[\]\*]/g, '');
-          if (foundChar.avatar) matchedAvatar = foundChar.avatar;
+        // 1. Nhận diện tên nhân vật ở ĐẦU DÒNG NÀY (VD: [Gà Rừng]: hoặc Gà Rừng:)
+        const charMatch = lineStr.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*(.*)$/);
+
+        let speakerRaw = charMatch ? charMatch[1].trim() : '';
+        let restText = charMatch ? (charMatch[2] || '').trim() : lineStr;
+
+        // Nếu dòng này không có tên nhân vật riêng, tìm tên mặc định
+        let currentSpeaker = speakerRaw.replace(/[\[\]\*]/g, '').trim();
+        let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
+
+        // 2. Tra cứu Nhân vật trong danh sách Story để lấy Avatar & Tên chuẩn
+        if (story && story.characters && currentSpeaker) {
+          const cleanSearchName = currentSpeaker.toLowerCase();
+          const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === cleanSearchName);
+          if (foundChar) {
+            currentSpeaker = foundChar.name.replace(/[\[\]\*]/g, '');
+            if (foundChar.avatar) matchedAvatar = foundChar.avatar;
+          }
         }
-      }
 
-      if (!speakerName || speakerName.toLowerCase() === 'ai') {
-        if (story && story.characters && story.characters.length > 0) {
-          speakerName = story.characters[0].name;
-          if (story.characters[0].avatar) matchedAvatar = story.characters[0].avatar;
-        } else {
-          speakerName = 'Nhân vật';
+        // Nếu không có tên ở dòng này, lấy nhân vật đầu tiên
+        if (!currentSpeaker || currentSpeaker.toLowerCase() === 'ai') {
+          if (story && story.characters && story.characters.length > 0) {
+            currentSpeaker = story.characters[0].name;
+            if (story.characters[0].avatar) matchedAvatar = story.characters[0].avatar;
+          } else {
+            currentSpeaker = 'Nhân vật';
+          }
         }
-      }
 
-      // 3. Xóa các tiền tố [Tên]: lặp lại ở các dòng nhỏ mà không xóa dữ liệu gốc
-      let cleanContent = restText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/gm, '');
-      const lines = cleanContent.split('\n').filter(p => p.trim() !== '');
-
-      lines.forEach((line, lineIdx) => {
-        let lineStr = line.trim().replace(/[“”]/g, '"');
-        const hasQuote = (lineStr.match(/"/g) || []).length >= 2;
+        // 3. Tách Hành động & Lời thoại cho riêng dòng này
+        restText = restText.replace(/[“”]/g, '"');
+        const hasQuote = (restText.match(/"/g) || []).length >= 2;
         const segs = [];
 
         if (hasQuote) {
           const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g; let m;
-          while ((m = re.exec(lineStr)) !== null) {
+          while ((m = re.exec(restText)) !== null) {
             if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'dialogue', text: m[1].trim() });
             else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'action', text: m[2].trim() });
             else if (m[3] !== undefined && m[3].trim()) segs.push({ type: 'action', text: m[3].trim() });
           }
         } else {
           const re = /\*([^*]*)\*|([^*]+)/g;
-          const hasStar = /\*[^*]+\*/.test(lineStr); let m;
-          while ((m = re.exec(lineStr)) !== null) {
+          const hasStar = /\*[^*]+\*/.test(restText); let m;
+          while ((m = re.exec(restText)) !== null) {
             if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'action', text: m[1].trim() });
             else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
           }
-          if (!hasStar && segs.length === 0 && lineStr) {
-            segs.push({ type: 'action', text: lineStr.replace(/[\[\]\*]/g, '').trim() });
+          if (!hasStar && segs.length === 0 && restText) {
+            segs.push({ type: 'action', text: restText.replace(/[\[\]\*]/g, '').trim() });
           }
         }
 
-        segs.forEach((seg, segIdx) => {
+        // 4. Render ra màn hình cho ĐÚNG NHÂN VẬT DÒNG NÀY
+        segs.forEach(seg => {
           if (!seg.text) return;
 
           if (seg.type === 'action') {
+            // Nối tên nhân vật đúng của dòng đó vào đầu câu hành động
             const actDiv = document.createElement('div');
             actDiv.className = 'narrative-block ai-action';
             let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
 
-            // Nếu là khối hành động đầu tiên và chưa có tên nhân vật ở đầu câu -> Ghép tên vào (KHÔNG CÓ DẤU HAI CHẤM :)
-            if (lineIdx === 0 && segIdx === 0 && speakerName) {
-              if (!cleanAction.toLowerCase().startsWith(speakerName.toLowerCase())) {
-                cleanAction = `${speakerName} ${cleanAction}`;
-              }
+            if (currentSpeaker && !cleanAction.toLowerCase().startsWith(currentSpeaker.toLowerCase())) {
+              cleanAction = `${currentSpeaker} ${cleanAction}`;
             }
 
             actDiv.innerText = cleanAction;
             container.appendChild(actDiv);
           } else {
-            // Lời thoại -> Bong bóng chat chuẩn có Avatar và Thẻ tên ở trên (Không có dấu :)
+            // Bong bóng thoại hiện đúng Avatar và Tên của dòng này (Gà Rừng ra Gà Rừng)
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
               <img src="${matchedAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
               <div class="msg-bubble-wrap">
-                <div class="msg-sender">${escapeHtml(speakerName)}</div>
+                <div class="msg-sender">${escapeHtml(currentSpeaker)}</div>
                 <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(seg.text.replace(/[\[\]]/g, ''))}</span></div>
                 <div class="msg-action-bar">
                   <button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button>
