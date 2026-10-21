@@ -336,11 +336,12 @@
   <div id="modal-job-game" class="modal">
     <div class="modal-content" style="max-width: 440px; text-align: center;">
       <div class="modal-header">
-        <h3 id="jgame-title">🎮 Thử Thách Công Việc (AI Sinh Câu Hỏi)</h3>
+        <h3 id="jgame-title">🎮 Thử Thách Vô Tận (Sai 5 lần dừng)</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
       </div>
-      <div style="font-size: 0.82rem; color: #e53e3e; font-weight: bold;" id="jgame-stats">Đang tải câu hỏi từ AI...</div>
-      <!-- Xuống hàng chữ rõ ràng, không bị tràn khung -->
+      <!-- Hiển thị điểm và số lần sai trực tiếp trên tab -->
+      <div style="font-size: 0.85rem; color: #e53e3e; font-weight: bold; background: #fff5f5; padding: 6px; border-radius: 8px;" id="jgame-stats">Đang tải câu hỏi từ AI...</div>
+      <!-- Xuống hàng chữ rõ ràng, không tràn khung -->
       <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
       <div id="jgame-options-box" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
     </div>
@@ -838,11 +839,11 @@
     function updateJobDesc() {
       const box = document.getElementById('job-desc-box');
       const j = window.state.currentJob;
-      if (j === 'barista') box.innerText = 'AI tự tạo câu hỏi chuyên môn pha chế ngẫu nhiên (Lương cơ bản: 200.000 VNĐ).';
-      else if (j === 'office') box.innerText = 'AI tự tạo bài toán kiểm toán tài chính văn phòng ngẫu nhiên (Lương cơ bản: 300.000 VNĐ).';
-      else if (j === 'gangster') box.innerText = 'AI tự sinh tình huống giang hồ phản xạ nhanh ngẫu nhiên (Lương cơ bản: 400.000 VNĐ).';
-      else if (j === 'teacher') box.innerText = 'AI tự tạo câu hỏi kiến thức học thuật ngẫu nhiên (Lương cơ bản: 350.000 VNĐ).';
-      else if (j === 'artist') box.innerText = 'AI tự tạo câu hỏi mỹ thuật phối màu ngẫu nhiên (Lương cơ bản: 300.000 VNĐ).';
+      if (j === 'barista') box.innerText = 'Chế độ vô tận: AI sinh câu hỏi pha chế liên tục đến khi sai 5 lần (Thưởng mỗi câu đúng).';
+      else if (j === 'office') box.innerText = 'Chế độ vô tận: AI sinh bài toán văn phòng liên tục đến khi sai 5 lần (Thưởng mỗi câu đúng).';
+      else if (j === 'gangster') box.innerText = 'Chế độ vô tận: AI sinh tình huống giang hồ liên tục đến khi sai 5 lần (Thưởng mỗi câu đúng).';
+      else if (j === 'teacher') box.innerText = 'Chế độ vô tận: AI sinh câu hỏi học thuật liên tục đến khi sai 5 lần (Thưởng mỗi câu đúng).';
+      else if (j === 'artist') box.innerText = 'Chế độ vô tận: AI sinh câu hỏi mỹ thuật liên tục đến khi sai 5 lần (Thưởng mỗi câu đúng).';
       else if (j === 'sudoku') box.innerText = '⚡ Giải mã bảng Sudoku 9x9 sinh ngẫu nhiên vô tận (Lương khủng: 10.000.000.000 VNĐ).';
     }
 
@@ -898,9 +899,9 @@
       });
     }
 
-    let jobGameState = { job: '', baseSalary: 0, currentSalary: 0, wrongCount: 0, qIndex: 0, currentQuestions: [] };
+    // CHẾ ĐỘ VÔ TẬN - AI SINH TỪNG CÂU LIÊN TỤC ĐẾN KHI SAI 5 LẦN
+    let jobGameState = { job: '', rewardPerCorrect: 0, currentSessionEarned: 0, wrongCount: 0, currentQuestion: null };
 
-    // GỌI AI ĐỂ TỰ ĐỘNG TẠO 5 CÂU HỎI NGẪU NHIÊN CHO NGHỀ NGHIỆP
     async function executeWorkMinigame() {
       checkDailyReset();
       if (window.state.dailyWorkCount >= 5) {
@@ -920,35 +921,40 @@
 
       jobGameState.job = job;
       jobGameState.wrongCount = 0;
-      jobGameState.qIndex = 0;
+      jobGameState.currentSessionEarned = 0;
       
-      if (job === 'barista') jobGameState.baseSalary = 200000;
-      else if (job === 'office') jobGameState.baseSalary = 300000;
-      else if (job === 'gangster') jobGameState.baseSalary = 400000;
-      else if (job === 'teacher') jobGameState.baseSalary = 350000;
-      else if (job === 'artist') jobGameState.baseSalary = 300000;
+      if (job === 'barista') jobGameState.rewardPerCorrect = 40000;
+      else if (job === 'office') jobGameState.rewardPerCorrect = 60000;
+      else if (job === 'gangster') jobGameState.rewardPerCorrect = 80000;
+      else if (job === 'teacher') jobGameState.rewardPerCorrect = 70000;
+      else if (job === 'artist') jobGameState.rewardPerCorrect = 60000;
 
-      jobGameState.currentSalary = jobGameState.baseSalary;
-      
-      document.getElementById('jgame-stats').innerText = 'AI đang tự động sáng tạo bộ 5 câu hỏi mới tinh cho bạn...';
-      document.getElementById('jgame-question-box').innerText = 'Đang kết nối AI...';
+      document.getElementById('jgame-stats').innerText = `Sai: 0/5 | Tiền thưởng phiên này: 0 VNĐ`;
+      document.getElementById('jgame-question-box').innerText = 'AI đang sáng tạo câu hỏi mới...';
       document.getElementById('jgame-options-box').innerHTML = '';
       openModal('modal-job-game');
 
+      fetchNextAiQuestion();
+    }
+
+    async function fetchNextAiQuestion() {
+      if (jobGameState.wrongCount >= 5) {
+        finishJobGame();
+        return;
+      }
+
       const jobNames = { barista: 'Nhân viên pha chế cocktail', office: 'Nhân viên văn phòng/kiểm toán', gangster: 'Tay anh chị giang hồ', teacher: 'Giáo viên/Giảng viên', artist: 'Họa sĩ/Nghệ sĩ tự do' };
-      const prompt = `Hãy tạo ra một danh sách gồm đúng 5 câu hỏi trắc nghiệm hoàn toàn mới lạ, độc đáo về ngành nghề "${jobNames[job]}". 
-      Mỗi câu hỏi có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
+      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm hoàn toàn mới lạ, độc đáo về ngành nghề "${jobNames[jobGameState.job]}". 
+      Có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
       Yêu cầu trả về cấu trúc JSON thuần túy (không kèm markdown rườm rà) theo định dạng mẫu sau:
-      [
-        {
-          "q": "Nội dung câu hỏi...",
-          "opts": ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
-          "ans": 0
-        }
-      ]
+      {
+        "q": "Nội dung câu hỏi...",
+        "opts": ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
+        "ans": 0
+      }
       Trong đó "ans" là số thứ tự từ 0 đến 3 ứng với đáp án đúng trong mảng opts.`;
 
-      let questionsData = null;
+      let qData = null;
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
       
       for (const rawKey of window.state.apiKeys) {
@@ -963,22 +969,23 @@
             const parts = data.candidates?.[0]?.content?.parts;
             let rawText = parts ? parts.map(p => p.text || '').join('') : '';
             rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const startIdx = rawText.indexOf('[');
-            const endIdx = rawText.lastIndexOf(']');
+            const startIdx = rawText.indexOf('{');
+            const endIdx = rawText.lastIndexOf('}');
             if (startIdx !== -1 && endIdx !== -1) {
-              questionsData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
-              if (Array.isArray(questionsData) && questionsData.length > 0) break;
+              qData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
+              if (qData && qData.q && qData.opts) break;
             }
           }
         } catch (e) {}
       }
 
-      if (questionsData && questionsData.length > 0) {
-        jobGameState.currentQuestions = questionsData;
+      if (qData) {
+        jobGameState.currentQuestion = qData;
         renderJobGameQuestion();
       } else {
-        closeModal('modal-job-game');
-        alert('AI không tạo được câu hỏi, vui lòng thử lại!');
+        document.getElementById('jgame-question-box').innerText = 'AI đang bận, bấm để thử lại câu khác...';
+        const optBox = document.getElementById('jgame-options-box');
+        optBox.innerHTML = `<button class="btn btn-pink" onclick="fetchNextAiQuestion()">🔄 Lấy câu hỏi tiếp theo</button>`;
       }
     }
 
@@ -987,15 +994,12 @@
       const optBox = document.getElementById('jgame-options-box');
       const statsBox = document.getElementById('jgame-stats');
 
-      statsBox.innerText = `Sai: ${jobGameState.wrongCount}/5 | Lượt còn: ${5 - window.state.dailyWorkCount} | Thưởng hiện tại: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ`;
+      statsBox.innerText = `Sai: ${jobGameState.wrongCount}/5 | Tiền thưởng phiên này: +${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ`;
 
-      if (jobGameState.qIndex >= jobGameState.currentQuestions.length || jobGameState.wrongCount >= 5) {
-        finishJobGame();
-        return;
-      }
+      const currentQ = jobGameState.currentQuestion;
+      if (!currentQ) return;
 
-      const currentQ = jobGameState.currentQuestions[jobGameState.qIndex];
-      qBox.innerText = `Câu ${jobGameState.qIndex + 1}: ${currentQ.q}`;
+      qBox.innerText = currentQ.q;
       optBox.innerHTML = '';
 
       let shuffledOpts = currentQ.opts.map((opt, idx) => ({ text: opt, originalIdx: idx }));
@@ -1004,7 +1008,6 @@
       shuffledOpts.forEach(item => {
         const btn = document.createElement('button');
         btn.className = 'btn btn-outline';
-        // Xuống hàng tự động, chữ dài không tràn khung
         btn.style.padding = '10px 12px';
         btn.style.fontSize = '0.85rem';
         btn.style.textAlign = 'left';
@@ -1018,30 +1021,47 @@
     }
 
     function handleJobAnswer(isCorrect) {
-      const stepBonus = jobGameState.baseSalary * 0.1;
       const statsBox = document.getElementById('jgame-stats');
 
       if (isCorrect) {
-        jobGameState.currentSalary += stepBonus;
-        statsBox.innerText = `✅ Chính xác! +${stepBonus.toLocaleString('vi-VN')} VNĐ (Thưởng: ${jobGameState.currentSalary.toLocaleString('vi-VN')})`;
+        jobGameState.currentSessionEarned += jobGameState.rewardPerCorrect;
+        // Cộng thẳng vào ví ngay lập tức, hiển thị trực tiếp trên tab không pop-up
+        window.state.walletBalance = (window.state.walletBalance || 0) + jobGameState.rewardPerCorrect;
+        saveStorage();
+        renderLifeModeUI();
+
+        statsBox.innerText = `✅ Đúng! +${jobGameState.rewardPerCorrect.toLocaleString('vi-VN')} VNĐ vào ví | Sai: ${jobGameState.wrongCount}/5`;
+        qBoxText = 'Đang tải câu tiếp theo...';
+        document.getElementById('jgame-question-box').innerText = '✨ Đang tải câu hỏi mới tiếp theo...';
+        document.getElementById('jgame-options-box').innerHTML = '';
+        
+        setTimeout(() => {
+          fetchNextAiQuestion();
+        }, 600);
       } else {
         jobGameState.wrongCount++;
-        jobGameState.currentSalary = Math.max(0, jobGameState.currentSalary - 10000);
-        statsBox.innerText = `❌ Trả lời sai! -10.000 VNĐ. (Sai ${jobGameState.wrongCount}/5 lần)`;
+        statsBox.innerText = `❌ Sai rồi! (Sai ${jobGameState.wrongCount}/5 lần) | Tổng thưởng: ${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ`;
+        
+        if (jobGameState.wrongCount >= 5) {
+          setTimeout(() => {
+            finishJobGame();
+          }, 800);
+        } else {
+          document.getElementById('jgame-question-box').innerText = '⚠️ Bạn trả lời sai. Đang tải câu hỏi khác thay thế...';
+          document.getElementById('jgame-options-box').innerHTML = '';
+          setTimeout(() => {
+            fetchNextAiQuestion();
+          }, 800);
+        }
       }
-      jobGameState.qIndex++;
-      setTimeout(() => {
-        renderJobGameQuestion();
-      }, 700);
     }
 
     function finishJobGame() {
       closeModal('modal-job-game');
       window.state.dailyWorkCount++;
-      window.state.walletBalance = (window.state.walletBalance || 0) + jobGameState.currentSalary;
       saveStorage();
       renderLifeModeUI();
-      alert(`🎉 KẾT THÚC CA LÀM VIỆC!\nTổng tiền kiếm được: ${jobGameState.currentSalary.toLocaleString('vi-VN')} VNĐ đã cộng vào ví.`);
+      alert(`🛑 KẾT THÚC CA LÀM VIỆC DO ĐÃ SAI QUÁ 5 LẦN!\nTổng số tiền bạn kiếm được trong ca này: ${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ đã được cộng thẳng vào ví.`);
     }
 
     let currentSudokuSolution = [];
@@ -1852,7 +1872,7 @@ ${charsPrompt}
 [NGUYÊN TẮC QUAN TRỌNG]
 - BÁM SÁT CỐT TRUYỆN (BẮT BUỘC): mọi diễn biến, lời thoại và hành động phải phù hợp với bối cảnh/cốt truyện ở mục 1 và cảnh mở đầu ở mục 2; không tự bịa ra tình tiết mâu thuẫn với chúng, không bỏ qua hay đảo lộn các sự kiện đã xảy ra trong đoạn chat. Khi người dùng chỉ bảo tiếp tục (không đưa chỉ dẫn mới), hãy tự đẩy câu chuyện đi tiếp theo đúng hướng cốt truyện: để các nhân vật hành động hợp lý theo mục tiêu và tính cách của họ, nhưng chỉ tiến một bước nhỏ mỗi lượt. Nếu người dùng đưa hành động hoặc lời thoại mới thì phản ứng theo đó nhưng vẫn giữ mạch cốt truyện.
 - BÁM SÁT NHÂN VẬT (BẮT BUỘC): mỗi nhân vật phải nói và hành động ĐÚNG với tính cách, thuộc tính đã cho ở mục 3: giọng điệu, thái độ, cách ứng xử, mức độ nói nhiều hay ít. Tuyệt đối giữ đúng CÁCH XƯNG HÔ đã ghi (cách nhân vật tự xưng và cách gọi người khác, kể cả cách gọi người dùng), không tự đổi sang xưng hô khác và giữ nhất quán từ đầu đến cuối. Không để nhân vật nói hay làm trái tính cách; nếu thuộc tính không ghi rõ xưng hô thì chọn cách xưng hô hợp lý theo bối cảnh và giữ cố định. Mỗi nhân vật chỉ biết những gì họ có thể biết trong truyện.
-- BẮT BUỘC: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
+- BÁM SÁT: hành động/cử chỉ/miêu tả đặt trong dấu sao *như thế này*, lời thoại đặt trong ngoặc kép "như thế này". Hành động và lời thoại phải tách rõ bằng hai dấu này.
 - SỐ LƯỢNG NHÂN VẬT LÊN TIẾNG: Tùy vào tình huống và tính cách từng nhân vật để quyết định ai lên tiếng. Chỉ nhân vật nào theo tính cách và hoàn cảnh hiện tại sẽ nói thì mới có lời thoại; nhân vật nào theo tính cách sẽ im lặng, ít nói hoặc không muốn nói thì chỉ viết hành động/biểu cảm (không có lời thoại), hoặc không xuất hiện trong lượt đó. Không ép nhân vật nào phải nói. Khi người dùng gọi chung như "mọi người", chỉ những nhân vật phù hợp mới đáp lời.
 - TÊN TRONG HÀNH ĐỘNG: mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Sào Bì cười tít mắt, xua tay*), không được viết hành động mà thiếu tên chủ thể, vì giao diện sẽ không hiển thị tên riêng ở dòng hành động.
 - TUYỆT ĐỐI KHÔNG viết lời thoại, hành động, suy nghĩ hay quyết định thay cho người dùng "${(window.state.persona && window.state.persona.name) || 'User'}" và không để dòng nào bắt đầu bằng tên người dùng. Khi tình huống đến lúc người dùng cần phản hồi, trả lời hoặc hành động, hãy DỪNG lại và chờ người dùng.
