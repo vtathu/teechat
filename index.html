@@ -1523,15 +1523,14 @@
         function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
       if (!fullText) return;
 
-      // 1. Gom toàn bộ tin nhắn phản hồi của AI lại để xử lý chung 1 lượt (không split line làm lẻ tên)
-      // Tìm xem có thẻ [Tên]: hoặc Tên: ở đầu không
+      // 1. Tách phần [Tên Nhân Vật]: ở đầu chuỗi (nếu có)
       const globalMatch = fullText.match(/^\s*(?:\[\vert{}\*)?\s*([^:\[\]\*"\n]{1,40})\s*(?:\]|\*)?\s*:\s*([\s\S]*)$/);
 
       let speakerRaw = globalMatch ? globalMatch[1].trim() : '';
       let speakerName = speakerRaw.replace(/[\[\]\*]/g, '').trim();
-      let contentText = globalMatch ? globalMatch[2].trim() : fullText.trim();
+      let restText = globalMatch ? globalMatch[2].trim() : fullText.trim();
 
-      // 2. Tìm Avatar chuẩn của nhân vật trong Cài đặt cốt truyện
+      // 2. Tìm Avatar chuẩn của nhân vật trong Cài đặt
       let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
       if (story && story.characters && speakerName) {
         const cleanSearchName = speakerName.toLowerCase();
@@ -1542,7 +1541,6 @@
         }
       }
 
-      // Nếu không tìm thấy tên nhân vật, lấy tên nhân vật đầu tiên của cốt truyện (tránh bị hiện thành AI hay User)
       if (!speakerName || speakerName.toLowerCase() === 'ai') {
         if (story && story.characters && story.characters.length > 0) {
           speakerName = story.characters[0].name;
@@ -1552,47 +1550,53 @@
         }
       }
 
-      // 3. Tách nội dung thành các phần Hành động & Lời thoại
-      // Loại bỏ thẻ [Tên]: mồ côi ở hiển thị, chỉ lấy nội dung văn bản bên trong
-      let cleanContent = contentText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/gm, '');
-
+      // 3. Xóa các tiền tố [Tên]: lặp lại ở các dòng nhỏ mà không xóa dữ liệu gốc
+      let cleanContent = restText.replace(/^\s*(?:\[\vert{}\*)?\s*[^:\[\]\*"\n]{1,40}\s*(?:\]|\*)?\s*:\s*/gm, '');
       const lines = cleanContent.split('\n').filter(p => p.trim() !== '');
 
-      lines.forEach(line => {
-        let restText = line.trim().replace(/[“”]/g, '"');
-        const hasQuote = (restText.match(/"/g) || []).length >= 2;
+      lines.forEach((line, lineIdx) => {
+        let lineStr = line.trim().replace(/[“”]/g, '"');
+        const hasQuote = (lineStr.match(/"/g) || []).length >= 2;
         const segs = [];
 
         if (hasQuote) {
           const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g; let m;
-          while ((m = re.exec(restText)) !== null) {
+          while ((m = re.exec(lineStr)) !== null) {
             if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'dialogue', text: m[1].trim() });
             else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'action', text: m[2].trim() });
             else if (m[3] !== undefined && m[3].trim()) segs.push({ type: 'action', text: m[3].trim() });
           }
         } else {
           const re = /\*([^*]*)\*|([^*]+)/g;
-          const hasStar = /\*[^*]+\*/.test(restText); let m;
-          while ((m = re.exec(restText)) !== null) {
+          const hasStar = /\*[^*]+\*/.test(lineStr); let m;
+          while ((m = re.exec(lineStr)) !== null) {
             if (m[1] !== undefined && m[1].trim()) segs.push({ type: 'action', text: m[1].trim() });
             else if (m[2] !== undefined && m[2].trim()) segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
           }
-          if (!hasStar && segs.length === 0 && restText) {
-            segs.push({ type: 'action', text: restText.replace(/[\[\]\*]/g, '').trim() });
+          if (!hasStar && segs.length === 0 && lineStr) {
+            segs.push({ type: 'action', text: lineStr.replace(/[\[\]\*]/g, '').trim() });
           }
         }
 
-        segs.forEach(seg => {
+        segs.forEach((seg, segIdx) => {
           if (!seg.text) return;
 
           if (seg.type === 'action') {
-            // Khối hành động: Chỉ hiện đoạn văn mô tả tự nhiên, KHÔNG LẶP LẠI THẺ TÊN THỪA
             const actDiv = document.createElement('div');
             actDiv.className = 'narrative-block ai-action';
-            actDiv.innerText = seg.text.replace(/[\[\]\*]/g, '').trim();
+            let cleanAction = seg.text.replace(/[\[\]\*]/g, '').trim();
+
+            // Nếu là khối hành động đầu tiên và chưa có tên nhân vật ở đầu câu -> Ghép tên vào (KHÔNG CÓ DẤU HAI CHẤM :)
+            if (lineIdx === 0 && segIdx === 0 && speakerName) {
+              if (!cleanAction.toLowerCase().startsWith(speakerName.toLowerCase())) {
+                cleanAction = `${speakerName} ${cleanAction}`;
+              }
+            }
+
+            actDiv.innerText = cleanAction;
             container.appendChild(actDiv);
           } else {
-            // Khối thoại: Hiện bong bóng chat kèm ĐÚNG AVATAR & TÊN NHÂN VẬT ở trên
+            // Lời thoại -> Bong bóng chat chuẩn có Avatar và Thẻ tên ở trên (Không có dấu :)
             const div = document.createElement('div');
             div.className = 'chat-message ai';
             div.innerHTML = `
