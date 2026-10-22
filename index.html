@@ -1079,9 +1079,9 @@
 
       let giftActionText = '';
       if (giftedItem.tag === 'propose') {
-        giftActionText = `[SỰ KIỆN CẦU HÔN: ${userName} trao tặng "${baseSingleName}" cho ${charName}. Độ thân mật đạt ${newAff}%! (${levelText}). Nếu hảo cảm >= 85%, nhân vật sẽ đồng ý cầu hôn và thăng hoa cảm xúc!]`;
+        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. Độ thân mật đạt ${newAff}%! (${levelText}).]`;
       } else {
-        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. Độ thân mật tăng lên ${newAff}%! (${levelText}). Nhân vật hãy phản ứng tự nhiên đúng mốc thái độ]`;
+        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. Độ thân mật tăng lên ${newAff}%! (${levelText}).]`;
       }
 
       sendMessage(giftActionText);
