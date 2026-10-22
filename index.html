@@ -53,7 +53,6 @@
     .page { display: none; height: 100vh; flex-direction: column; width: 100%; max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(8px); position: relative; }
     .page.active { display: flex; }
 
-    /* ĐỒNG BỘ HOÀN HẢO: Header, Tab, Thanh điều khiển & Nhập liệu dùng hiệu ứng kính mờ trong suốt theo Theme */
     .navbar { 
       background: color-mix(in srgb, var(--bg-color) 75%, transparent); 
       backdrop-filter: blur(10px); 
@@ -269,7 +268,7 @@
           <h3 style="color: #234e52; font-size: 1.1rem;">💲 Ví</h3>
           <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handlePlusAction('transfer')">Chuyển Khoản</button>
         </div>
-        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">100.000.000 VNĐ</div>
+        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
         <div style="font-size: 0.78rem; color: #2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 5/5 | Thời gian đổi nghề: Có thể đổi ngay</div>
       </div>
 
@@ -309,7 +308,7 @@
         <button class="btn btn-outline" onclick="closeModal('modal-transfer')">✖</button>
       </div>
       <div style="background: #e6fffa; padding: 8px; border-radius: 8px; border: 1px solid #b2f5ea; text-align: center;">
-        <div style="font-size: 0.8rem; color: #234e52;">Số dư: <span id="wallet-balance-display" style="font-weight: bold;">100.000.000 VNĐ</span></div>
+        <div style="font-size: 0.8rem; color: #234e52;">Số dư: <span id="wallet-balance-display" style="font-weight: bold;">10.000.000 VNĐ</span></div>
       </div>
       <div class="form-group">
         <label>Giao Dịch:</label>
@@ -337,22 +336,31 @@
   <div id="modal-buy-detail" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="buy-modal-title">🏷️ Loại Vật Phẩm</h3>
+        <h3 id="buy-modal-title">🛒 Mua Vật Phẩm</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-buy-detail')">✖</button>
       </div>
-      <div id="buy-modal-body" class="form-group"></div>
-      <button class="btn btn-pink" onclick="confirmBuyItem()">Xác Nhận Mua</button>
+      <div id="buy-modal-body"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-buy-detail')">Hủy</button>
+        <button class="btn btn-pink" onclick="confirmBuyItem()">Xác Nhận Mua</button>
+      </div>
     </div>
   </div>
 
   <div id="modal-select-char-gift" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⭐ Người nhận?</h3>
+        <h3 style="color:#d53f8c;">🎁 Chọn Nhân Vật Nhận Quà</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">✖</button>
       </div>
-      <div style="font-size: 0.85rem; color: #666;">Chọn người bạn muốn tặng món quà này:</div>
-      <div id="target-char-list-for-gift" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="font-size:0.85rem; color:#4a5568;">Chọn nhân vật:</label>
+        <select id="gift-target-char-select" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e0; margin-top:4px;"></select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">Hủy</button>
+        <button class="btn btn-pink" onclick="executeSendGift()">Tặng Ngay</button>
+      </div>
     </div>
   </div>
 
@@ -707,7 +715,6 @@
       userBubbleBg: '#c1ebd9'
     };
 
-   // HỆ THỐNG MAP BẤT ĐỘNG SẢN & ĐỊA ĐIỂM
     const REAL_ESTATE_MAPS = [
       { id: 'map-1', name: '🌆 Khu Căn Hộ Cao Cấp Trung Tâm (Downtown)', desc: 'View kính sát trần ngắm toàn cảnh thành phố, gần TTM sầm uất.' },
       { id: 'map-2', name: '🏘️ Khu Phố Cổ / Chợ Mới Sầm Uất', desc: 'Náo nhiệt, vỉa hè náo nhiệt, ngập tràn hơi thở đời thường & drama.' },
@@ -721,9 +728,7 @@
       { id: 'map-10', name: '📦 Khu Nhà Trọ Sinh Viên / Căn Hộ Mini', desc: 'Khởi đầu giản dị cho những ngày tháng lập nghiệp.' }
     ];
 
-    // DANH SÁCH 9 NHÓM VỚI 15 MÓN MỖI NHÓM (TỔNG CỘNG 135 VẬT PHẨM)
     const SHOP_CATALOG = [
-      // 🌹 NHÓM 1: HOA & THIÊN NHIÊN (15 MÓN)
       { id: 'item-101', cat: 'flower', name: '🌷 Cành Hồng Lẻ', price: 50000, desc: 'Một cành hoa e ấp làm quen nhẹ nhàng.', tag: 'romantic' },
       { id: 'item-102', cat: 'flower', name: '🌿 Chậu Cây Trầu Bà Thủy Sinh', price: 80000, desc: 'Xanh mát dịu mắt, dễ chăm sóc.', tag: 'real' },
       { id: 'item-103', cat: 'flower', name: '🌻 Chậu Hướng Dương Mini', price: 90000, desc: 'Mang năng lượng ấm áp rực rỡ.', tag: 'romantic' },
@@ -740,7 +745,6 @@
       { id: 'item-114', cat: 'flower', name: '🪷 Bonsai Tùng Nhật Cổ Thụ Mini', price: 6500000, desc: 'Dáng cây thanh tao, nghệ thuật.', tag: 'art' },
       { id: 'item-115', cat: 'flower', name: '🏡 Khu Vườn Hồng Ngoại Thất', price: 15000000, desc: 'Xây hẳn một khu vườn tràn ngập sắc hoa.', tag: 'luxury' },
 
-      // 💻 NHÓM 2: ĐỒ CÔNG NGHỆ & TIỆN ÍCH (15 MÓN)
       { id: 'item-201', cat: 'tech', name: '🔌 Cáp Sạc Dự Phòng Nhanh', price: 150000, desc: 'Tiện lợi cho cuộc sống bận rộn.', tag: 'real' },
       { id: 'item-202', cat: 'tech', name: '📱 Ốp Lưng Độc Quyền Khắc Tên', price: 250000, desc: 'Độc đáo và cá tính.', tag: 'real' },
       { id: 'item-203', cat: 'tech', name: '🖊️ Bút Cảm Ứng Stylus', price: 350000, desc: 'Mượt mà cho công việc sáng tạo.', tag: 'real' },
@@ -757,7 +761,6 @@
       { id: 'item-214', cat: 'tech', name: '💻 Laptop Gaming Cấu Hình Khủng', price: 45000000, desc: 'Chiến mọi tựa game mượt mà.', tag: 'luxury' },
       { id: 'item-215', cat: 'tech', name: '🖥️ Dàn PC Workstation Siêu Cấp', price: 85000000, desc: 'Sức mạnh đồ họa đỉnh cao.', tag: 'luxury' },
 
-      // 👗 NHÓM 3: QUẦN ÁO & THỜI TRANG (15 MÓN)
       { id: 'item-301', cat: 'clothes', name: '🧣 Khăn Len Tự Đan Ấm Áp', price: 120000, desc: 'Gửi gắm hơi ấm ngày đông.', tag: 'romantic' },
       { id: 'item-302', cat: 'clothes', name: '👕 Áo Thun Đôi Cotton Basic', price: 250000, desc: 'Đơn giản, năng động dạo phố.', tag: 'romantic' },
       { id: 'item-303', cat: 'clothes', name: '👔 Áo Sơ Mi Lụa Lịch Lãm', price: 450000, desc: 'Tôn dáng, chuẩn phong cách công sở.', tag: 'real' },
@@ -774,7 +777,6 @@
       { id: 'item-314', cat: 'clothes', name: '🧥 Áo Lông Thú Đô Hộ Thượng Lưu', price: 65000000, desc: 'Đỉnh cao xa xỉ quý phái.', tag: 'luxury' },
       { id: 'item-315', cat: 'clothes', name: '👗 Tủ Đồ Độc Bản Giới Hạn Theo Mùa', price: 120000000, desc: 'Sở hữu toàn bộ bộ sưu tập thời trang cao cấp.', tag: 'luxury' },
 
-      // 👟 NHÓM 4: GIÀY DÉP & PHỤ KIỆN (15 MÓN)
       { id: 'item-401', cat: 'shoes', name: '🧦 Tất/Vớ Thời Trang Họa Tiết', price: 40000, desc: 'Món quà nhỏ nhắn ấm áp.', tag: 'real' },
       { id: 'item-402', cat: 'shoes', name: '🕶️ Kính Mát Dạo Phố Thời Trang', price: 400000, desc: 'Bảo vệ mắt và cực ngầu.', tag: 'real' },
       { id: 'item-403', cat: 'shoes', name: '🪵 Thắt Lưng Da Bò Nguyên Miếng', price: 650000, desc: 'Bền bỉ, nam tính.', tag: 'real' },
@@ -791,7 +793,6 @@
       { id: 'item-414', cat: 'shoes', name: '🕶️ Kính Mát Nạm Vàng Đính Đá Quý', price: 85000000, desc: 'Lấp lánh dưới ánh nắng.', tag: 'luxury' },
       { id: 'item-415', cat: 'shoes', name: '👢 Đôi Bốt Da Thật Thiết Kế Độc Bản', price: 110000000, desc: 'Quyến rũ và phong cách.', tag: 'luxury' },
 
-      // 💍 NHÓM 5: TRANG SỨC & XA XỈ PHẨM (15 MÓN - Kèm Nhẫn Cầu Hôn)
       { id: 'item-501', cat: 'jewelry', name: '💍 Vòng Tay Bạc Khắc Tên Đôi', price: 350000, desc: 'Gắn kết tình yêu đôi lứa.', tag: 'romantic' },
       { id: 'item-502', cat: 'jewelry', name: '🦪 Bông Tai Bạc Ngọc Trai', price: 550000, desc: 'Dịu dàng và e ấp.', tag: 'romantic' },
       { id: 'item-503', cat: 'jewelry', name: '🏵️ Trâm Cài Áo Mạ Vàng Cổ Điển', price: 950000, desc: 'Điểm nhấn quý phái.', tag: 'art' },
@@ -804,11 +805,10 @@
       { id: 'item-510', cat: 'jewelry', name: '👑 Cầu Hôn: Nhẫn Kim Cương Hoàng Gia', price: 80000000, desc: 'Món quà CẦU HÔN đắt giá (Kích hoạt phân cảnh cầu hôn thăng hoa).', tag: 'propose' },
       { id: 'item-511', cat: 'jewelry', name: '👸 Vương Miện Gia Tộc Nạm Đá Quý', price: 150000000, desc: 'Tôn vinh như nữ hoàng/vua của đời bạn.', tag: 'luxury' },
       { id: 'item-512', cat: 'jewelry', name: '⌚ Đồng Hồ Thụy Sỹ Vỏ Vàng Khối Nạm Kim Cương', price: 280000000, desc: 'Đẳng cấp đồng hồ thượng lưu.', tag: 'luxury' },
-      { id: 'item-513', cat: 'jewelry', name: '📿 MẶT DÂY CHUYỀN LỤC BẢO BẢO THẠCH', price: 450000000, desc: 'Viên ngọc xanh biếc hiếm có.', tag: 'luxury' },
+      { id: 'item-513', cat: 'jewelry', name: '📿 MẶT DÂY CHUYỆN LỤC BẢO BẢO THẠCH', price: 450000000, desc: 'Viên ngọc xanh biếc hiếm có.', tag: 'luxury' },
       { id: 'item-514', cat: 'jewelry', name: '💍 Nhẫn Kim Cương Hồng Nguyên Khối', price: 850000000, desc: 'Viên kim cương hồng cực hiếm trên thế giới.', tag: 'luxury' },
       { id: 'item-515', cat: 'jewelry', name: '👑 BỘ TRANG SỨC HOÀNG GIA ĐẠI TỘC', price: 1500000000, desc: 'Bộ sưu tập trang sức độc bản quý giá.', tag: 'luxury' },
 
-      // 🍔 NHÓM 6: ĐỒ ĂN, THỨC UỐNG & BÁNH KẸO (15 MÓN)
       { id: 'item-601', cat: 'food', name: '🍬 Kẹo Ngọt Vị Trái Cây Hộp Nhỏ', price: 25000, desc: 'Vị ngọt nhỏ nhắn.', tag: 'romantic' },
       { id: 'item-602', cat: 'food', name: '🧋 Ly Trà Sữa Trân Châu Size L', price: 45000, desc: 'Ngọt ngào đúng gu giới trẻ.', tag: 'romantic' },
       { id: 'item-603', cat: 'food', name: '🧁 Hộp Bánh Macaron Pháp', price: 90000, desc: 'Màu sắc bắt mắt, giòn xốp.', tag: 'romantic' },
@@ -825,7 +825,6 @@
       { id: 'item-614', cat: 'food', name: '🍾 Chai Rượu Champagne Dom Pérignon Vintage', price: 25000000, desc: 'Sâm-panh nổ mừng khoảnh khắc đặc biệt.', tag: 'luxury' },
       { id: 'item-615', cat: 'food', name: '🛳️ Bữa Tiệc Ẩm Thực Đầu Bếp 3 Sao Michelin', price: 85000000, desc: 'Đích thân siêu đầu bếp chế biến riêng.', tag: 'luxury' },
 
-      // 🛋️ NHÓM 7: NỘI THẤT & TIỆN ÍCH TRANG TRÍ (15 MÓN)
       { id: 'item-701', cat: 'decor', name: '🔑 Móc Khóa Khắc Tên Đôi', price: 40000, desc: 'Vật nhỏ luôn mang bên người.', tag: 'romantic' },
       { id: 'item-702', cat: 'decor', name: '🌅 Đèn Ngủ Hoàng Hôn Ấm Cúng', price: 220000, desc: 'Ánh sáng dịu nhẹ chill phòng ngủ.', tag: 'art' },
       { id: 'item-703', cat: 'decor', name: '🕯️ Nến Thơm Tinh Dầu Thư Giãn', price: 280000, desc: 'Hương thơm tự nhiên giảm stress.', tag: 'romantic' },
@@ -842,7 +841,6 @@
       { id: 'item-714', cat: 'decor', name: '🎹 Đàn Piano Đại Dương Vỏ Gỗ Cẩm Lai', price: 120000000, desc: 'Giai điệu lãng mạn cất lên trong căn phòng.', tag: 'art' },
       { id: 'item-715', cat: 'decor', name: '🏰 Đèn Chùm Pha Lê Swarovski Hoàng Gia', price: 250000000, desc: 'Ánh sáng lộng lẫy bao phủ phòng khách.', tag: 'luxury' },
 
-      // 🏍️ NHÓM 8: PHƯƠNG TIỆN & XE CỘ (15 MÓN)
       { id: 'item-801', cat: 'vehicle', name: '🛹 Ván Trượt Đường Phố', price: 800000, desc: 'Thể thao năng động dạo phố.', tag: 'art' },
       { id: 'item-802', cat: 'vehicle', name: '🚲 Xe Đạp Địa Hình Thể Thao', price: 3500000, desc: 'Cùng nhau đạp xe rèn luyện sức khỏe.', tag: 'real' },
       { id: 'item-803', cat: 'vehicle', name: '🛵 Xe Máy Điện Thời Trang', price: 22000000, desc: 'Di chuyển êm ái bảo vệ môi trường.', tag: 'real' },
@@ -859,7 +857,6 @@
       { id: 'item-814', cat: 'vehicle', name: '🛩️ Chuyên Cơ Tư Nhân Gulfstream', price: 350000000000, desc: 'Bay khắp thế giới bất cứ lúc nào.', tag: 'luxury' },
       { id: 'item-815', cat: 'vehicle', name: '🚀 Phi Thuyền Du Lịch Vũ Trụ Khai Phá', price: 1000000000000, desc: 'Ngắm nhìn trái đất từ không gian bao la.', tag: 'luxury' },
 
-      // 🏠 NHÓM 9: BẤT ĐỘNG SẢN & TỔ ẤM (15 MÓN - Kèm chọn Map)
       { id: 'item-901', cat: 'estate', name: '📦 Phòng Trọ Sinh Viên Căn Hộ Mini', price: 50000000, desc: 'Tổ ấm nhỏ những ngày lập nghiệp.', tag: 'estate' },
       { id: 'item-902', cat: 'estate', name: '🏘️ Căn Hộ Nhỏ Góc Phố Chợ Mới', price: 150000000, desc: 'Gần gũi và náo nhiệt.', tag: 'estate' },
       { id: 'item-903', cat: 'estate', name: '🕯️ Căn Hộ Studio Vintage Cổ Kính', price: 450000000, desc: 'Đậm chất nghệ thuật hoài niệm.', tag: 'estate' },
@@ -876,11 +873,13 @@
       { id: 'item-914', cat: 'estate', name: '🏰 Dinh Biệt Siêu Đô Thị Bậc Nhất', price: 250000000000, desc: 'Khu phức hợp xa hoa độc bản.', tag: 'estate' },
       { id: 'item-915', cat: 'estate', name: '🌌 Trạm Không Gian Tư Nhân Nghỉ Dưỡng', price: 500000000000, desc: 'Tổ ấm ngắm trọn vũ trụ bao la.', tag: 'estate' }
     ];
+
     window.onload = function() {
       loadStorage();
       renderStoryList();
       checkDailyReset();
     };
+
     let selectedBuyItem = null;
     let selectedBuyQty = 1;
     let selectedEstateMap = 'map-1';
@@ -999,16 +998,15 @@
       if (itemIdx === -1) return;
       
       const giftedItem = inv[itemIdx];
-      const giftQty = giftedItem.qty || 1; // Lấy số lượng quà hiện có
+      const giftQty = giftedItem.qty || 1; 
       const baseSingleName = giftedItem.singleName || giftedItem.name.replace(/\s*\(x\d+\).*/, '');
       const giftDisplayName = `${giftQty}x ${baseSingleName}`;
 
-      // Xử lý trừ số lượng hoặc xóa khỏi kho
       if (giftedItem.qty && giftedItem.qty > 1) {
         giftedItem.qty -= 1;
         giftedItem.name = `${baseSingleName} (x${giftedItem.qty})`;
       } else {
-        inv.splice(itemIdx, 1); // Xóa khỏi kho nếu hết
+        inv.splice(itemIdx, 1); 
       }
 
       const userName = (window.state && window.state.userName) ? window.state.userName : 'Bạn';
@@ -1016,12 +1014,11 @@
       if (!window.state.affection) window.state.affection = {};
       const currentAff = window.state.affection[charId] || 20;
 
-      // Tính điểm thưởng dựa trên loại quà và nhân với số lượng
       let bonusAff = 1 * giftQty;
       if (giftedItem.tag === 'romantic') bonusAff = 0.005 * giftQty;
       if (giftedItem.tag === 'luxury') bonusAff = 0.01 * giftQty;
       if (giftedItem.tag === 'estate') bonusAff = 0.015 * giftQty;
-      if (giftedItem.tag === 'propose') bonusAff = 3; // Nhẫn cầu hôn giữ nguyên mốc
+      if (giftedItem.tag === 'propose') bonusAff = 3; 
 
       const newAff = Math.min(100, currentAff + bonusAff);
       window.state.affection[charId] = newAff;
@@ -1045,6 +1042,7 @@
 
       sendMessage(giftActionText);
     }
+
     function checkDailyReset() {
       const today = new Date().toDateString();
       if (window.state.lastWorkDate !== today) {
@@ -1152,7 +1150,7 @@
       }
     }
 
-   function renderLifeModeUI() {
+    function renderLifeModeUI() {
       checkDailyReset();
       document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
       
@@ -1171,7 +1169,6 @@
         }
       }
 
-      // HỂ THỐNG RENDER CỬA HÀNG PHÂN THEO 9 NHÓM LỚN
       const shopContainer = document.getElementById('shop-items-container');
       if (shopContainer) {
         shopContainer.innerHTML = '';
@@ -1224,6 +1221,7 @@
 
       renderInventoryUI();
     }
+
     function changeJobSelection() {
       const daysPassed = Math.floor((Date.now() - (window.state.jobChangeTimestamp || Date.now())) / (1000 * 60 * 60 * 24));
       if (daysPassed < 3) {
@@ -1251,45 +1249,6 @@
       else if (j === 'sudoku') box.innerText = 'Giải mã độc';
     }
 
-    let selectedShopItem = null;
-    function openBuyDetailModal(itemId) {
-      selectedShopItem = SHOP_CATALOG.find(i => i.id === itemId);
-      if (!selectedShopItem) return;
-
-      document.getElementById('buy-modal-title').innerText = `🛒 Mua: ${selectedShopItem.name}`;
-      const body = document.getElementById('buy-modal-body');
-      body.innerHTML = `
-        <label>Chọn Phân Loại / Kiểu Dáng:</label>
-        <select id="buy-option-select" style="padding: 8px; border-radius: 8px; border: 1px solid #cbd5e0;">
-          ${selectedShopItem.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-        </select>
-        <div style="font-size: 0.8rem; color: #666; margin-top: 6px;">Giá tiền: <span style="color: #e53e3e; font-weight: bold;">${selectedShopItem.price.toLocaleString('vi-VN')} VNĐ</span></div>
-      `;
-      openModal('modal-buy-detail');
-    }
-
-    function confirmBuyItem() {
-      if (!selectedShopItem) return;
-      const optVal = document.getElementById('buy-option-select').value;
-      if ((window.state.walletBalance || 0) < selectedShopItem.price) {
-        closeModal('modal-buy-detail');
-        return alert('Số dư ví không đủ để mua món đồ này!');
-      }
-
-      window.state.walletBalance -= selectedShopItem.price;
-      if (!window.state.inventory) window.state.inventory = [];
-      window.state.inventory.push({
-        name: `${selectedShopItem.name} (${optVal})`,
-        price: selectedShopItem.price,
-        desc: `${selectedShopItem.desc} Phân loại: ${optVal}.`,
-        uniqueId: 'inv-' + Date.now() + Math.random()
-      });
-      saveStorage();
-      closeModal('modal-buy-detail');
-      renderLifeModeUI();
-      alert(`🎉 Đã mua thành công "${selectedShopItem.name} (${optVal})"!`);
-    }
-
     function renderInventoryUI() {
       const container = document.getElementById('inventory-list-container');
       container.innerHTML = '';
@@ -1303,7 +1262,6 @@
       });
     }
 
-    // 2. CHẾ ĐỘ VÔ TẬN & CHỐNG LẶP CÂU HỎI MINIGAME
     let jobGameState = { job: '', rewardPerCorrect: 0, currentSessionEarned: 0, wrongCount: 0, currentQuestion: null, askedQuestionsHistory: [] };
 
     async function executeWorkMinigame() {
@@ -1326,7 +1284,7 @@
       jobGameState.job = job;
       jobGameState.wrongCount = 0;
       jobGameState.currentSessionEarned = 0;
-      jobGameState.askedQuestionsHistory = []; // Reset lịch sử câu hỏi trong phiên
+      jobGameState.askedQuestionsHistory = [];
       
       if (job === 'barista') jobGameState.rewardPerCorrect = 40000;
       else if (job === 'office') jobGameState.rewardPerCorrect = 60000;
@@ -1350,7 +1308,6 @@
 
       const jobNames = { barista: 'Nhân viên pha chế cocktail', office: 'Nhân viên văn phòng', gangster: 'Tay anh chị giang hồ', teacher: 'Giáo viên', artist: 'Họa sĩ' };
       
-      // Truyền danh sách lịch sử câu hỏi đã hỏi để AI tuyệt đối không lặp lại
       const historyContext = jobGameState.askedQuestionsHistory.length > 0 
         ? `\nCác câu hỏi đã hỏi trước đó (TUYỆT ĐỐI KHÔNG LẶP LẠI NỘI DUNG NÀY):\n- ${jobGameState.askedQuestionsHistory.join('\n- ')}` 
         : '';
@@ -1390,7 +1347,6 @@
             if (startIdx !== -1 && endIdx !== -1) {
               qData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
               if (qData && qData.q && qData.opts) {
-                // Lưu lại câu hỏi vào lịch sử chống lặp
                 jobGameState.askedQuestionsHistory.push(qData.q);
                 break;
               }
@@ -1584,8 +1540,7 @@
       }
     }
 
-  function maybeTriggerRandomEvent() {
-      // Tỷ lệ kích hoạt sự kiện ngẫu nhiên (35%)
+    function maybeTriggerRandomEvent() {
       if (Math.random() > 0.35) return;
 
       const currentStory = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
@@ -1595,13 +1550,10 @@
 
       const charId = activeChar.id;
       const charName = activeChar.name;
-      const currentAff = window.state.affection && window.state.affection[charId] ? window.state.affection[charId] : 20;
 
-      // Danh sách các mẫu sự kiện cơ bản hoặc bạn có thể gọi AI để sinh linh hoạt. 
-      // Dưới đây là cấu trúc mẫu cực kỳ chi tiết, tập trung vào việc phạt nặng tay khi chọn phương án ích kỷ/làm người ta ghét:
       const randomEventsPool = [
         {
-          desc: ` Đang đi dạo phố cùng ${charName}, bạn bất ngờ bắt gặp một chiếc ví da rơi trên đường chứa rất nhiều tiền mặt và giấy tờ quan trọng.`,
+          desc: `Đang đi dạo phố cùng ${charName}, bạn bất ngờ bắt gặp một chiếc ví da rơi trên đường chứa rất nhiều tiền mặt và giấy tờ quan trọng.`,
           choices: [
             {
               text: `Đem nộp công an cùng ${charName} (+0.015% Hảo cảm, ghi điểm tốt bụng)`,
@@ -1610,7 +1562,7 @@
                 if (!window.state.affection) window.state.affection = {};
                 window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 0.015);
                 saveStorage();
-                alert(`Bạn và ${charName} nhận được 300k tiền thưởng cảm ơn. ${charName} nhìn bạn với ánh mắt trìu mến (+15% Hảo cảm)!`);
+                alert(`Bạn và ${charName} nhận được 300k tiền thưởng cảm ơn. ${charName} nhìn bạn với ánh mắt trìu mến (+0.015% Hảo cảm)!`);
               }
             },
             {
@@ -1621,7 +1573,6 @@
                 window.state.affection[charId] = Math.max(0, (window.state.affection[charId] || 20) - 0.30);
                 saveStorage();
                 
-                // Chuyển sang chat và ép AI bám sát nội dung sự kiện để mắng/trách móc
                 handleEventAndChat(charId, charName, 
                   `Bạn vừa lén lấy trộm ví tiền rơi ngoài đường trước mặt ${charName} thay vì đem trả lại.`, 
                   `Lén giấu ví làm của riêng và bảo ${charName} đừng lo chuyện bao đồng.`
@@ -1661,20 +1612,15 @@
         }
       ];
 
-      // Chọn ngẫu nhiên một sự kiện trong kho
       const chosenEvent = randomEventsPool[Math.floor(Math.random() * randomEventsPool.length)];
-      
-      // Hiển thị popup sự kiện (Giả định bạn có hàm hiển thị modal sự kiện, nếu chưa có thể dùng confirm/prompt hoặc hàm tuỳ chỉnh giao diện game của bạn)
       triggerEventModal(chosenEvent);
     }
 
-    // Hàm phụ trợ hỗ trợ chuyển tab chat và bắt AI bám sát nội dung sự kiện để đối thoại
     function handleEventAndChat(charId, charName, eventContext, playerChoice) {
       if (typeof switchStoryTab === 'function') {
         switchStoryTab('chat');
       }
 
-      // Prompt ngầm ép AI nhập vai và bám sát 100% vào ngữ cảnh sự kiện vừa diễn ra
       const promptToAI = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU ĐẶC BIỆT]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi tin nhắn thoại/hành động phản ứng trực tiếp, bám sát chặt chẽ vào tình huống này (nếu người chơi làm sai trái/phũ phàng thì hãy tức giận, thất vọng hoặc chì chiết; nếu người chơi tốt thì hãy vui vẻ, cảm động). Tuyệt đối không nói lạc đề!`;
 
       if (typeof sendMessageSilently === 'function') {
@@ -1683,60 +1629,24 @@
         sendMessage(promptToAI);
       }
     }
-function triggerEventModal(eventObj) {
-      // Kiểm tra xem game của bạn đã có hàm mở modal chung chưa, nếu chưa ta tạo trực tiếp một lớp phủ (overlay) popup sự kiện
-      let modalOverlay = document.getElementById('modal-random-event');
-      if (!modalOverlay) {
-        modalOverlay = document.createElement('div');
-        modalOverlay.id = 'modal-random-event';
-        modalOverlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:15px;';
-        document.body.appendChild(modalOverlay);
-      }
 
-      modalOverlay.innerHTML = `
-        <div style="background:#fff; border-radius:16px; padding:20px; width:100%; max-width:420px; border:2px solid var(--app-pink, #d53f8c); box-shadow:0 8px 30px rgba(0,0,0,0.2);">
-          <h3 style="font-size:1.05rem; color:#d53f8c; margin-bottom:10px; font-weight:bold;">⚡ CÓ BIẾN</h3>
-          <p style="font-size:0.9rem; color:#2d3748; line-height:1.5; margin-bottom:16px;">${eventObj.desc}</p>
-          <div id="event-choices-container" style="display:flex; flex-direction:column; gap:8px;">
-            ${eventObj.choices.map((choice, idx) => `
-              <button class="btn" style="width:100%; text-align:left; padding:10px 12px; font-size:0.85rem; background:#f7fafc; color:#2d3748; border:1px solid #cbd5e0; border-radius:8px; cursor:pointer;" onclick="handleEventChoice(${idx})">
-                👉 ${choice.text}
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `;
-
-      modalOverlay.style.display = 'flex';
-      
-      // Lưu tạm thời danh sách choices để xử lý click
-      window._currentRandomEventChoices = eventObj.choices;
-    }
-
-    function handleEventChoice(choiceIdx) {
-      const choices = window._currentRandomEventChoices;
-      if (choices && choices[choiceIdx] && typeof choices[choiceIdx].action === 'function') {
-        choices[choiceIdx].action();
-      }
-
-      // Đóng modal sự kiện lại sau khi chọn
-      const modalOverlay = document.getElementById('modal-random-event');
-      if (modalOverlay) {
-        modalOverlay.style.display = 'none';
-      }
-    }
-      const chosenEvent = eventsList[Math.floor(Math.random() * eventsList.length)];
-      document.getElementById('revent-desc').innerText = chosenEvent.desc;
+    function triggerEventModal(eventObj) {
+      document.getElementById('revent-desc').innerText = eventObj.desc;
       const bContainer = document.getElementById('revent-btns');
       bContainer.innerHTML = '';
 
-      chosenEvent.choices.forEach(ch => {
+      eventObj.choices.forEach(ch => {
         const btn = document.createElement('button');
         btn.className = 'btn btn-pink';
         btn.style.width = '100%';
         btn.style.padding = '10px';
         btn.innerText = ch.text;
-        btn.onclick = () => { closeModal('modal-random-event'); ch.action(); saveStorage(); renderLifeModeUI(); };
+        btn.onclick = () => { 
+          closeModal('modal-random-event'); 
+          ch.action(); 
+          saveStorage(); 
+          renderLifeModeUI(); 
+        };
         bContainer.appendChild(btn);
       });
 
@@ -1776,7 +1686,7 @@ function triggerEventModal(eventObj) {
       }
     }
 
-   function openTransferModal() {
+    function openTransferModal() {
       document.getElementById('wallet-balance-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
       
       const selectEl = document.getElementById('transfer-target-char');
@@ -1795,7 +1705,6 @@ function triggerEventModal(eventObj) {
         });
       }
 
-      // Ẩn thanh chọn chiều giao dịch vì giờ chỉ còn 1 chiều User chuyển đi
       const dirSelect = document.getElementById('transfer-direction');
       if (dirSelect && dirSelect.parentNode) {
         dirSelect.parentNode.style.display = 'none';
@@ -1804,8 +1713,6 @@ function triggerEventModal(eventObj) {
       openModal('modal-transfer');
     }
 
-    // Không cần hàm updateTransferUI() nữa vì đã cố định 1 chiều, 
-    // nhưng giữ lại hàm trống để tránh lỗi nếu các phần khác lỡ gọi đến nó.
     function updateTransferUI() {}
 
     function executeTransfer() {
@@ -1850,50 +1757,22 @@ function triggerEventModal(eventObj) {
       openModal('modal-gift');
     }
 
-    let pendingGiftUniqueId = null;
     function openTargetCharForGift(uniqueId) {
       pendingGiftUniqueId = uniqueId;
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      const container = document.getElementById('target-char-list-for-gift');
+      const container = document.getElementById('gift-target-char-select');
       container.innerHTML = '';
 
       if (!story || !story.characters || story.characters.length === 0) return alert('Truyện chưa có nhân vật nào!');
 
       story.characters.forEach(char => {
-        if (!window.state.affection) window.state.affection = {};
-        const aff = window.state.affection[char.id] || 20;
-        const row = document.createElement('div');
-        row.style.background = '#f7faf8'; row.style.border = '1px solid #d0ebd8'; row.style.padding = '10px'; row.style.borderRadius = '12px'; row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center';
-        row.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px;">
-            <img src="${char.avatar || DEFAULT_LOGO}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;" onerror="this.src='${DEFAULT_LOGO}'">
-            <div>
-              <div style="font-weight: bold; font-size: 0.9rem;">${escapeHtml(char.name)}</div>
-              <div style="font-size: 0.75rem; color: #319795;">❤️ Độ thân mật: ${aff}%</div>
-            </div>
-          </div>
-          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="confirmSendGiftToChar('${char.id}', '${escapeHtml(char.name)}')">Tặng Ngay</button>
-        `;
-        container.appendChild(row);
+        const opt = document.createElement('option');
+        opt.value = char.id;
+        opt.innerText = char.name;
+        container.appendChild(opt);
       });
       closeModal('modal-gift');
       openModal('modal-select-char-gift');
-    }
-
-    function confirmSendGiftToChar(charId, charName) {
-      const inv = window.state.inventory || [];
-      const itemIdx = inv.findIndex(i => i.uniqueId === pendingGiftUniqueId);
-      if (itemIdx === -1) return;
-      const giftedItem = inv.splice(itemIdx, 1)[0];
-
-      if (!window.state.affection) window.state.affection = {};
-      window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 15);
-      saveStorage();
-      closeModal('modal-select-char-gift');
-
-      switchStoryTab('chat');
-      const giftActionText = `[Lấy từ trong túi ra "${giftedItem.name}" ${giftedItem.desc} trao tận tay ${charName}. Độ thân mật tăng lên ${(window.state.affection[charId])}%!]`;
-      sendMessage(giftActionText);
     }
 
     function insertInputFormat(type) {
@@ -2217,7 +2096,7 @@ function triggerEventModal(eventObj) {
       }
       const filled = segs.filter(sg => sg.text);
       let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
-      if (lastDialogueIdx === -1 && filled.length > 0) lastDialogueIdx = filled.length - 1; // Hỗ trợ khối hành động đơn lẻ hiển thị nút
+      if (lastDialogueIdx === -1 && filled.length > 0) lastDialogueIdx = filled.length - 1;
 
       filled.forEach((sg, k) => {
         if (sg.type === 'action') {
@@ -2225,7 +2104,6 @@ function triggerEventModal(eventObj) {
           actDiv.className = 'narrative-block user-action'; 
           actDiv.innerText = sg.text; 
           
-          // 4. Bổ sung nút Sửa/Xóa cho khối hành động đơn lẻ phía User nếu là phần tử cuối
           if (k === lastDialogueIdx) {
             const wrapDiv = document.createElement('div');
             wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
@@ -2291,7 +2169,6 @@ function triggerEventModal(eventObj) {
               nDiv.className = 'narrative-block ai-action';
               nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
               
-              // 4. Bổ sung nút Sửa/Tạo lại/Xóa cho khối hành động đơn lẻ phía AI
               if (lineIdx === lines.length - 1) {
                 const wrapDiv = document.createElement('div');
                 wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-start'; wrapDiv.style.width = '100%';
@@ -2388,15 +2265,12 @@ function triggerEventModal(eventObj) {
       if (confirm('Xóa tin nhắn?')) { window.state.chatHistories[window.state.activeStoryId].splice(idx, 1); saveStorage(); renderChatHistory(); }
     }
 
-    // 3. SỬA LỖI API KHI BẤM "TẠO LẠI" (REGENERATE)
     function regenerateAiResponse(idx) {
       const history = window.state.chatHistories[window.state.activeStoryId];
       if (!history) return;
-      // Cắt lịch sử chính xác đến trước tin nhắn AI cần tạo lại
       history.splice(idx);
       saveStorage();
       renderChatHistory();
-      // Gửi yêu cầu tiếp tục lượt thoại liền trước một cách mượt mà
       sendMessage(null, false, true);
     }
 
@@ -2428,12 +2302,11 @@ function triggerEventModal(eventObj) {
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
-      // 5. CHỐNG NHẦM LẪN THỜI GIAN & MÂU THUẪN MỐI QUAN HỆ NHÂN VẬT
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
-3. Các nhân vật bạn nhập vai (AI phải điều phối nhiều nhân vật cùng tham gia khi user gọi chung như "mọi người", "tất cả"):
+3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
@@ -2442,21 +2315,17 @@ ${charsPrompt}
 ⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
-- GIỮ VỮNG MỐC THỜI GIAN (BẮT BUỘC): Tuyệt đối không tự ý nhảy cóc mốc thời gian (ví dụ sang phần 2, sang năm mới...) trừ khi có sự kiện hệ thống hoặc người dùng yêu cầu.
-- KIỂM TRA MỐI QUAN HỆ NHÂN VẬT (BẮT BUỘC): Kiểm tra kỹ quan hệ giữa nhân vật và User. Nếu cốt truyện chưa thiết lập quan hệ quen biết, nhân vật phải ứng xử như người mới gặp, CẤM tự bịa ra quan hệ quen thân hay người yêu.
-- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại, hành động phải đúng tính cách, xưng hô cố định. Diễn biến câu chuyện cực kỳ chậm rãi, từng bước một.
-- TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu (ví dụ *Hạo Nam cười mỉm, nâng ly*).
+- GIỮ VỮNG MỐC THỜI GIAN (BẮT BUỘC): Tuyệt đối không tự ý nhảy cóc mốc thời gian.
+- KIỂM TRA MỐI QUAN HỆ NHÂN VẬT (BẮT BUỘC): Kiểm tra kỹ quan hệ giữa nhân vật và User.
+- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định.
+- TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
 [TÍNH NĂNG TỰ ĐỘNG CHUYỂN TIỀN CỦA NHÂN VẬT]:
-- Nhân vật AI có quyền tự động chuyển tiền/chu cấp/tặng tiền cho người dùng nếu diễn biến kịch bản hợp lý (ví dụ: trả lương, cho tiền tiêu vặt, thưởng, đền bù...).
-- Khi muốn chuyển tiền cho người dùng, đính kèm cú pháp này ở cuối lượt thoại:
-[SYSTEM_TRANSFER: số_tiền | nội_dung_lời_nhắn]
-(Ví dụ: [SYSTEM_TRANSFER: 2000000 | Cầm lấy tiền tiêu vặt đi em]).
+- [SYSTEM_TRANSFER: số_tiền | nội_dung_lời_nhắn]
 
 [ĐỊNH DẠNG ĐẦU RA]
 Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
-- THOẢI MÁI 18+ & DRAMA: Tự do phát triển kịch tính và cảm xúc.
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];
@@ -2552,31 +2421,5 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       reader.readAsText(file);
     }
   </script>
-  <!-- MODAL CHI TIẾT MUA HÀNG -->
-  <div id="modal-buy-detail" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:16px; padding:18px; width:90%; max-width:420px; border:2px solid var(--app-green); box-shadow:0 4px 20px rgba(0,0,0,0.15);">
-      <h3 id="buy-modal-title" style="font-size:1rem; color:var(--app-dark-green); margin-bottom:12px;">🛒 Mua Vật Phẩm</h3>
-      <div id="buy-modal-body"></div>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-        <button class="btn btn-outline" onclick="closeModal('modal-buy-detail')">Hủy</button>
-        <button class="btn" onclick="confirmBuyItem()">Xác Nhận Mua</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL CHỌN NHÂN VẬT TẶNG QUÀ -->
-  <div id="modal-select-char-gift" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:16px; padding:18px; width:90%; max-width:380px; border:2px solid var(--app-pink); box-shadow:0 4px 20px rgba(0,0,0,0.15);">
-      <h3 style="font-size:1rem; color:#d53f8c; margin-bottom:12px;">🎁 Chọn Nhân Vật Nhận Quà</h3>
-      <div class="form-group" style="margin-bottom:14px;">
-        <label style="font-size:0.85rem; color:#4a5568;">Chọn nhân vật:</label>
-        <select id="gift-target-char-select" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e0; margin-top:4px;"></select>
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px;">
-        <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">Hủy</button>
-        <button class="btn btn-pink" onclick="executeSendGift()">Tặng Ngay</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
