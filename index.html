@@ -628,7 +628,7 @@
     </div>
   </div>
 
-  <!-- FIREBASE SDK -->
+  <!-- FIREBASE SDK & AUTO-DOWNLOAD CHÍNH TÁC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -649,7 +649,13 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    onAuthStateChanged(auth, (user) => {
+    // Lưu biến auth & db ra window để hàm autoSyncToCloud dùng ngầm
+    window.auth = auth;
+    window.db = db;
+    window.ref = ref;
+    window.set = set;
+
+    onAuthStateChanged(auth, async (user) => {
       const statusBox = document.getElementById('auth-status-box');
       const formContainer = document.getElementById('auth-form-container');
       const actionContainer = document.getElementById('cloud-action-container');
@@ -657,6 +663,22 @@
         statusBox.innerText = `Đã đăng nhập: ${user.email}`;
         formContainer.classList.add('hidden');
         actionContainer.classList.remove('hidden');
+
+        // 📥 TỰ ĐỘNG TẢI DỮ LIỆU TỪ CLOUD VỀ KHI VỪA MỞ WEB (TỰ ĐỘNG NHỚ TÀI KHOẢN)
+        try {
+          const snap = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
+          if (snap.exists()) {
+            window.state = snap.val();
+            localStorage.setItem('teechat_state_v10', JSON.stringify(window.state));
+            window.loadStorage();
+            window.renderStoryList();
+            if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId);
+            console.log("📥 Auto-download Cloud thành công!");
+          }
+        } catch (err) {
+          console.log("Auto-download lỗi:", err.message);
+        }
+
       } else {
         statusBox.innerText = "Chưa đăng nhập";
         formContainer.classList.remove('hidden');
@@ -805,7 +827,7 @@
       { id: 'item-510', cat: 'jewelry', name: '👑 Cầu Hôn: Nhẫn Kim Cương Hoàng Gia', price: 80000000, desc: 'Món quà CẦU HÔN đắt giá (Kích hoạt phân cảnh cầu hôn thăng hoa).', tag: 'propose' },
       { id: 'item-511', cat: 'jewelry', name: '👸 Vương Miện Gia Tộc Nạm Đá Quý', price: 150000000, desc: 'Tôn vinh như nữ hoàng/vua của đời bạn.', tag: 'luxury' },
       { id: 'item-512', cat: 'jewelry', name: '⌚ Đồng Hồ Thụy Sỹ Vỏ Vàng Khối Nạm Kim Cương', price: 280000000, desc: 'Đẳng cấp đồng hồ thượng lưu.', tag: 'luxury' },
-      { id: 'item-513', cat: 'jewelry', name: '📿 MẶT DÂY CHUYỆN LỤC BẢO BẢO THẠCH', price: 450000000, desc: 'Viên ngọc xanh biếc hiếm có.', tag: 'luxury' },
+      { id: 'item-513', cat: 'jewelry', name: '📿 MẶT DÂY CHUYỀN LỤC BẢO BẢO THẠCH', price: 450000000, desc: 'Viên ngọc xanh biếc hiếm có.', tag: 'luxury' },
       { id: 'item-514', cat: 'jewelry', name: '💍 Nhẫn Kim Cương Hồng Nguyên Khối', price: 850000000, desc: 'Viên kim cương hồng cực hiếm trên thế giới.', tag: 'luxury' },
       { id: 'item-515', cat: 'jewelry', name: '👑 BỘ TRANG SỨC HOÀNG GIA ĐẠI TỘC', price: 1500000000, desc: 'Bộ sưu tập trang sức độc bản quý giá.', tag: 'luxury' },
 
@@ -883,6 +905,28 @@
     let selectedBuyItem = null;
     let selectedBuyQty = 1;
     let selectedEstateMap = 'map-1';
+
+    // 🔄 HÀM TỰ ĐỘNG SYNC LÊN CLOUD MỖI KHÍ LƯU
+    async function autoSyncToCloud() {
+      try {
+        if (window.auth && window.auth.currentUser) {
+          if (window.db && window.ref && window.set) {
+            await window.set(window.ref(window.db, 'users/' + window.auth.currentUser.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state)));
+            console.log("☁️ Auto-sync Cloud thành công!");
+          }
+        }
+      } catch (err) {
+        console.log("Auto-sync lỗi:", err.message);
+      }
+    }
+
+    function saveStorage() {
+      try { 
+        localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); 
+        // 🔄 Tự động đồng bộ ngầm lên Cloud
+        autoSyncToCloud();
+      } catch(e) {}
+    }
 
     function openBuyDetailModal(itemId) {
       selectedBuyItem = SHOP_CATALOG.find(i => i.id === itemId);
@@ -1089,10 +1133,6 @@
       }
 
       applyActiveStoryTheme();
-    }
-
-    function saveStorage() {
-      try { localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); } catch(e) {}
     }
 
     function escapeHtml(str) {
@@ -1630,6 +1670,7 @@
       }
     }
 
+    // 🛠️ HÀM TẠO POPUP SỰ KIỆN ĐÃ ĐƯỢC CHỈNH SỬA CHỐNG TRÀN CHỮ
     function triggerEventModal(eventObj) {
       document.getElementById('revent-desc').innerText = eventObj.desc;
       const bContainer = document.getElementById('revent-btns');
@@ -1640,11 +1681,12 @@
         btn.className = 'btn btn-pink';
         btn.style.width = '100%';
         btn.style.padding = '10px 14px';
-        btn.style.whiteSpace = 'normal';       // 👈 THÊM DÒNG NÀY: Cho phép chữ xuống hàng khi dài
-        btn.style.wordBreak = 'break-word';    // 👈 THÊM DÒNG NÀY: Tự ngắt từ nếu cần
-        btn.style.textAlign = 'left';          // 👈 THÊM DÒNG NÀY: Căn lề trái cho dễ đọc
-        btn.style.lineHeight = '1.4';
+        btn.style.whiteSpace = 'normal';       // Cho phép chữ xuống hàng
+        btn.style.wordBreak = 'break-word';    // Tự ngắt từ hợp lý
+        btn.style.textAlign = 'left';          // Căn trái dễ đọc
+        btn.style.lineHeight = '1.4';          // Độ cao dòng vừa vặn
         btn.innerText = ch.text;
+        
         btn.onclick = () => { 
           closeModal('modal-random-event'); 
           ch.action(); 
