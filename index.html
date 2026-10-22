@@ -1596,17 +1596,17 @@
           desc: `Đang đi dạo phố cùng ${charName}, bạn bất ngờ bắt gặp một chiếc ví da rơi trên đường chứa rất nhiều tiền mặt và giấy tờ quan trọng.`,
           choices: [
             {
-              text: `Đem nộp công an cùng ${charName} (+0.015% Hảo cảm, ghi điểm tốt bụng)`,
+              text: `Đem nộp công an cùng ${charName}`,
               action: () => {
                 window.state.walletBalance = (window.state.walletBalance || 0) + 300000;
                 if (!window.state.affection) window.state.affection = {};
                 window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 0.015);
                 saveStorage();
-                alert(`Bạn và ${charName} nhận được 300k tiền thưởng cảm ơn. ${charName} nhìn bạn với ánh mắt trìu mến (+0.015% Hảo cảm)!`);
+                alert(`Bạn và ${charName} nhận được 300k tiền thưởng cảm ơn. ${charName} nhìn bạn với ánh mắt trìu mến!`);
               }
             },
             {
-              text: `Lén giấu ví làm của riêng, bảo ${charName} đừng lo chuyện bao đồng (-0.30% Hảo cảm)`,
+              text: `Lén giấu ví làm của riêng, bảo ${charName} đừng lo chuyện bao đồng`,
               action: () => {
                 window.state.walletBalance = (window.state.walletBalance || 0) + 3000000;
                 if (!window.state.affection) window.state.affection = {};
@@ -1637,7 +1637,7 @@
               }
             },
             {
-              text: `Nhắn tin từ chối phũ phàng vì đang bận chơi game/kiếm tiền (-0.35% Hảo cảm, nhân vật nổi giận lôi đình)`,
+              text: `Nhắn tin từ chối phũ phàng vì đang bận chơi game`,
               action: () => {
                 if (!window.state.affection) window.state.affection = {};
                 window.state.affection[charId] = Math.max(0, (window.state.affection[charId] || 20) - 0.35);
