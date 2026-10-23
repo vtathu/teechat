@@ -659,24 +659,54 @@
       const statusBox = document.getElementById('auth-status-box');
       const formContainer = document.getElementById('auth-form-container');
       const actionContainer = document.getElementById('cloud-action-container');
+      
       if (user) {
         statusBox.innerText = `Đã đăng nhập: ${user.email}`;
         formContainer.classList.add('hidden');
         actionContainer.classList.remove('hidden');
 
-        // 📥 TỰ ĐỘNG TẢI DỮ LIỆU TỪ CLOUD VỀ KHI VỪA MỞ WEB (TỰ ĐỘNG NHỚ TÀI KHOẢN)
+        // 🧠 ĐỒNG BỘ THÔNG MINH (SO SÁNH THỜI GIAN LƯU)
         try {
           const snap = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
+          
           if (snap.exists()) {
-            window.state = snap.val();
-            localStorage.setItem('teechat_state_v10', JSON.stringify(window.state));
-            window.loadStorage();
-            window.renderStoryList();
-            if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId);
-            console.log("📥 Auto-download Cloud thành công!");
+            const cloudState = snap.val();
+            const localSaved = localStorage.getItem('teechat_state_v10');
+            let localState = null;
+            if (localSaved) {
+              try { localState = JSON.parse(localSaved); } catch(e) {}
+            }
+
+            const cloudTime = cloudState.lastUpdated || 0;
+            const localTime = (localState && localState.lastUpdated) ? localState.lastUpdated : 0;
+
+            // Nếu trên Cloud mới hơn ở máy local -> Tải Cloud về
+            if (cloudTime > localTime) {
+              window.state = cloudState;
+              localStorage.setItem('teechat_state_v10', JSON.stringify(window.state));
+              console.log("📥 Đã tự động cập nhật bản mới nhất từ Cloud!");
+            } 
+            // Nếu ở máy local mới hơn -> Đẩy local lên Cloud ngay
+            else if (localTime > cloudTime) {
+              await set(ref(db, 'users/' + user.uid + '/teechat_state'), localState);
+              window.state = localState;
+              console.log("☁️ Máy local mới hơn, đã tự động đẩy bản mới lên Cloud!");
+            }
+          } else {
+            // Nếu trên Cloud chưa có gì -> Đẩy local hiện tại lên luôn
+            if (window.state) {
+              window.state.lastUpdated = Date.now();
+              await set(ref(db, 'users/' + user.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state)));
+            }
           }
+
+          // Cập nhật lại giao diện game
+          window.loadStorage();
+          window.renderStoryList();
+          if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId);
+
         } catch (err) {
-          console.log("Auto-download lỗi:", err.message);
+          console.log("Lỗi đồng bộ tự động:", err.message);
         }
 
       } else {
@@ -922,12 +952,14 @@
 
     function saveStorage() {
       try { 
+        // Đánh dấu thời điểm lưu mới nhất
+        window.state.lastUpdated = Date.now();
+        
         localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); 
-        // 🔄 Tự động đồng bộ ngầm lên Cloud
+        // 🔄 Tự động sync ngầm lên cloud
         autoSyncToCloud();
       } catch(e) {}
     }
-
     function openBuyDetailModal(itemId) {
       selectedBuyItem = SHOP_CATALOG.find(i => i.id === itemId);
       if (!selectedBuyItem) return;
@@ -1072,16 +1104,16 @@
       switchStoryTab('chat');
 
       let levelText = '';
-      if (newAff <= 30) levelText = 'Mức 1: Xã giao / Người lạ';
-      else if (newAff <= 60) levelText = 'Mức 2: Bạn bè / Đồng minh';
-      else if (newAff <= 85) levelText = 'Mức 3: Tâm giao / Thấp thoáng tình cảm';
-      else levelText = 'Mức 4: Tri kỷ / Người yêu trọn đời (Sẵn sàng đồng ý cầu hôn)';
+      if (newAff <= 30) levelText = 'Mức 1: Xã giao';
+      else if (newAff <= 60) levelText = 'Mức 2: Bạn bè';
+      else if (newAff <= 85) levelText = 'Mức 3: Tâm giao';
+      else levelText = 'Mức 4: Tri kỷ';
 
       let giftActionText = '';
       if (giftedItem.tag === 'propose') {
-        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. Độ thân mật đạt ${newAff}%! (${levelText}).]`;
+        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. (${newAff}%: ${levelText})]`;
       } else {
-        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. Độ thân mật tăng lên ${newAff}%! (${levelText}).]`;
+        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. (${newAff}%: ${levelText})]`;
       }
 
       sendMessage(giftActionText);
@@ -1232,7 +1264,7 @@
             catBlock.style.cssText = 'margin-bottom: 18px; width: 100%;';
             catBlock.innerHTML = `
               <h3 style="font-size:0.92rem; color:var(--app-dark-green); margin-bottom:8px; border-bottom:2px solid var(--app-green); padding-bottom:4px; font-weight:bold;">
-                ${cat.name} (${items.length} món)
+                ${cat.name}
               </h3>
             `;
 
@@ -1352,7 +1384,7 @@
         ? `\nCác câu hỏi đã hỏi trước đó (TUYỆT ĐỐI KHÔNG LẶP LẠI NỘI DUNG NÀY):\n- ${jobGameState.askedQuestionsHistory.join('\n- ')}` 
         : '';
 
-      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm HOÀN TOÀN MỚI LẠ, ĐỘC ĐÁO khác biệt hoàn toàn về ngành nghề "${jobNames[jobGameState.job]}". 
+      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm HOÀN TOÀN MỚI LẠ, ĐỘC ĐÁO khác biệt hoàn toàn về ngành nghề nhưng không quá khó hay quá chuyên môn"${jobNames[jobGameState.job]}". 
       ${historyContext}
       Có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
       Yêu cầu trả về cấu trúc JSON thuần túy (không kèm markdown rườm rà) theo định dạng mẫu sau:
@@ -1625,7 +1657,7 @@
           desc: `☕ ${charName} nhắn tin gọi gấp: "Đang ở quán cà phê quen chờ cậu có việc cực kỳ quan trọng, ra ngay đi đừng lề mề!"`,
           choices: [
             {
-              text: `Lập tức phóng xe ra điểm hẹn ngay lập tức (+0.01% Hảo cảm, đối mặt trực tiếp)`,
+              text: `Lập tức phóng xe ra điểm hẹn ngay lập tức`,
               action: () => {
                 if (!window.state.affection) window.state.affection = {};
                 window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 0.010);
@@ -1656,20 +1688,30 @@
       triggerEventModal(chosenEvent);
     }
 
-    function handleEventAndChat(charId, charName, eventContext, playerChoice) {
+   function handleEventAndChat(charId, charName, eventContext, playerChoice) {
       if (typeof switchStoryTab === 'function') {
         switchStoryTab('chat');
       }
 
-      const promptToAI = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU ĐẶC BIỆT]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi tin nhắn thoại/hành động phản ứng trực tiếp, bám sát chặt chẽ vào tình huống này (nếu người chơi làm sai trái/phũ phàng thì hãy tức giận, thất vọng hoặc chì chiết; nếu người chơi tốt thì hãy vui vẻ, cảm động). Tuyệt đối không nói lạc đề!`;
-
-      if (typeof sendMessageSilently === 'function') {
-        sendMessageSilently(promptToAI);
-      } else if (typeof sendMessage === 'function') {
-        sendMessage(promptToAI);
+      // 1. Chỉ đưa nội dung tình huống và lựa chọn lên màn hình chat để lưu lịch sử cho tự nhiên
+      const chatNarrativeText = `[SỰ KIỆN]: ${eventContext}\n[HÀNH ĐỘNG]: ${playerChoice}`;
+      
+      const storyId = window.state.activeStoryId;
+      if (!window.state.chatHistories[storyId]) {
+        window.state.chatHistories[storyId] = [];
       }
-    }
 
+      // Đẩy vào lịch sử chat dưới dạng sự kiện hệ thống (system)
+      window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText });
+      saveStorage();
+      renderChatHistory();
+
+      // 2. Tạo câu lệnh ngầm (prompt) riêng biệt để ép AI nhập vai phản ứng mà không bị hiện code thô ra màn hình
+      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU ĐẶC BIỆT]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi tin nhắn thoại/hành động phản ứng trực tiếp, bám sát chặt chẽ vào tình huống này (nếu người chơi làm sai trái/phũ phàng thì hãy tức giận, thất vọng hoặc chì chiết; nếu người chơi tốt thì hãy vui vẻ, cảm động). Tuyệt đối không nói lạc đề!`;
+
+      // Gửi ngầm prompt này cho AI xử lý phản hồi
+      sendMessage(hiddenAiPrompt, false, true);
+    }
     // 🛠️ HÀM TẠO POPUP SỰ KIỆN ĐÃ ĐƯỢC CHỈNH SỬA CHỐNG TRÀN CHỮ
     function triggerEventModal(eventObj) {
       document.getElementById('revent-desc').innerText = eventObj.desc;
