@@ -2004,6 +2004,7 @@
     function openStoryDetail(storyId) {
       const story = window.state.stories.find(s => s.id === storyId);
       if (!story) return;
+      
       window.state.activeStoryId = storyId;
       document.getElementById('active-story-title').innerText = story.title || 'Trò Chuyện';
 
@@ -2017,10 +2018,16 @@
         else if (story.characters && story.characters[0] && story.characters[0].firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
       }
 
+      // 1. Chuyển màn hình trước
+      switchPage('page-story-detail');
+      
+      // 2. Áp dụng giao diện & hiển thị lịch sử chat
       applyActiveStoryTheme();
-      switchStoryTab('chat'); renderChatHistory(); switchPage('page-story-detail');
+      renderChatHistory();
+      
+      // 3. Mở tab chat chuẩn xác
+      switchStoryTab('chat');
     }
-
     function applyActiveStoryTheme() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.theme) return;
