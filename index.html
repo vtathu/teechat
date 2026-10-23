@@ -1656,7 +1656,7 @@
     }
 
     function maybeTriggerRandomEvent() {
-      if (Math.random() > 0.35) return;
+      if (Math.random() > 0.1) return;
 
       const currentStory = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       const activeChar = (currentStory && currentStory.characters && currentStory.characters.length > 0) ? currentStory.characters[0] : null;
