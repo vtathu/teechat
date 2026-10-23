@@ -727,7 +727,8 @@
             } 
             // Nếu ở máy local mới hơn -> Đẩy local lên Cloud ngay
             else if (localTime > cloudTime) {
-              await set(ref(db, 'users/' + user.uid + '/teechat_state'), localState);
+              const cleanLocal = JSON.parse(JSON.stringify(localState));
+              await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanLocal);
               window.state = localState;
               console.log("☁️ Máy local mới hơn, đã tự động đẩy bản mới lên Cloud!");
             }
@@ -735,7 +736,8 @@
             // Nếu trên Cloud chưa có gì -> Đẩy local hiện tại lên luôn
             if (window.state) {
               window.state.lastUpdated = Date.now();
-              await set(ref(db, 'users/' + user.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state)));
+              const cleanState = JSON.parse(JSON.stringify(window.state));
+              await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanState);
             }
           }
 
@@ -755,6 +757,19 @@
       }
     });
 
+    // 🔄 HÀM TỰ ĐỘNG SYNC LÊN CLOUD AN TOÀN (LỌC SẠCH DỮ LIỆU CHỐNG LỖI NODE TREE)
+    window.autoSyncToCloud = async function() {
+      try {
+        if (auth && auth.currentUser) {
+          const cleanState = JSON.parse(JSON.stringify(window.state));
+          await set(ref(db, 'users/' + auth.currentUser.uid + '/teechat_state'), cleanState);
+          console.log("☁️ Auto-sync Cloud thành công!");
+        }
+      } catch (err) {
+        console.log("Auto-sync lỗi:", err.message);
+      }
+    };
+
     window.handleFirebaseRegister = async function() {
       const email = document.getElementById('fb-email').value.trim();
       const pass = document.getElementById('fb-password').value.trim();
@@ -771,7 +786,12 @@
     window.uploadDataToFirebase = async function() {
       const user = auth.currentUser;
       if (!user) return alert("Đăng nhập trước!");
-      try { window.saveStorage(); await set(ref(db, 'users/' + user.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state))); alert("Đã đồng bộ lên Cloud!"); } catch (err) { alert(err.message); }
+      try { 
+        if (typeof window.saveStorage === 'function') window.saveStorage();
+        const cleanState = JSON.parse(JSON.stringify(window.state));
+        await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanState); 
+        alert("Đã đồng bộ lên Cloud thành công!"); 
+      } catch (err) { alert("Lỗi đồng bộ: " + err.message); }
     };
     window.downloadDataFromFirebase = async function() {
       const user = auth.currentUser;
@@ -975,25 +995,11 @@
     let selectedBuyQty = 1;
     let selectedEstateMap = 'map-1';
 
-    // 🔄 HÀM TỰ ĐỘNG SYNC LÊN CLOUD MỖI KHI LƯU
-    async function autoSyncToCloud() {
-      try {
-        if (window.auth && window.auth.currentUser) {
-          if (window.db && window.ref && window.set) {
-            await window.set(window.ref(window.db, 'users/' + window.auth.currentUser.uid + '/teechat_state'), JSON.parse(JSON.stringify(window.state)));
-            console.log("☁️ Auto-sync Cloud thành công!");
-          }
-        }
-      } catch (err) {
-        console.log("Auto-sync lỗi:", err.message);
-      }
-    }
-
     function saveStorage() {
       try { 
         window.state.lastUpdated = Date.now();
         localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); 
-        autoSyncToCloud();
+        if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud();
       } catch(e) {}
     }
 
@@ -2028,6 +2034,7 @@
       // 3. Mở tab chat chuẩn xác
       switchStoryTab('chat');
     }
+
     function applyActiveStoryTheme() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.theme) return;
@@ -2270,7 +2277,6 @@
             const bar = document.createElement('div');
             bar.className = 'msg-action-bar';
             bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
-            wrapDiv.appendChild(wrapDiv.appendChild ? wrapDiv : bar); // fix style
             wrapDiv.appendChild(bar);
             container.appendChild(wrapDiv);
           } else {
