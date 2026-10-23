@@ -101,7 +101,7 @@
     .narrative-block { color: var(--app-dark-green); font-style: italic; line-height: 1.5; padding: 6px 12px; font-size: 0.9rem; background: rgba(255,255,255,0.85); border-radius: 10px; margin: 4px 0; max-width: 88%; }
     .narrative-block.ai-action { align-self: flex-start; text-align: left; }
     .narrative-block.user-action { align-self: flex-end; text-align: right; }
-    .narrative-block.system-action { align-self: center; text-align: center; width: 100%; background: rgba(255,255,255,0.7); }
+    .narrative-block.system-action { align-self: center; text-align: center; width: 100%; background: rgba(255,255,255,0.7); white-space: pre-line; }
 
     .chat-message { display: flex; gap: 10px; max-width: 88%; align-items: flex-end; }
     .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
@@ -157,6 +157,18 @@
       border-radius: 6px;
     }
 
+    /* Thẻ chuyển tiền kiểu Momo / Zalo */
+    .mm-card { width: 250px; max-width: 100%; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12); border: 1px solid #f3d1e4; }
+    .mm-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: linear-gradient(135deg, #d82d8b, #a50064); color: #fff; }
+    .mm-logo { width: 30px; height: 30px; border-radius: 8px; background: #fff; color: #a50064; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: bold; flex-shrink: 0; }
+    .mm-title { font-size: 0.85rem; font-weight: bold; }
+    .mm-sub { font-size: 0.68rem; opacity: 0.85; }
+    .mm-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .mm-amount { font-size: 1.35rem; font-weight: bold; color: #a50064; }
+    .mm-row { display: flex; justify-content: space-between; font-size: 0.76rem; color: #666; gap: 8px; }
+    .mm-row b { color: #222; text-align: right; word-break: break-word; }
+    .mm-status { display: flex; align-items: center; gap: 4px; font-size: 0.74rem; color: #2f9e5f; font-weight: bold; border-top: 1px dashed #eadbe3; padding-top: 6px; }
+
     .msg-action-bar { display: flex; gap: 6px; margin-top: 4px; }
     .ai .msg-action-bar { justify-content: flex-start; }
     .user .msg-action-bar { justify-content: flex-end; }
@@ -201,6 +213,7 @@
     }
     .input-bar input { flex: 1; min-width: 0; border: 2px solid var(--app-green); padding: 10px 14px; border-radius: 20px; outline: none; font-size: 0.95rem; text-overflow: clip; overflow-x: auto; white-space: nowrap; background: rgba(255, 255, 255, 0.9); }
     .life-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .life-sub { display: flex; flex-direction: column; gap: 16px; }
     .life-card { background: #fff; border-radius: 16px; padding: 16px; border: 2px solid var(--app-green); box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 10px; }
     .shop-item-row { display: flex; justify-content: space-between; align-items: center; background: #f7faf8; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; gap: 8px; }
 
@@ -218,6 +231,12 @@
     .form-group input, .form-group textarea, .form-group select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 8px; outline: none; font-size: 0.9rem; }
     .status-badge { background: #e6fffa; border: 1px solid #b2f5ea; color: #234e52; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; text-align: center; }
     .hidden { display: none !important; }
+
+    /* Merge 12x12 */
+    .craft-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; width: 100%; }
+    .craft-cell { aspect-ratio: 1; border: 1px solid #d0ebd8; border-radius: 5px; background: #f7faf8; font-size: clamp(11px, 3.6vw, 20px); padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1; user-select: none; }
+    .craft-cell.sel { outline: 2px solid var(--app-pink); background: #fff0f3 !important; transform: scale(1.08); }
+    .jg-btn { padding: 10px 12px; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -310,30 +329,61 @@
         <div style="font-size: 0.78rem; color: #2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 5/5 | Thời gian đổi nghề: Có thể đổi ngay</div>
       </div>
 
-      <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">💼 Nghề Nghiệp & Đi Làm</h3>
-        <div class="form-group">
-          <label>Chọn Ngành Nghề Hiện Tại:</label>
-          <select id="job-select" onchange="changeJobSelection()">
-            <option value="barista">🥂 Nhân Viên Pha Chế </option>
-            <option value="office">💻 Nhân Viên Văn Phòng</option>
-            <option value="gangster">⚔️ Sĩ Quan</option>
-            <option value="teacher">🎓 Giáo Viên</option>
-            <option value="artist">🎨 Nghệ Sĩ Tự Do</option>
-            <option value="sudoku">🌐 Công nghệ</option>
-          </select>
-        </div>
-        <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
-          Pha chế cocktail.
-        </div>
-        <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
+      <div class="modal-tab-bar" id="life-sub-tabs">
+        <button class="modal-tab-btn active" id="life-sub-btn-work" onclick="switchLifeSub('work')">💼 Đi Làm</button>
+        <button class="modal-tab-btn" id="life-sub-btn-shop" onclick="switchLifeSub('shop')">🛒 Shopping</button>
+        <button class="modal-tab-btn" id="life-sub-btn-craft" onclick="switchLifeSub('craft')">🧶 Thủ Công</button>
       </div>
 
-      <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛒 Cửa Hàng & Túi Đồ Quà Tặng</h3>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container"></div>
-        <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">📦 Tài sản</h4>
-        <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
+      <!-- TAB NHỎ: ĐI LÀM -->
+      <div id="life-sub-work" class="life-sub">
+        <div class="life-card">
+          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">💼 Nghề Nghiệp & Đi Làm</h3>
+          <div class="form-group">
+            <label>Chọn Ngành Nghề Hiện Tại:</label>
+            <select id="job-select" onchange="changeJobSelection()">
+              <option value="barista">🥂 Nhân Viên Pha Chế</option>
+              <option value="cleaner">🧹 Vệ Sinh / Phục Vụ</option>
+              <option value="cashier">💵 Thu Ngân</option>
+              <option value="driver">🛵 Tài Xế / Shipper</option>
+              <option value="teacher">🎓 Giáo Viên</option>
+              <option value="sudoku">🌐 Công nghệ</option>
+            </select>
+          </div>
+          <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
+            Pha chế cocktail.
+          </div>
+          <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
+        </div>
+      </div>
+
+      <!-- TAB NHỎ: SHOPPING -->
+      <div id="life-sub-shop" class="life-sub hidden">
+        <div class="life-card">
+          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛒 Cửa Hàng & Túi Đồ Quà Tặng</h3>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container"></div>
+          <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">📦 Tài sản</h4>
+          <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
+        </div>
+      </div>
+
+      <!-- TAB NHỎ: THỦ CÔNG MỸ NGHỆ -->
+      <div id="life-sub-craft" class="life-sub hidden">
+        <div class="life-card">
+          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🧶 Thủ Công Mỹ Nghệ</h3>
+          <div style="font-size: 0.8rem; color: #718096;">Ghép các nguyên liệu giống nhau để nâng cấp. Hết giờ hoặc bấm hoàn thành, món có cấp cao nhất sẽ vào túi.</div>
+          <div class="form-group">
+            <label>Chọn món muốn làm:</label>
+            <select id="craft-select" onchange="updateCraftPreview()"></select>
+          </div>
+          <div id="craft-chain-preview" style="font-size: 1.3rem; text-align: center; background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px; word-break: break-word;"></div>
+          <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
+          <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Làm</button>
+        </div>
+        <div class="life-card">
+          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎒 Túi Thủ Công</h3>
+          <div id="craft-bag-container" style="display: flex; flex-direction: column; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -428,11 +478,28 @@
     <div class="modal-content" style="max-width: 440px; text-align: center;">
       <div class="modal-header">
         <h3 id="jgame-title">📋 Hoàn thành công việc</h3>
-        <button class="btn btn-outline" onclick="closeModal('modal-job-game')">✖</button>
+        <button class="btn btn-outline" onclick="abortJobGame()">✖</button>
       </div>
       <div style="font-size: 0.85rem; color: #e53e3e; font-weight: bold; background: #fff5f5; padding: 6px; border-radius: 8px;" id="jgame-stats">Sếp đang giao việc...</div>
-      <div id="jgame-question-box" style="font-size: 0.95rem; font-weight: bold; margin: 12px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
+      <div id="jgame-question-box" style="font-size: 0.9rem; font-weight: bold; margin: 8px 0; color: var(--app-dark-green); word-break: break-word; white-space: pre-wrap; line-height: 1.4; text-align: left; padding: 0 4px;">Đang khởi tạo thử thách...</div>
+      <div id="jgame-area"></div>
       <div id="jgame-options-box" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
+    </div>
+  </div>
+
+  <div id="modal-craft" class="modal">
+    <div class="modal-content" style="max-width: 480px; padding: 14px; gap: 10px;">
+      <div class="modal-header">
+        <h3 id="craft-title" style="font-size: 1rem;">🧶 Thủ công</h3>
+        <button class="btn btn-outline" onclick="requestFinishCraft()">✖</button>
+      </div>
+      <div class="status-badge" id="craft-stats">...</div>
+      <div id="craft-board" class="craft-grid"></div>
+      <div style="font-size: 0.72rem; color: #718096; text-align: center;">Chạm 1 ô rồi chạm ô thứ hai cùng cấp để ghép. Cấp cao nhất sẽ được lưu vào túi.</div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="addCraftMaterials()">➕ Thêm nguyên liệu</button>
+        <button class="btn btn-pink" style="flex: 1;" onclick="requestFinishCraft()">✅ Hoàn thành</button>
+      </div>
     </div>
   </div>
 
@@ -594,7 +661,7 @@
         <button class="btn btn-outline" onclick="closeModal('modal-settings')">✖</button>
       </div>
       <div class="form-group">
-        <label>Danh Sách Gemini API Keys:</label>
+        <label>Danh Sách Gemini API Keys (chỉ lưu trên máy này, không đồng bộ):</label>
         <textarea id="cfg-api-keys" rows="3" placeholder="AIzaSy..."></textarea>
       </div>
       <div class="form-group">
@@ -665,7 +732,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD6jSVSBLMp7hC_MSEYpph1xjCZ7vYS9oU",
@@ -686,6 +753,18 @@
     window.db = db;
     window.ref = ref;
     window.set = set;
+
+    // Lấy chênh lệch giờ máy so với giờ server (chống chỉnh giờ máy để lách lượt)
+    try {
+      onValue(ref(db, '.info/serverTimeOffset'), (snap) => { window.serverOffset = snap.val() || 0; });
+    } catch (e) {}
+
+    // Bỏ API key khỏi dữ liệu đồng bộ
+    function stripKeys(s) {
+      const c = JSON.parse(JSON.stringify(s));
+      delete c.apiKeys;
+      return c;
+    }
 
     onAuthStateChanged(auth, async (user) => {
       const statusBox = document.getElementById('auth-status-box');
@@ -712,17 +791,20 @@
             const localTime = (localState && localState.lastUpdated) ? localState.lastUpdated : 0;
 
             if (cloudTime > localTime) {
-              window.state = cloudState;
+              if (Array.isArray(cloudState.apiKeys) && cloudState.apiKeys.length && window.loadKeys && window.loadKeys().length === 0) {
+                window.saveKeys(cloudState.apiKeys);
+              }
+              window.state = stripKeys(cloudState);
               localStorage.setItem('teechat_state_v10', JSON.stringify(window.state));
             } else if (localTime > cloudTime) {
-              const cleanLocal = JSON.parse(JSON.stringify(localState));
+              const cleanLocal = stripKeys(localState);
               await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanLocal);
               window.state = localState;
             }
           } else {
             if (window.state) {
               window.state.lastUpdated = Date.now();
-              const cleanState = JSON.parse(JSON.stringify(window.state));
+              const cleanState = stripKeys(window.state);
               await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanState);
             }
           }
@@ -743,7 +825,7 @@
     window.autoSyncToCloud = async function() {
       try {
         if (auth && auth.currentUser) {
-          const cleanState = JSON.parse(JSON.stringify(window.state));
+          const cleanState = stripKeys(window.state);
           await set(ref(db, 'users/' + auth.currentUser.uid + '/teechat_state'), cleanState);
         }
       } catch (err) {}
@@ -767,7 +849,7 @@
       if (!user) return alert("Đăng nhập trước!");
       try { 
         if (typeof window.saveStorage === 'function') window.saveStorage();
-        const cleanState = JSON.parse(JSON.stringify(window.state));
+        const cleanState = stripKeys(window.state);
         await set(ref(db, 'users/' + user.uid + '/teechat_state'), cleanState); 
         alert("Đã đồng bộ lên Cloud thành công!"); 
       } catch (err) { alert("Lỗi đồng bộ: " + err.message); }
@@ -777,7 +859,7 @@
       if (!user) return alert("Đăng nhập trước!");
       try {
         const snap = await get(ref(db, 'users/' + user.uid + '/teechat_state'));
-        if (snap.exists()) { window.state = snap.val(); window.saveStorage(); window.loadStorage(); window.renderStoryList(); if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId); alert("Đã tải về thành công!"); closeModal('modal-auth'); }
+        if (snap.exists()) { window.state = stripKeys(snap.val()); window.saveStorage(); window.loadStorage(); window.renderStoryList(); if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId); alert("Đã tải về thành công!"); closeModal('modal-auth'); }
         else alert("Chưa có dữ liệu trên Cloud!");
       } catch (err) { alert(err.message); }
     };
@@ -797,8 +879,11 @@
       inventory: [],
       currentJob: 'barista',
       jobChangeTimestamp: 0,
+      jobPicked: false,
       dailyWorkCount: 0,
+      dailyCraftCount: 0,
       lastWorkDate: '',
+      lastSeenTs: 0,
       affectionLevels: {}, // { charId: { level: 1, points: 0 } }
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
@@ -973,10 +1058,34 @@
     let selectedBuyQty = 1;
     let selectedEstateMap = 'map-1';
 
+    // ===================== KEY / THỜI GIAN / ĐỒNG BỘ =====================
+    function loadKeys() {
+      try {
+        const k = JSON.parse(localStorage.getItem('teechat_keys_v1') || '[]');
+        return Array.isArray(k) ? k : [];
+      } catch (e) { return []; }
+    }
+    function saveKeys(arr) {
+      try { localStorage.setItem('teechat_keys_v1', JSON.stringify(arr || [])); } catch (e) {}
+    }
+    // Bản state để lưu / đồng bộ / xuất file: KHÔNG chứa API key
+    function getSyncableState() {
+      const c = JSON.parse(JSON.stringify(window.state));
+      delete c.apiKeys;
+      return c;
+    }
+    // Giờ chuẩn: ưu tiên giờ server Firebase, không cho lùi về trước mốc đã thấy
+    function nowTs() {
+      let t = Date.now() + (window.serverOffset || 0);
+      const last = (window.state && window.state.lastSeenTs) || 0;
+      if (t < last) t = last;
+      return t;
+    }
+
     function saveStorage() {
       try { 
         window.state.lastUpdated = Date.now();
-        localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); 
+        localStorage.setItem('teechat_state_v10', JSON.stringify(getSyncableState())); 
         if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud();
       } catch(e) {}
     }
@@ -1089,6 +1198,10 @@
       confirmSendGiftToChar(charId, charName);
     }
 
+    function affectionNeeded(level) {
+      return Math.floor(15 * Math.pow(level, 1.4));
+    }
+
     function addAffectionPoints(charId, points) {
       if (!window.state.affectionLevels) window.state.affectionLevels = {};
       if (!window.state.affectionLevels[charId]) {
@@ -1100,7 +1213,7 @@
 
       // Công thức tính điểm level thân mật dãn rộng dạng số mũ nhẹ nhàng
       while (true) {
-        let pointsNeeded = Math.floor(15 * Math.pow(affData.level, 1.4));
+        let pointsNeeded = affectionNeeded(affData.level);
         if (affData.points >= pointsNeeded) {
           affData.points -= pointsNeeded;
           affData.level += 1;
@@ -1108,7 +1221,51 @@
           break;
         }
       }
+      // Trừ điểm: tụt cấp nếu âm
+      while (affData.points < 0) {
+        if (affData.level <= 1) { affData.points = 0; break; }
+        affData.level -= 1;
+        affData.points += affectionNeeded(affData.level);
+      }
       saveStorage();
+    }
+
+    // Phản ứng của nhân vật với đồ thủ công (thích -> cộng, không thích -> trừ)
+    function craftGiftReaction(charId, item) {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const char = story && story.characters ? story.characters.find(c => c.id === charId) : null;
+      const pers = ((char && char.personality) || '').toLowerCase();
+      const lvl = item.level || 1;
+      const has = (arr) => arr.some(k => pers.includes(k));
+
+      const cold = has(['lạnh lùng', 'lạnh', 'kiêu', 'thực dụng', 'khó tính', 'xa cách', 'cộc', 'tàn nhẫn', 'băng giá']);
+      const warm = has(['dịu dàng', 'hiền', 'ngọt', 'lãng mạn', 'dễ thương', 'ấm áp', 'tình cảm', 'trẻ con', 'hòa đồng', 'mơ mộng', 'nhạy cảm']);
+      const fitMap = {
+        cake: ['ăn', 'ngọt', 'nấu', 'bếp', 'tham ăn', 'đầu bếp'],
+        flower: ['lãng mạn', 'dịu dàng', 'nghệ sĩ', 'mơ mộng', 'tình cảm'],
+        necklace: ['sang', 'quý phái', 'thời trang', 'kiêu', 'tiểu thư', 'cô gái', 'nữ'],
+        lego: ['trẻ con', 'nghịch', 'game', 'kỹ sư', 'sưu tầm', 'tinh nghịch'],
+        teddy: ['dễ thương', 'trẻ con', 'ngây thơ', 'hiền', 'ấm áp']
+      };
+      const fit = has(fitMap[item.craftType] || []);
+
+      const aff = (window.state.affectionLevels && window.state.affectionLevels[charId]) || { level: 1 };
+      let prob = 0.5 + 0.06 * lvl + Math.min(0.1, aff.level * 0.01);
+      if (cold) prob -= 0.2;
+      if (warm) prob += 0.15;
+      if (fit) prob += 0.15;
+      prob = Math.max(0.1, Math.min(0.95, prob));
+
+      const liked = Math.random() < prob;
+      let pts, reason;
+      if (liked) {
+        pts = Math.max(1, Math.min(10, Math.round(lvl * 1.5) + 1));
+        reason = fit ? 'đúng gu của nhân vật' : 'tấm lòng tự tay làm khiến nhân vật cảm động';
+      } else {
+        pts = -Math.max(1, Math.min(5, 1 + (cold ? 2 : 0) + Math.floor(Math.random() * 2)));
+        reason = cold ? 'nhân vật khó tính, không thích đồ tự làm' : 'món quà không hợp gu nhân vật';
+      }
+      return { liked, pts, reason };
     }
 
     function confirmSendGiftToChar(charId, charName) {
@@ -1135,6 +1292,12 @@
       if (giftedItem.tag === 'luxury') bonusPts = Math.floor(Math.random() * 6) + 5; // 5-10 điểm
       if (giftedItem.tag === 'propose') bonusPts = 15;
 
+      let craftReact = null;
+      if (giftedItem.kind === 'craft') {
+        craftReact = craftGiftReaction(charId, giftedItem);
+        bonusPts = craftReact.pts;
+      }
+
       addAffectionPoints(charId, bonusPts);
       const affData = window.state.affectionLevels[charId];
 
@@ -1148,14 +1311,21 @@
         giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. (Lv.${affData.level} - Tích lũy: ${affData.points}pts)]`;
       }
 
+      if (craftReact) {
+        window.__nextHint = `${charName} ${craftReact.liked ? 'THÍCH' : 'KHÔNG THÍCH'} món quà thủ công này (${craftReact.reason}). Hãy để nhân vật phản ứng đúng như vậy theo tính cách, không nhắc đến điểm số.`;
+      }
+
       sendMessage(giftActionText);
     }
 
     function checkDailyReset() {
-      const today = new Date().toDateString();
+      const t = nowTs();
+      window.state.lastSeenTs = t;
+      const today = new Date(t).toDateString();
       if (window.state.lastWorkDate !== today) {
         window.state.lastWorkDate = today;
         window.state.dailyWorkCount = 0;
+        window.state.dailyCraftCount = 0;
         saveStorage();
       }
     }
@@ -1164,14 +1334,25 @@
       const saved = localStorage.getItem('teechat_state_v10');
       if (saved) { try { window.state = JSON.parse(saved); } catch(e) {} }
 
+      // API key lưu riêng, không đồng bộ. Chuyển key cũ (nếu có) sang kho riêng.
+      let keys = loadKeys();
+      if (keys.length === 0 && Array.isArray(window.state.apiKeys) && window.state.apiKeys.length) {
+        keys = window.state.apiKeys.slice();
+        saveKeys(keys);
+      }
+      window.state.apiKeys = keys;
+
       if (!window.state.stories) window.state.stories = [];
       if (!window.state.chatHistories) window.state.chatHistories = {};
       if (typeof window.state.walletBalance !== 'number') window.state.walletBalance = 10000000;
       if (!window.state.inventory) window.state.inventory = [];
       if (!window.state.affectionLevels) window.state.affectionLevels = {};
-      if (!window.state.currentJob) window.state.currentJob = 'barista';
-      if (!window.state.jobChangeTimestamp) window.state.jobChangeTimestamp = Date.now();
+      if (!window.state.currentJob || !JOBS[window.state.currentJob]) window.state.currentJob = 'barista';
+      if (typeof window.state.jobChangeTimestamp !== 'number') window.state.jobChangeTimestamp = 0;
+      if (typeof window.state.jobPicked !== 'boolean') window.state.jobPicked = false;
       if (typeof window.state.dailyWorkCount !== 'number') window.state.dailyWorkCount = 0;
+      if (typeof window.state.dailyCraftCount !== 'number') window.state.dailyCraftCount = 0;
+      if (typeof window.state.lastSeenTs !== 'number') window.state.lastSeenTs = 0;
       if (!window.state.currentModel) window.state.currentModel = 'gemini-2.5-flash';
 
       if (window.state.stories.length === 0) {
@@ -1232,6 +1413,15 @@
       }
     }
 
+    function switchLifeSub(name) {
+      ['work', 'shop', 'craft'].forEach(n => {
+        document.getElementById('life-sub-' + n).classList.toggle('hidden', n !== name);
+        document.getElementById('life-sub-btn-' + n).classList.toggle('active', n === name);
+      });
+      window.lifeSub = name;
+      if (name === 'craft') { updateCraftPreview(); renderCraftBag(); }
+    }
+
     function switchConfigTab(tabName) {
       document.getElementById('cfg-tab-view-story').classList.add('hidden');
       document.getElementById('cfg-tab-view-theme').classList.add('hidden');
@@ -1254,6 +1444,23 @@
       }
     }
 
+    // ===================== NGHỀ NGHIỆP =====================
+    // Nghề càng khó thắng thì lương càng cao
+    const JOBS = {
+      barista: { unit: 170000, desc: 'Pha đúng công thức khách gọi trong 15 giây mỗi ly (3 ly/ca). Lương 170.000 VNĐ/ly đúng.' },
+      cleaner: { unit: 200000, desc: 'Lau sạch mọi vết bẩn trên sàn trong 30 giây. Lương 200.000 VNĐ nếu sạch hết (chưa sạch hết nhận theo tỷ lệ).' },
+      cashier: { unit: 120000, desc: 'Thối tiền chính xác cho 3 khách. Lương 120.000 VNĐ/khách thối đúng.' },
+      driver:  { unit: 900000, desc: 'Né chướng ngại vật 25 giây (3 mạng). Lương 900.000 VNĐ nếu về đích an toàn.' },
+      teacher: { unit: 600000, desc: 'Chấm bài: tìm hết các phép tính sai. Lương 600.000 VNĐ nếu chấm chuẩn, sai 1 lỗi chỉ còn 40%.' },
+      sudoku:  { unit: 5000000, desc: 'Giải mã sudoku (rất khó). Lương 5.000.000 VNĐ nếu giải đúng.' }
+    };
+
+    function canChangeJob() {
+      if (!window.state.jobPicked) return { ok: true, left: 0 };
+      const days = Math.floor((nowTs() - (window.state.jobChangeTimestamp || 0)) / 86400000);
+      return { ok: days >= 3, left: Math.max(0, 3 - days) };
+    }
+
     function renderLifeModeUI() {
       checkDailyReset();
       document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
@@ -1262,15 +1469,14 @@
       if (jobSel) jobSel.value = window.state.currentJob || 'barista';
       updateJobDesc();
 
-      const daysPassed = Math.floor((Date.now() - (window.state.jobChangeTimestamp || Date.now())) / (1000 * 60 * 60 * 24));
-      const daysLeft = Math.max(0, 3 - daysPassed);
+      const cj = canChangeJob();
       const limitInfo = document.getElementById('job-limit-info');
       if (limitInfo) {
-        if (daysLeft > 0) {
-          limitInfo.innerText = `Lượt làm việc hôm nay: ${window.state.dailyWorkCount}/5 | Cần đợi thêm ${daysLeft} ngày nữa mới được đổi nghề.`;
-        } else {
-          limitInfo.innerText = `Lượt làm việc hôm nay: ${window.state.dailyWorkCount}/5 | Đã có thể đổi nghề tự do!`;
-        }
+        let jobTxt;
+        if (!window.state.jobPicked) jobTxt = 'Lần đầu được chọn nghề tự do!';
+        else if (cj.ok) jobTxt = 'Đã có thể đổi nghề tự do!';
+        else jobTxt = `Cần đợi thêm ${cj.left} ngày nữa mới được đổi nghề.`;
+        limitInfo.innerText = `Lượt làm việc: ${window.state.dailyWorkCount}/5 | Lượt thủ công: ${window.state.dailyCraftCount || 0}/4 | ${jobTxt}`;
       }
 
       const shopContainer = document.getElementById('shop-items-container');
@@ -1324,18 +1530,21 @@
       }
 
       renderInventoryUI();
+      renderCraftBag();
+      updateCraftPreview();
     }
 
     function changeJobSelection() {
-      const daysPassed = Math.floor((Date.now() - (window.state.jobChangeTimestamp || Date.now())) / (1000 * 60 * 60 * 24));
-      if (daysPassed < 3) {
-        alert(`Bạn chưa đủ 3 ngày để đổi nghề! Còn ${3 - daysPassed} ngày nữa.`);
+      const cj = canChangeJob();
+      if (!cj.ok) {
+        alert(`Bạn chưa đủ 3 ngày để đổi nghề! Còn ${cj.left} ngày nữa.`);
         document.getElementById('job-select').value = window.state.currentJob;
         return;
       }
 
       window.state.currentJob = document.getElementById('job-select').value;
-      window.state.jobChangeTimestamp = Date.now();
+      window.state.jobChangeTimestamp = nowTs();
+      window.state.jobPicked = true;
       saveStorage();
       updateJobDesc();
       renderLifeModeUI();
@@ -1344,13 +1553,8 @@
 
     function updateJobDesc() {
       const box = document.getElementById('job-desc-box');
-      const j = window.state.currentJob;
-      if (j === 'barista') box.innerText = 'Nhiệm vụ pha chế';
-      else if (j === 'office') box.innerText = 'Làm báo cáo KPI cho sếp';
-      else if (j === 'gangster') box.innerText = 'Dẹp loạn băng đảng';
-      else if (j === 'teacher') box.innerText = 'Soạn giáo án và chấm bài';
-      else if (j === 'artist') box.innerText = 'Vẽ tranh kiếm tiền';
-      else if (j === 'sudoku') box.innerText = 'Giải mã độc';
+      const j = JOBS[window.state.currentJob];
+      if (box && j) box.innerText = j.desc;
     }
 
     function renderInventoryUI() {
@@ -1361,14 +1565,56 @@
       inv.forEach(obj => {
         const badge = document.createElement('div');
         badge.style.background = '#fff'; badge.style.border = '1px solid #90d4b8'; badge.style.padding = '4px 8px'; badge.style.borderRadius = '8px'; badge.style.fontSize = '0.78rem';
-        badge.innerHTML = `<span>${obj.name}</span>`;
+        if (obj.kind === 'craft') {
+          const price = craftPrice(obj.craftType, obj.level);
+          badge.innerHTML = `<span>${obj.name}</span> <button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}')">Bán ~${price.toLocaleString('vi-VN')}</button> <button class="action-text-btn" onclick="openSelectCharGiftModal('${obj.uniqueId}')">Tặng</button>`;
+        } else {
+          badge.innerHTML = `<span>${obj.name}</span>`;
+        }
         container.appendChild(badge);
       });
     }
 
-    let jobGameState = { job: '', rewardPerCorrect: 0, currentSessionEarned: 0, wrongCount: 0, currentQuestion: null, askedQuestionsHistory: [] };
+    // ===================== MINI-GAME CÔNG VIỆC (THAO TÁC TAY) =====================
+    let jobGameState = { job: '', raf: null, timers: [], listeners: [] };
 
-    async function executeWorkMinigame() {
+    const jgShuffle = (arr) => arr.sort(() => Math.random() - 0.5);
+    const jgRand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    function jgArea() { return document.getElementById('jgame-area'); }
+    function jgSetQ(t) { document.getElementById('jgame-question-box').innerText = t; }
+    function jgSetStats(t) { document.getElementById('jgame-stats').innerText = t; }
+    function jgAddTimer(id) { jobGameState.timers.push(id); return id; }
+
+    function jgClear() {
+      if (jobGameState.raf) { cancelAnimationFrame(jobGameState.raf); jobGameState.raf = null; }
+      jobGameState.timers.forEach(t => { clearInterval(t); clearTimeout(t); });
+      jobGameState.timers = [];
+      jobGameState.listeners.forEach(fn => { try { fn(); } catch (e) {} });
+      jobGameState.listeners = [];
+      const a = jgArea();
+      if (a) a.innerHTML = '';
+      const ob = document.getElementById('jgame-options-box');
+      if (ob) ob.innerHTML = '';
+    }
+
+    function abortJobGame() {
+      jgClear();
+      closeModal('modal-job-game');
+    }
+
+    function endJobGame(earned, title, msg) {
+      jgClear();
+      closeModal('modal-job-game');
+      earned = Math.max(0, Math.floor(earned));
+      if (earned > 0) {
+        window.state.walletBalance = (window.state.walletBalance || 0) + earned;
+        saveStorage();
+        renderLifeModeUI();
+      }
+      alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}`);
+    }
+
+    function executeWorkMinigame() {
       checkDailyReset();
       if (window.state.dailyWorkCount >= 5) {
         return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay! Hãy quay lại vào ngày mai.');
@@ -1380,170 +1626,312 @@
         return;
       }
 
-      if (!window.state.apiKeys || window.state.apiKeys.length === 0) {
-        alert('Vui lòng nhập API Key trong Cài Đặt để tạo nhiệm vụ!');
-        return openModal('modal-settings');
-      }
-
       // TRỪ LƯỢT NGAY KHI BẤM MỞ NHIỆM VỤ CÔNG VIỆC
       window.state.dailyWorkCount++;
       saveStorage();
       renderLifeModeUI();
 
+      jgClear();
       jobGameState.job = job;
-      jobGameState.wrongCount = 0;
-      jobGameState.currentSessionEarned = 0;
-      jobGameState.askedQuestionsHistory = [];
-      
-      if (job === 'barista') jobGameState.rewardPerCorrect = 40000;
-      else if (job === 'office') jobGameState.rewardPerCorrect = 60000;
-      else if (job === 'gangster') jobGameState.rewardPerCorrect = 80000;
-      else if (job === 'teacher') jobGameState.rewardPerCorrect = 70000;
-      else if (job === 'artist') jobGameState.rewardPerCorrect = 60000;
-
-      document.getElementById('jgame-stats').innerText = `Sai: 0/5 | Tiền thưởng phiên này: 0 VNĐ`;
-      document.getElementById('jgame-question-box').innerText = 'Sếp đang giao nhiệm vụ mới...';
-      document.getElementById('jgame-options-box').innerHTML = '';
+      document.getElementById('jgame-title').innerText = '📋 Ca làm việc';
+      jgSetStats('Bắt đầu ca làm...');
       openModal('modal-job-game');
 
-      fetchNextAiQuestion();
+      if (job === 'barista') startBaristaGame();
+      else if (job === 'cleaner') startCleanerGame();
+      else if (job === 'cashier') startCashierGame();
+      else if (job === 'driver') startDriverGame();
+      else if (job === 'teacher') startTeacherGame();
     }
 
-    async function fetchNextAiQuestion() {
-      if (jobGameState.wrongCount >= 5) {
-        finishJobGame();
-        return;
+    // ---------- 1. VỆ SINH: chùi vết bẩn ----------
+    function startCleanerGame() {
+      const reward = JOBS.cleaner.unit;
+      const total = jgRand(6, 10);
+      const TIME = 30;
+      jgSetQ('🧹 Kéo ngón tay (hoặc chuột) lên vết bẩn để lau sạch hết trước khi hết giờ!');
+      const area = jgArea();
+      area.innerHTML = `<div id="cl-board" style="position:relative;width:100%;max-width:320px;aspect-ratio:1/1;margin:0 auto;background:linear-gradient(135deg,#e6f2ff,#fdfdfd);border:2px solid var(--app-green);border-radius:14px;overflow:hidden;touch-action:none;user-select:none;"></div>`;
+      const board = document.getElementById('cl-board');
+      const stains = [];
+      for (let i = 0; i < total; i++) {
+        const size = jgRand(40, 66);
+        const el = document.createElement('div');
+        const x = jgRand(12, 88), y = jgRand(12, 88);
+        el.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;margin:-${size/2}px 0 0 -${size/2}px;border-radius:${jgRand(35,50)}% ${jgRand(35,50)}% ${jgRand(35,50)}% ${jgRand(35,50)}%;background:radial-gradient(circle,rgba(110,70,30,.9),rgba(110,70,30,.35));pointer-events:none;`;
+        board.appendChild(el);
+        stains.push({ el, x, y, size, hp: jgRand(80, 150), alive: true });
       }
+      let cleared = 0, left = TIME, down = false;
 
-      const jobNames = { barista: 'Nhân viên pha chế cocktail', office: 'Nhân viên văn phòng', gangster: 'Tay anh chị giang hồ', teacher: 'Giáo viên', artist: 'Họa sĩ' };
-      
-      const historyContext = jobGameState.askedQuestionsHistory.length > 0 
-        ? `\nCác câu hỏi đã hỏi trước đó (TUYỆT ĐỐI KHÔNG LẶP LẠI NỘI DUNG NÀY):\n- ${jobGameState.askedQuestionsHistory.join('\n- ')}` 
-        : '';
-
-      const prompt = `Hãy tạo ra ĐÚNG 1 câu hỏi trắc nghiệm HOÀN TOÀN MỚI LẠ, ĐỘC ĐÁO khác biệt hoàn toàn về ngành nghề nhưng không quá khó hay quá chuyên môn"${jobNames[jobGameState.job]}". 
-      ${historyContext}
-      Có 4 đáp án (A, B, C, D) trong đó chỉ có 1 đáp án đúng.
-      Yêu cầu trả về cấu trúc JSON thuần túy (không kèm markdown rườm rà) theo định dạng mẫu sau:
-      {
-        "q": "Nội dung câu hỏi...",
-        "opts": ["Đáp án 1", "Đáp án 2", "Đáp án 3", "Đáp án 4"],
-        "ans": 0
-      }
-      Trong đó "ans" là số thứ tự từ 0 đến 3 ứng với đáp án đúng trong mảng opts.`;
-
-      let qData = null;
-      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
-      const randomSeed = Math.floor(Math.random() * 1000000);
-      
-      for (const rawKey of window.state.apiKeys) {
-        const key = rawKey.trim().replace(/^["']|["']$/g, '');
-        try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, 
-            body: JSON.stringify({ 
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.9, seed: randomSeed }
-            })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            const parts = data.candidates?.[0]?.content?.parts;
-            let rawText = parts ? parts.map(p => p.text || '').join('') : '';
-            rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const startIdx = rawText.indexOf('{');
-            const endIdx = rawText.lastIndexOf('}');
-            if (startIdx !== -1 && endIdx !== -1) {
-              qData = JSON.parse(rawText.substring(startIdx, endIdx + 1));
-              if (qData && qData.q && qData.opts) {
-                jobGameState.askedQuestionsHistory.push(qData.q);
-                break;
-              }
-            }
+      const wipe = (e) => {
+        if (!down) return;
+        const r = board.getBoundingClientRect();
+        const px = e.clientX - r.left, py = e.clientY - r.top;
+        stains.forEach(s => {
+          if (!s.alive) return;
+          const cx = r.width * s.x / 100, cy = r.height * s.y / 100;
+          if (Math.hypot(px - cx, py - cy) < s.size / 2 + 12) {
+            s.hp -= 9;
+            s.el.style.opacity = Math.max(0, s.hp / 120).toFixed(2);
+            if (s.hp <= 0) { s.alive = false; s.el.remove(); cleared++; update(); if (cleared >= total) finish(); }
           }
-        } catch (e) {}
-      }
+        });
+      };
+      board.addEventListener('pointerdown', (e) => { down = true; wipe(e); });
+      board.addEventListener('pointermove', wipe);
+      const up = () => { down = false; };
+      window.addEventListener('pointerup', up);
+      jobGameState.listeners.push(() => window.removeEventListener('pointerup', up));
 
-      if (qData) {
-        jobGameState.currentQuestion = qData;
-        renderJobGameQuestion();
-      } else {
-        document.getElementById('jgame-question-box').innerText = 'Sếp đang bận, bấm để nhận nhiệm vụ lại...';
-        const optBox = document.getElementById('jgame-options-box');
-        optBox.innerHTML = `<button class="btn btn-pink" onclick="fetchNextAiQuestion()">🔄 Nhiệm vụ tiếp theo</button>`;
+      function update() { jgSetStats(`⏱ ${left}s | Đã sạch: ${cleared}/${total}`); }
+      function finish() {
+        const earned = reward * (cleared / total);
+        endJobGame(earned, cleared >= total ? '✨ Sạch bong!' : '⏰ Hết giờ!', `Bạn lau sạch ${cleared}/${total} vết bẩn.`);
       }
+      update();
+      jgAddTimer(setInterval(() => { left--; update(); if (left <= 0) finish(); }, 1000));
     }
 
-    function renderJobGameQuestion() {
-      const qBox = document.getElementById('jgame-question-box');
-      const optBox = document.getElementById('jgame-options-box');
-      const statsBox = document.getElementById('jgame-stats');
+    // ---------- 2. THU NGÂN: thối tiền ----------
+    function startCashierGame() {
+      const unit = JOBS.cashier.unit;
+      const DEN = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000];
+      const ITEMS = [
+        ['🥤 Nước ngọt', 8, 15], ['🍞 Bánh mì', 12, 25], ['🍜 Mì ly', 10, 20], ['🧃 Sữa hộp', 7, 18],
+        ['🍫 Sô-cô-la', 15, 45], ['🧴 Dầu gội', 30, 95], ['🪥 Bàn chải', 12, 30], ['🍎 Táo (túi)', 25, 60],
+        ['🧻 Giấy vệ sinh', 20, 55], ['🍪 Bánh quy', 10, 35]
+      ];
+      const NAMES = ['Cô Hoa', 'Anh Nam', 'Bé Mi', 'Chú Tư', 'Chị Lan', 'Bạn Khoa', 'Bà Sáu', 'Anh Dũng'];
+      let idx = 0, earned = 0, good = 0, cur = null, picked = [];
+      jgSetQ('💵 Thối đúng số tiền khách cần nhận lại.');
 
-      statsBox.innerText = `Sai: ${jobGameState.wrongCount}/5 | Tiền lương đợt này: +${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ`;
+      function nextCustomer() {
+        if (idx >= 3) return endJobGame(earned, '🧾 Hết ca thu ngân', `Bạn thối đúng ${good}/3 khách.`);
+        idx++;
+        const n = jgRand(2, 4);
+        const items = jgShuffle(ITEMS.slice()).slice(0, n).map(it => ({ name: it[0], price: jgRand(it[1], it[2]) * 1000 }));
+        const bill = items.reduce((s, i) => s + i.price, 0);
+        const bills = [20000, 50000, 100000, 200000, 500000].filter(d => d > bill);
+        let opts = bills.filter(d => d - bill <= 300000);
+        if (opts.length === 0) opts = [bills[0] || 500000];
+        const paid = opts[jgRand(0, opts.length - 1)];
+        cur = { name: NAMES[jgRand(0, NAMES.length - 1)], items, bill, paid, change: paid - bill };
+        picked = [];
+        render();
+      }
+      function sum() { return picked.reduce((s, v) => s + v, 0); }
+      function render() {
+        jgSetStats(`Khách ${idx}/3 | Đúng: ${good}`);
+        jgArea().innerHTML = `
+          <div style="text-align:left;background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.85rem;line-height:1.6;">
+            <b>👤 ${cur.name}</b><br>
+            ${cur.items.map(i => `${i.name}: ${i.price.toLocaleString('vi-VN')}đ`).join('<br>')}
+            <hr style="border:0;border-top:1px dashed #cbd5e0;margin:4px 0;">
+            Tổng: <b>${cur.bill.toLocaleString('vi-VN')}đ</b> &nbsp;|&nbsp; Khách đưa: <b style="color:#e53e3e;">${cur.paid.toLocaleString('vi-VN')}đ</b>
+          </div>
+          <div style="margin:8px 0;font-size:0.95rem;">Thối lại: <b id="cs-sum" style="color:#2b6cb0;">0đ</b></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            ${DEN.map(d => `<button class="btn btn-outline jg-btn" data-d="${d}" style="padding:8px 2px;">${d >= 1000 ? (d / 1000) + 'k' : d}</button>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-outline" style="flex:1;" id="cs-undo">↩ Hoàn tác</button>
+            <button class="btn btn-pink" style="flex:1;" id="cs-ok">✅ Đưa tiền</button>
+          </div>`;
+        const area = jgArea();
+        area.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { picked.push(parseInt(b.dataset.d, 10)); document.getElementById('cs-sum').innerText = sum().toLocaleString('vi-VN') + 'đ'; });
+        document.getElementById('cs-undo').onclick = () => { picked.pop(); document.getElementById('cs-sum').innerText = sum().toLocaleString('vi-VN') + 'đ'; };
+        document.getElementById('cs-ok').onclick = () => {
+          if (sum() === cur.change) {
+            earned += unit; good++;
+            jgSetQ('✅ Chính xác! Khách tiếp theo...');
+          } else {
+            jgSetQ(`❌ Sai rồi! Cần thối ${cur.change.toLocaleString('vi-VN')}đ, bạn đưa ${sum().toLocaleString('vi-VN')}đ.`);
+          }
+          jgArea().innerHTML = '';
+          jgAddTimer(setTimeout(() => { jgSetQ('💵 Thối đúng số tiền khách cần nhận lại.'); nextCustomer(); }, 1100));
+        };
+      }
+      nextCustomer();
+    }
 
-      const currentQ = jobGameState.currentQuestion;
-      if (!currentQ) return;
+    // ---------- 3. PHA CHẾ: làm đúng công thức ----------
+    function startBaristaGame() {
+      const unit = JOBS.barista.unit;
+      const ING = [
+        { k: 'cf', e: '☕', n: 'Cà phê' }, { k: 'milk', e: '🥛', n: 'Sữa' }, { k: 'sug', e: '🍬', n: 'Đường' },
+        { k: 'ice', e: '🧊', n: 'Đá' }, { k: 'tea', e: '🍵', n: 'Trà' }, { k: 'syr', e: '🍓', n: 'Siro' }, { k: 'cream', e: '🍦', n: 'Kem' }
+      ];
+      const DRINKS = ['Latte đặc biệt', 'Trà sữa chiều', 'Cà phê muối', 'Mocha lạ', 'Trà trái cây', 'Cacao kem', 'Bạc xỉu'];
+      let orderNo = 0, earned = 0, good = 0, order = {}, cup = {}, timeLeft = 15, tm = null, busy = false;
+      const fmt = (o) => ING.filter(i => o[i.k]).map(i => `${i.e}${i.n} ×${o[i.k]}`).join('  ');
 
-      qBox.innerText = currentQ.q;
-      optBox.innerHTML = '';
+      function newOrder() {
+        if (orderNo >= 3) return endJobGame(earned, '☕ Hết ca pha chế', `Bạn pha đúng ${good}/3 ly.`);
+        orderNo++; busy = false;
+        const n = jgRand(2, 3);
+        order = {};
+        jgShuffle(ING.slice()).slice(0, n).forEach(i => order[i.k] = jgRand(1, 3));
+        cup = {}; timeLeft = 15;
+        jgSetQ(`🧾 Khách gọi "${DRINKS[jgRand(0, DRINKS.length - 1)]}":\n${fmt(order)}`);
+        render();
+        if (tm) clearInterval(tm);
+        tm = jgAddTimer(setInterval(() => {
+          timeLeft--; stats();
+          if (timeLeft <= 0) { clearInterval(tm); resolve(false, 'Hết giờ!'); }
+        }, 1000));
+      }
+      function stats() { jgSetStats(`Ly ${orderNo}/3 | ⏱ ${timeLeft}s | Đúng: ${good}`); }
+      function render() {
+        stats();
+        jgArea().innerHTML = `
+          <div style="background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.9rem;">🥤 Trong ly: <b id="bs-cup">(trống)</b></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;">
+            ${jgShuffle(ING.slice()).map(i => `<button class="btn btn-outline jg-btn" data-k="${i.k}" style="flex-direction:column;padding:8px 2px;font-size:0.7rem;"><span style="font-size:1.4rem;">${i.e}</span>${i.n}</button>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline" style="flex:1;" id="bs-reset">🗑 Đổ đi</button>
+            <button class="btn btn-pink" style="flex:1;" id="bs-ok">✅ Giao khách</button>
+          </div>`;
+        jgArea().querySelectorAll('[data-k]').forEach(b => b.onclick = () => { if (busy) return; cup[b.dataset.k] = (cup[b.dataset.k] || 0) + 1; upCup(); });
+        document.getElementById('bs-reset').onclick = () => { if (busy) return; cup = {}; upCup(); };
+        document.getElementById('bs-ok').onclick = () => { if (busy) return; resolve(ING.every(i => (cup[i.k] || 0) === (order[i.k] || 0)), null); };
+      }
+      function upCup() { const el = document.getElementById('bs-cup'); if (el) el.innerText = fmt(cup) || '(trống)'; }
+      function resolve(ok, why) {
+        if (busy) return; busy = true;
+        if (tm) clearInterval(tm);
+        if (ok) { earned += unit; good++; jgSetQ('✅ Khách khen ngon!'); }
+        else jgSetQ(`❌ ${why || 'Sai công thức rồi!'} Công thức đúng: ${fmt(order)}`);
+        jgAddTimer(setTimeout(newOrder, 1300));
+      }
+      newOrder();
+    }
 
-      let shuffledOpts = currentQ.opts.map((opt, idx) => ({ text: opt, originalIdx: idx }));
-      shuffledOpts.sort(() => Math.random() - 0.5);
+    // ---------- 4. TÀI XẾ / SHIPPER: né chướng ngại ----------
+    function startDriverGame() {
+      const reward = JOBS.driver.unit;
+      const TOTAL = 25;
+      jgSetQ('🛵 Chạm nửa trái/phải màn hình, bấm ◀ ▶ hoặc phím mũi tên để đổi làn. Sống sót 25 giây!');
+      jgArea().innerHTML = `
+        <div id="dr-board" style="position:relative;width:100%;max-width:300px;height:380px;margin:0 auto;background:#4a5568;border-radius:14px;overflow:hidden;touch-action:none;user-select:none;">
+          <div style="position:absolute;left:33.33%;top:0;bottom:0;border-left:3px dashed #cbd5e0;opacity:.6;"></div>
+          <div style="position:absolute;left:66.66%;top:0;bottom:0;border-left:3px dashed #cbd5e0;opacity:.6;"></div>
+          <div id="dr-car" style="position:absolute;bottom:10px;width:33.33%;height:44px;line-height:44px;text-align:center;font-size:2rem;transition:left .08s;">🛵</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:8px;">
+          <button class="btn btn-outline jg-btn" id="dr-left" style="flex:1;">◀</button>
+          <button class="btn btn-outline jg-btn" id="dr-right" style="flex:1;">▶</button>
+        </div>`;
+      const board = document.getElementById('dr-board');
+      const car = document.getElementById('dr-car');
+      const H = board.clientHeight || 380;
+      const OBS = ['🚧', '🕳️', '🐕', '🚗', '🛢️', '🪨'];
+      let lane = 1, lives = 3, elapsed = 0, spawnT = 0.4, last = null;
+      const obstacles = [];
+      const baseSpeed = jgRand(150, 180);
 
-      shuffledOpts.forEach(item => {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-outline';
-        btn.style.padding = '10px 12px';
-        btn.style.fontSize = '0.85rem';
-        btn.style.textAlign = 'left';
-        btn.style.whiteSpace = 'normal';
-        btn.style.wordBreak = 'break-word';
-        btn.style.width = '100%';
-        btn.innerText = item.text;
-        btn.onclick = () => handleJobAnswer(item.originalIdx === currentQ.ans);
-        optBox.appendChild(btn);
+      function setLane(l) { lane = Math.max(0, Math.min(2, l)); car.style.left = (lane * 33.33) + '%'; }
+      setLane(1);
+      document.getElementById('dr-left').onclick = () => setLane(lane - 1);
+      document.getElementById('dr-right').onclick = () => setLane(lane + 1);
+      board.addEventListener('pointerdown', (e) => {
+        const r = board.getBoundingClientRect();
+        setLane(lane + ((e.clientX - r.left) < r.width / 2 ? -1 : 1));
       });
-    }
+      const keyH = (e) => { if (e.key === 'ArrowLeft') setLane(lane - 1); else if (e.key === 'ArrowRight') setLane(lane + 1); };
+      window.addEventListener('keydown', keyH);
+      jobGameState.listeners.push(() => window.removeEventListener('keydown', keyH));
 
-    function handleJobAnswer(isCorrect) {
-      const statsBox = document.getElementById('jgame-stats');
+      function stats() { jgSetStats(`❤️ ${lives} | ⏱ ${Math.max(0, Math.ceil(TOTAL - elapsed))}s`); }
+      function loop(ts) {
+        if (last === null) last = ts;
+        const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
+        elapsed += dt;
+        const speed = baseSpeed + elapsed * 8;
 
-      if (isCorrect) {
-        jobGameState.currentSessionEarned += jobGameState.rewardPerCorrect;
-        window.state.walletBalance = (window.state.walletBalance || 0) + jobGameState.rewardPerCorrect;
-        saveStorage();
-        renderLifeModeUI();
-
-        statsBox.innerText = `✅ Đúng! +${jobGameState.rewardPerCorrect.toLocaleString('vi-VN')} VNĐ vào ví | Sai: ${jobGameState.wrongCount}/5`;
-        document.getElementById('jgame-question-box').innerText = '✨ Đang nhận nhiệm vụ mới tiếp theo...';
-        document.getElementById('jgame-options-box').innerHTML = '';
-        
-        setTimeout(() => {
-          fetchNextAiQuestion();
-        }, 600);
-      } else {
-        jobGameState.wrongCount++;
-        statsBox.innerText = `❌ Làm ăn vậy toang rồi! (Sai ${jobGameState.wrongCount}/5 lần) | Tổng lương: ${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ`;
-        
-        if (jobGameState.wrongCount >= 5) {
-          setTimeout(() => {
-            finishJobGame();
-          }, 800);
-        } else {
-          document.getElementById('jgame-question-box').innerText = '⚠️ Hỏng rồi! Sếp giao công việc khác thay thế...';
-          document.getElementById('jgame-options-box').innerHTML = '';
-          setTimeout(() => {
-            fetchNextAiQuestion();
-          }, 800);
+        spawnT -= dt;
+        if (spawnT <= 0) {
+          const nearTop = obstacles.filter(o => o.y < 120).length;
+          if (nearTop < 2) {
+            const l = jgRand(0, 2);
+            const el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:-40px;left:${l * 33.33}%;width:33.33%;height:40px;line-height:40px;text-align:center;font-size:1.8rem;`;
+            el.innerText = OBS[jgRand(0, OBS.length - 1)];
+            board.appendChild(el);
+            obstacles.push({ el, lane: l, y: -40 });
+          }
+          spawnT = Math.max(0.35, 0.55 + Math.random() * 0.7 - elapsed * 0.01);
         }
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const o = obstacles[i];
+          o.y += speed * dt;
+          o.el.style.top = o.y + 'px';
+          if (o.lane === lane && o.y + 34 > H - 54 + 6 && o.y < H - 10 - 6) {
+            lives--; o.el.remove(); obstacles.splice(i, 1);
+            board.style.background = '#e53e3e';
+            setTimeout(() => { if (board) board.style.background = '#4a5568'; }, 120);
+            continue;
+          }
+          if (o.y > H) { o.el.remove(); obstacles.splice(i, 1); }
+        }
+        stats();
+
+        if (lives <= 0) {
+          return endJobGame(reward * 0.3 * Math.min(1, elapsed / TOTAL), '💥 Tai nạn!', `Bạn chạy được ${Math.floor(elapsed)}/${TOTAL} giây.`);
+        }
+        if (elapsed >= TOTAL) {
+          return endJobGame(reward, '🏁 Giao hàng thành công!', `Bạn còn ${lives} mạng.`);
+        }
+        jobGameState.raf = requestAnimationFrame(loop);
       }
+      stats();
+      jobGameState.raf = requestAnimationFrame(loop);
     }
 
-    function finishJobGame() {
-      closeModal('modal-job-game');
-      alert(`🛑 KẾT THÚC CA LÀM VIỆC DO ĐÃ SAI QUÁ 5 LẦN!\nTổng số tiền bạn kiếm được trong ca này: ${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ đã được cộng thẳng vào ví.`);
+    // ---------- 5. GIÁO VIÊN: chấm bài ----------
+    function startTeacherGame() {
+      const reward = JOBS.teacher.unit;
+      jgSetQ('🎓 Chạm vào những phép tính SAI để khoanh đỏ, rồi bấm Nộp bài.');
+      const N = 8;
+      const numWrong = jgRand(2, 4);
+      const wrongIdx = new Set();
+      while (wrongIdx.size < numWrong) wrongIdx.add(jgRand(0, N - 1));
+      const eqs = [];
+      for (let i = 0; i < N; i++) {
+        const op = ['+', '−', '×'][jgRand(0, 2)];
+        let a, b, r;
+        if (op === '+') { a = jgRand(5, 60); b = jgRand(5, 60); r = a + b; }
+        else if (op === '−') { a = jgRand(20, 90); b = jgRand(3, a - 1); r = a - b; }
+        else { a = jgRand(3, 12); b = jgRand(3, 12); r = a * b; }
+        let shown = r;
+        if (wrongIdx.has(i)) { let d = 0; while (d === 0) d = jgRand(-9, 9); shown = r + d; if (shown < 0) shown = r + Math.abs(d); }
+        eqs.push({ text: `${a} ${op} ${b} = ${shown}`, wrong: wrongIdx.has(i) });
+      }
+      const marked = new Set();
+      jgSetStats(`Đã khoanh: 0 | Bài có ${numWrong} lỗi sai`);
+      jgArea().innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${eqs.map((q, i) => `<button class="btn btn-outline jg-btn" data-i="${i}" style="font-size:1rem;padding:12px 4px;">${q.text}</button>`).join('')}
+        </div>
+        <button class="btn btn-pink" style="width:100%;margin-top:10px;" id="tc-submit">📝 Nộp bài</button>`;
+      jgArea().querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
+        const i = parseInt(b.dataset.i, 10);
+        if (marked.has(i)) { marked.delete(i); b.style.background = 'transparent'; b.style.borderColor = 'var(--app-green)'; b.style.color = 'var(--app-dark-green)'; }
+        else { marked.add(i); b.style.background = '#fed7d7'; b.style.borderColor = '#e53e3e'; b.style.color = '#c53030'; }
+        jgSetStats(`Đã khoanh: ${marked.size} | Bài có ${numWrong} lỗi sai`);
+      });
+      document.getElementById('tc-submit').onclick = () => {
+        let missed = 0, falseMarks = 0;
+        eqs.forEach((q, i) => { if (q.wrong && !marked.has(i)) missed++; if (!q.wrong && marked.has(i)) falseMarks++; });
+        const errs = missed + falseMarks;
+        const earned = errs === 0 ? reward : (errs === 1 ? reward * 0.4 : 0);
+        endJobGame(earned, errs === 0 ? '🎉 Chấm chuẩn từng câu!' : '📝 Chấm xong', `Bỏ sót ${missed} câu sai, khoanh nhầm ${falseMarks} câu đúng.`);
+      };
     }
 
+    // ---------- 6. CÔNG NGHỆ: sudoku (khó, thưởng cao) ----------
     let currentSudokuSolution = [];
     let currentSudokuPuzzle = [];
 
@@ -1580,7 +1968,7 @@
       currentSudokuSolution = grid.map(row => [...row]);
 
       let puzzle = grid.map(row => [...row]);
-      let holes = 42;
+      let holes = 48; // khó hơn trước (42)
       while (holes > 0) {
         let r = Math.floor(Math.random() * 9);
         let c = Math.floor(Math.random() * 9);
@@ -1628,48 +2016,261 @@
 
     function checkSudoku9Result() {
       const inputs = document.querySelectorAll('#sudoku-grid-9 input');
-      let isAllCorrect = true;
+      const g = Array(9).fill(0).map(() => Array(9).fill(0));
+      inputs.forEach(inp => { g[parseInt(inp.dataset.r, 10)][parseInt(inp.dataset.c, 10)] = parseInt(inp.value, 10) || 0; });
 
-      inputs.forEach(inp => {
-        const r = parseInt(inp.dataset.r);
-        const c = parseInt(inp.dataset.c);
-        const val = parseInt(inp.value) || 0;
-        if (val !== currentSudokuSolution[r][c]) isAllCorrect = false;
-      });
+      // Kiểm tra theo luật sudoku (hàng, cột, ô 3x3) nên đáp án hợp lệ nào cũng được tính
+      let isAllCorrect = true;
+      for (let i = 0; i < 9 && isAllCorrect; i++) {
+        const row = new Set(), col = new Set(), box = new Set();
+        for (let j = 0; j < 9; j++) {
+          const a = g[i][j], b = g[j][i], c = g[3 * Math.floor(i / 3) + Math.floor(j / 3)][3 * (i % 3) + (j % 3)];
+          if (a < 1 || a > 9 || b < 1 || b > 9 || c < 1 || c > 9) { isAllCorrect = false; break; }
+          row.add(a); col.add(b); box.add(c);
+        }
+        if (isAllCorrect && (row.size !== 9 || col.size !== 9 || box.size !== 9)) isAllCorrect = false;
+      }
 
       closeModal('modal-sudoku');
 
       if (isAllCorrect) {
-        const reward = 10000000000;
+        const reward = JOBS.sudoku.unit;
         window.state.walletBalance = (window.state.walletBalance || 0) + reward;
         saveStorage();
         renderLifeModeUI();
-        alert('🎉 CHÍNH XÁC TUYỆT ĐỐI! Bạn đã hack thành công ngân hàng nhận 10.000.000.000 VNĐ vào ví!');
+        alert(`🎉 CHÍNH XÁC TUYỆT ĐỐI! Bạn đã giải mã thành công, nhận ${reward.toLocaleString('vi-VN')} VNĐ vào ví!`);
       } else {
         alert('❌ GIẢI MÃ THẤT BẠI! Xém tí cảnh sát bắt');
       }
     }
 
-    // ⚡ HÀM SỰ KIỆN NGẪU NHIÊN: TỈ LỆ THẤP (15%) VÀ CHỈ CỘNG/TRỪ KHI THƯ BẤM LỰA CHỌN
+    // ===================== THỦ CÔNG MỸ NGHỆ (MERGE 12x12) =====================
+    const CRAFTS = {
+      cake: { label: '🎂 Bánh', chain: [['🌾', 'Bột mì'], ['🥚', 'Trứng gà'], ['🍞', 'Bột nhào'], ['🥐', 'Bánh ra lò'], ['🧁', 'Cupcake'], ['🍰', 'Bánh kem'], ['🎂', 'Bánh sinh nhật']] },
+      flower: { label: '🌷 Hoa', chain: [['🌱', 'Hạt giống'], ['🌿', 'Mầm non'], ['🍀', 'Cây con'], ['🌷', 'Nụ hoa'], ['🌻', 'Hoa nở'], ['🌹', 'Hoa hồng'], ['💐', 'Bó hoa']] },
+      necklace: { label: '📿 Dây chuyền', chain: [['🪨', 'Đá thô'], ['🔹', 'Hạt cườm'], ['📿', 'Chuỗi hạt'], ['🔗', 'Dây xích'], ['🦪', 'Ngọc trai'], ['💎', 'Kim cương'], ['💫', 'Dây chuyền lấp lánh']] },
+      lego: { label: '🧱 Lego (đồ ghép)', chain: [['🧱', 'Viên gạch'], ['🟦', 'Khối ghép'], ['🚗', 'Xe nhỏ'], ['🏠', 'Ngôi nhà'], ['🏰', 'Lâu đài'], ['🚀', 'Tên lửa'], ['🌆', 'Thành phố mô hình']] },
+      teddy: { label: '🧸 Gấu len', chain: [['🧶', 'Cuộn len'], ['🧵', 'Sợi len se'], ['🧣', 'Khăn len'], ['🧦', 'Tất len'], ['🐥', 'Thú len nhỏ'], ['🧸', 'Gấu bông'], ['🎀', 'Gấu bông nơ']] }
+    };
+    const CRAFT_PRICE = [0, 10000, 30000, 80000, 200000, 500000, 1200000, 3000000];
+    const CRAFT_MAX = 7;
+    const CRAFT_TIME = 120;
+
+    // Thời giá: mỗi ngày mỗi loại có hệ số 0.7 - 1.4
+    function craftMarketMult(type) {
+      const s = new Date(nowTs()).toDateString() + type;
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      return 0.7 + (h % 71) / 100;
+    }
+    function craftPrice(type, level) {
+      return Math.round((CRAFT_PRICE[level] || 0) * craftMarketMult(type) / 1000) * 1000;
+    }
+
+    function updateCraftPreview() {
+      const sel = document.getElementById('craft-select');
+      if (!sel) return;
+      if (sel.options.length === 0) {
+        sel.innerHTML = Object.keys(CRAFTS).map(k => `<option value="${k}">${CRAFTS[k].label}</option>`).join('');
+      }
+      const type = sel.value || 'cake';
+      const c = CRAFTS[type];
+      document.getElementById('craft-chain-preview').innerText = c.chain.map(x => x[0]).join(' ➜ ');
+      document.getElementById('craft-market-info').innerHTML =
+        '<b>Thời giá hôm nay:</b> ' + Object.keys(CRAFTS).map(k => `${CRAFTS[k].label.split(' ')[0]} ×${craftMarketMult(k).toFixed(2)}`).join(' | ') +
+        `<br>Giá bán cấp 1 → 7 (món đang chọn): ` + [1,2,3,4,5,6,7].map(l => craftPrice(type, l).toLocaleString('vi-VN')).join(' / ');
+    }
+
+    function renderCraftBag() {
+      const box = document.getElementById('craft-bag-container');
+      if (!box) return;
+      const items = (window.state.inventory || []).filter(i => i.kind === 'craft');
+      if (items.length === 0) { box.innerHTML = '<div style="font-size:0.8rem;color:#888;text-align:center;">Chưa có đồ thủ công nào.</div>'; return; }
+      box.innerHTML = '';
+      items.forEach(obj => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:6px;background:#fff;border:1px solid #90d4b8;border-radius:8px;padding:6px 8px;font-size:0.8rem;';
+        const price = craftPrice(obj.craftType, obj.level);
+        row.innerHTML = `<span>${obj.name}</span><span style="display:flex;gap:4px;flex-shrink:0;"><button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}')">Bán ~${price.toLocaleString('vi-VN')}</button><button class="action-text-btn" onclick="openSelectCharGiftModal('${obj.uniqueId}')">Tặng</button></span>`;
+        box.appendChild(row);
+      });
+    }
+
+    function sellCraftItem(uniqueId) {
+      const inv = window.state.inventory || [];
+      const idx = inv.findIndex(i => i.uniqueId === uniqueId);
+      if (idx === -1) return;
+      const it = inv[idx];
+      const price = craftPrice(it.craftType, it.level);
+      if (!confirm(`Bán "${it.name}" với giá ${price.toLocaleString('vi-VN')} VNĐ (thời giá hôm nay ×${craftMarketMult(it.craftType).toFixed(2)})?`)) return;
+      inv.splice(idx, 1);
+      window.state.walletBalance = (window.state.walletBalance || 0) + price;
+      saveStorage();
+      renderLifeModeUI();
+      alert(`💰 Đã bán, nhận ${price.toLocaleString('vi-VN')} VNĐ.`);
+    }
+
+    let craftState = { type: 'cake', board: [], sel: -1, best: 1, timeLeft: 0, timer: null, active: false };
+
+    function startCraftGame() {
+      checkDailyReset();
+      if ((window.state.dailyCraftCount || 0) >= 4) {
+        return alert('Bạn đã hết 4 lượt thủ công trong ngày hôm nay! Hãy quay lại vào ngày mai.');
+      }
+      const type = document.getElementById('craft-select').value || 'cake';
+
+      window.state.dailyCraftCount = (window.state.dailyCraftCount || 0) + 1;
+      saveStorage();
+      renderLifeModeUI();
+
+      if (craftState.timer) clearInterval(craftState.timer);
+      craftState = { type, board: Array(144).fill(0), sel: -1, best: 1, timeLeft: CRAFT_TIME, timer: null, active: true };
+      placeCraftMaterials(24);
+
+      document.getElementById('craft-title').innerText = `🧶 Làm ${CRAFTS[type].label}`;
+      const boardEl = document.getElementById('craft-board');
+      boardEl.onclick = (e) => {
+        const c = e.target.closest('[data-i]');
+        if (c) tapCraftCell(parseInt(c.dataset.i, 10));
+      };
+      renderCraftBoard();
+      openModal('modal-craft');
+
+      craftState.timer = setInterval(() => {
+        craftState.timeLeft--;
+        updateCraftStats();
+        if (craftState.timeLeft <= 0) finishCraft(true);
+      }, 1000);
+    }
+
+    function placeCraftMaterials(n) {
+      const free = [];
+      craftState.board.forEach((v, i) => { if (v === 0) free.push(i); });
+      jgShuffle(free);
+      const take = free.slice(0, n);
+      take.forEach(i => { craftState.board[i] = 1; });
+      return take.length;
+    }
+
+    function addCraftMaterials() {
+      if (!craftState.active) return;
+      const placed = placeCraftMaterials(6);
+      if (placed === 0) alert('Bàn đã đầy! Hãy ghép bớt nguyên liệu.');
+      renderCraftBoard();
+    }
+
+    function tapCraftCell(i) {
+      if (!craftState.active) return;
+      const b = craftState.board;
+      if (b[i] === 0) { craftState.sel = -1; renderCraftBoard(); return; }
+      if (craftState.sel === -1) { craftState.sel = i; renderCraftBoard(); return; }
+      if (craftState.sel === i) { craftState.sel = -1; renderCraftBoard(); return; }
+      const s = craftState.sel;
+      if (b[s] === b[i] && b[i] < CRAFT_MAX) {
+        b[i] = b[i] + 1;
+        b[s] = 0;
+        if (b[i] > craftState.best) craftState.best = b[i];
+        craftState.sel = -1;
+      } else {
+        craftState.sel = i;
+      }
+      renderCraftBoard();
+    }
+
+    function updateCraftStats() {
+      const c = CRAFTS[craftState.type];
+      const bst = c.chain[craftState.best - 1];
+      document.getElementById('craft-stats').innerText = `⏱ ${Math.max(0, craftState.timeLeft)}s | Cao nhất: ${bst[0]} ${bst[1]} (Lv.${craftState.best})`;
+    }
+
+    function renderCraftBoard() {
+      const c = CRAFTS[craftState.type];
+      const el = document.getElementById('craft-board');
+      el.innerHTML = craftState.board.map((lv, i) => {
+        if (lv === 0) return `<div class="craft-cell" data-i="${i}"></div>`;
+        const bg = `hsl(${110 + lv * 28}, 70%, ${92 - lv * 2}%)`;
+        return `<div class="craft-cell${craftState.sel === i ? ' sel' : ''}" data-i="${i}" style="background:${bg};" title="${c.chain[lv - 1][1]} (Lv.${lv})">${c.chain[lv - 1][0]}</div>`;
+      }).join('');
+      updateCraftStats();
+    }
+
+    function requestFinishCraft() {
+      if (!craftState.active) { closeModal('modal-craft'); return; }
+      if (confirm('Nộp thành phẩm cao nhất hiện tại và kết thúc lượt?')) finishCraft(false);
+    }
+
+    function finishCraft(auto) {
+      if (!craftState.active) return;
+      craftState.active = false;
+      if (craftState.timer) { clearInterval(craftState.timer); craftState.timer = null; }
+      closeModal('modal-craft');
+
+      let best = 1;
+      craftState.board.forEach(v => { if (v > best) best = v; });
+      const c = CRAFTS[craftState.type];
+      const info = c.chain[best - 1];
+      if (!window.state.inventory) window.state.inventory = [];
+      window.state.inventory.push({
+        id: 'craft-' + craftState.type + '-' + best,
+        kind: 'craft',
+        craftType: craftState.type,
+        level: best,
+        name: `${info[0]} ${info[1]} (Lv.${best})`,
+        singleName: `${info[0]} ${info[1]} (Lv.${best}) tự làm`,
+        qty: 1,
+        tag: 'handmade',
+        desc: `Đồ thủ công tự làm cấp ${best}`,
+        uniqueId: 'inv-' + Date.now() + Math.random()
+      });
+      saveStorage();
+      renderLifeModeUI();
+      alert(`${auto ? '⏰ Hết giờ! ' : ''}🎉 Thành phẩm: ${info[0]} ${info[1]} (Lv.${best}) đã vào túi.\nGiá bán hôm nay: ~${craftPrice(craftState.type, best).toLocaleString('vi-VN')} VNĐ. Bạn có thể bán hoặc tặng nhân vật.`);
+    }
+
+    // ===================== SỰ KIỆN NGẪU NHIÊN =====================
+    let eventBusy = false;
+
+    // Quà thưởng sự kiện: chia theo tỷ lệ độ hiếm
+    function pickRewardByRarity() {
+      const pool = SHOP_CATALOG.filter(i => i.cat !== 'estate');
+      const tiers = [
+        { max: 300000, w: 60 },
+        { max: 3000000, w: 25 },
+        { max: 50000000, w: 10 },
+        { max: 1000000000, w: 4 },
+        { max: Infinity, w: 1 }
+      ];
+      let r = Math.random() * 100, acc = 0, ti = 0;
+      for (let k = 0; k < tiers.length; k++) { acc += tiers[k].w; if (r < acc) { ti = k; break; } }
+      const min = ti > 0 ? tiers[ti - 1].max : 0;
+      let cand = pool.filter(i => i.price > min && i.price <= tiers[ti].max);
+      if (cand.length === 0) cand = pool.filter(i => i.price <= 300000);
+      return cand[Math.floor(Math.random() * cand.length)];
+    }
+
+    // ⚡ HÀM SỰ KIỆN NGẪU NHIÊN: TỈ LỆ THẤP (15%), CHỈ XUẤT HIỆN Ở TAB CUỘC SỐNG
     async function maybeTriggerRandomEvent() {
+      if (eventBusy) return;
       if (Math.random() > 0.15) return; 
 
       const storyId = window.state.activeStoryId;
       const currentStory = window.state.stories ? window.state.stories.find(s => s.id === storyId) : null;
-      const activeChar = (currentStory && currentStory.characters && currentStory.characters.length > 0) ? currentStory.characters[0] : null;
-      
-      if (!activeChar) return;
+      const chars = (currentStory && currentStory.characters) ? currentStory.characters : [];
+      if (chars.length === 0) return;
+      const activeChar = chars[Math.floor(Math.random() * chars.length)];
 
-      const charId = activeChar.id;
-      const charName = activeChar.name;
-      const userName = (window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
+      eventBusy = true;
+      try {
+        const charId = activeChar.id;
+        const charName = activeChar.name;
+        const userName = (window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
 
-      const chatHistory = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
-      const recentHistory = chatHistory.slice(-10).map(m => `${m.sender === 'ai' ? charName : userName}: ${m.text}`).join('\n');
+        const chatHistory = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
+        const recentHistory = chatHistory.slice(-10).map(m => `${m.sender === 'ai' ? charName : userName}: ${m.text}`).join('\n');
 
-      const randomRewardItem = SHOP_CATALOG[Math.floor(Math.random() * SHOP_CATALOG.length)];
+        const randomRewardItem = pickRewardByRarity();
 
-      const prompt = `Bạn là Trợ lý Hệ thống Game Cốt Truyện. 
+        const prompt = `Bạn là Trợ lý Hệ thống Game Cốt Truyện. 
 Dựa vào ngữ cảnh đoạn chat gần đây giữa người chơi (${userName}) và nhân vật (${charName}):
 ---
 ${recentHistory || "Mới bắt đầu trò chuyện"}
@@ -1677,8 +2278,8 @@ ${recentHistory || "Mới bắt đầu trò chuyện"}
 
 Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
 Yêu cầu tạo 2 lựa chọn cho người chơi:
-- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền, tặng vật phẩm hoặc tăng điểm thân mật nhẹ 1-10 điểm).
-- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền, giảm điểm thân mật 1-10 điểm hoặc tạo drama).
+- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền từ 50000 đến 500000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 10 điểm).
+- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền từ 50000 đến 300000, giảm điểm thân mật từ 1 đến 10 điểm hoặc tạo drama).
 
 Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
 {
@@ -1699,46 +2300,60 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
   }
 }`;
 
-      let eventData = null;
-      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+        let eventData = null;
+        const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
 
-      for (const rawKey of window.state.apiKeys || []) {
-        const key = rawKey.trim().replace(/^["']|["']$/g, '');
-        try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            let rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
-            rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const start = rawText.indexOf('{');
-            const end = rawText.lastIndexOf('}');
-            if (start !== -1 && end !== -1) {
-              eventData = JSON.parse(rawText.substring(start, end + 1));
-              break;
+        for (const rawKey of window.state.apiKeys || []) {
+          const key = rawKey.trim().replace(/^["']|["']$/g, '');
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+              body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+              let rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+              rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+              const start = rawText.indexOf('{');
+              const end = rawText.lastIndexOf('}');
+              if (start !== -1 && end !== -1) {
+                eventData = JSON.parse(rawText.substring(start, end + 1));
+                break;
+              }
             }
-          }
-        } catch (e) {}
-      }
+          } catch (e) {}
+        }
 
-      if (eventData && eventData.desc && eventData.choice1 && eventData.choice2) {
-        const dynamicEvent = {
-          desc: eventData.desc,
-          choices: [
-            {
-              text: eventData.choice1.text,
-              action: () => executeEventChoice(charId, charName, userName, eventData.desc, eventData.choice1, randomRewardItem)
-            },
-            {
-              text: eventData.choice2.text,
-              action: () => executeEventChoice(charId, charName, userName, eventData.desc, eventData.choice2, null)
-            }
-          ]
-        };
-        triggerEventModal(dynamicEvent);
+        if (eventData && eventData.desc && eventData.choice1 && eventData.choice2) {
+          // ÉP GIỚI HẠN số liệu do AI sinh ra
+          const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.abs(parseInt(v, 10) || 0)));
+          const c1 = {
+            text: eventData.choice1.text,
+            log: eventData.choice1.log,
+            moneyChange: clampN(eventData.choice1.moneyChange, 0, 500000),
+            affectionChange: clampN(eventData.choice1.affectionChange || 1, 1, 10),
+            getItem: !!eventData.choice1.getItem
+          };
+          const c2 = {
+            text: eventData.choice2.text,
+            log: eventData.choice2.log,
+            moneyChange: -clampN(eventData.choice2.moneyChange, 0, 300000),
+            affectionChange: -clampN(eventData.choice2.affectionChange || 1, 1, 10),
+            getItem: false
+          };
+
+          const dynamicEvent = {
+            desc: eventData.desc,
+            choices: [
+              { text: c1.text, action: () => executeEventChoice(charId, charName, userName, eventData.desc, c1, randomRewardItem) },
+              { text: c2.text, action: () => executeEventChoice(charId, charName, userName, eventData.desc, c2, null) }
+            ]
+          };
+          triggerEventModal(dynamicEvent);
+        }
+      } finally {
+        eventBusy = false;
       }
     }
 
@@ -1781,7 +2396,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         charId, 
         charName, 
         eventDesc, 
-        `${userName} lựa chọn: "${choiceObj.text}". (${choiceObj.log || ''})`
+        `${userName} lựa chọn: "${choiceObj.text}". ${choiceObj.log || ''}`
       );
     }
 
@@ -1790,18 +2405,20 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         switchStoryTab('chat');
       }
 
-      const chatNarrativeText = `[SỰ KIỆN]: ${eventContext}\n[HÀNH ĐỘNG]: ${playerChoice}`;
+      // Chỉ hiện nội dung sự kiện và hành động (không còn thẻ [SỰ KIỆN] / [HÀNH ĐỘNG])
+      const chatNarrativeText = `📢 ${eventContext}\n👉 ${playerChoice}`;
       
       const storyId = window.state.activeStoryId;
       if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
       }
 
-      window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText });
+      // event:true => tin hệ thống này được gửi cho AI đọc
+      window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText, event: true, ts: Date.now() });
       saveStorage();
       renderChatHistory();
 
-      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU BẮT BUỘC]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi lời thoại và hành động phản ứng trực tiếp với diễn biến trên. Bám sát tính cách nhân vật, thể hiện cảm xúc rõ ràng tùy theo kết quả lựa chọn của người chơi!`;
+      const hiddenAiPrompt = `Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi lời thoại và hành động phản ứng trực tiếp với sự kiện vừa xảy ra ở trên và lựa chọn của người chơi. Bám sát tính cách nhân vật, thể hiện cảm xúc rõ ràng tùy theo kết quả lựa chọn!`;
 
       sendMessage(hiddenAiPrompt, false, true);
     }
@@ -2176,7 +2793,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="char-info-body">
-              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}pts)</span></h4>
+              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
               <p>${escapeHtml(char.personality)}</p>
             </div>
           </div>
@@ -2248,9 +2865,9 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           div.innerText = msg.text.replace(/[\[\]\*\"]/g, '').trim(); 
           container.appendChild(div);
         } else if (msg.sender === 'user') {
-          renderUserFormattedMessage(msg.text, msg.img, container, idx);
+          renderUserFormattedMessage(msg.text, msg.img, container, idx, msg.ts);
         } else {
-          parseAndRenderAiMessage(msg.text, story, container, idx);
+          parseAndRenderAiMessage(msg.text, story, container, idx, msg.transfers);
         }
       });
       
@@ -2259,7 +2876,30 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       }, 60);
     }
 
-    function renderUserFormattedMessage(rawText, imgData, container, idx) {
+    // Thẻ chuyển tiền kiểu Momo / Zalo
+    function buildTransferCardHtml(dir, amount, note, who, ts) {
+      const incoming = dir === 'in';
+      const t = ts ? new Date(ts).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '';
+      return `
+        <div class="mm-card">
+          <div class="mm-head">
+            <div class="mm-logo">₫</div>
+            <div>
+              <div class="mm-title">${incoming ? 'Nhận tiền thành công' : 'Chuyển tiền thành công'}</div>
+              <div class="mm-sub">Ví Teechat</div>
+            </div>
+          </div>
+          <div class="mm-body">
+            <div class="mm-amount">${incoming ? '+' : '-'}${amount.toLocaleString('vi-VN')}đ</div>
+            <div class="mm-row"><span>${incoming ? 'Từ' : 'Đến'}</span><b>${escapeHtml(who)}</b></div>
+            <div class="mm-row"><span>Lời nhắn</span><b>${escapeHtml(note)}</b></div>
+            ${t ? `<div class="mm-row"><span>Thời gian</span><b>${t}</b></div>` : ''}
+            <div class="mm-status">✔ Giao dịch thành công</div>
+          </div>
+        </div>`;
+    }
+
+    function renderUserFormattedMessage(rawText, imgData, container, idx, ts) {
       const text = (rawText || '').replace(/[“”]/g, '"');
 
       const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
@@ -2268,24 +2908,31 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         const note = userTransferMatch[2] || 'Chuyển khoản';
         const target = userTransferMatch[3] || 'Nhân vật';
 
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'transfer-card';
-        cardDiv.innerHTML = `
-          <div class="transfer-card-header">
-            <span>💳 <b>CHUYỂN KHOẢN ĐI</b></span>
-            <span style="color:#38a169; font-weight:bold;">Success ✔</span>
-          </div>
-          <div class="transfer-card-amount" style="color:#e53e3e;">-${amt.toLocaleString('vi-VN')} VNĐ</div>
-          <div class="transfer-card-note">Đến: <b>${escapeHtml(target)}</b><br>"${escapeHtml(note)}"</div>
-        `;
-
         const wrapDiv = document.createElement('div');
         wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
-        wrapDiv.appendChild(cardDiv);
+        wrapDiv.innerHTML = buildTransferCardHtml('out', amt, note, target, ts);
 
         const bar = document.createElement('div');
         bar.className = 'msg-action-bar';
         bar.innerHTML = `<button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
+        wrapDiv.appendChild(bar);
+        container.appendChild(wrapDiv);
+        return;
+      }
+
+      // Tin dạng [nội dung] (tặng quà, voice...) hiển thị như hành động, không kèm ngoặc vuông
+      const trimmed = text.trim();
+      if (!imgData && /^\[[\s\S]*\]$/.test(trimmed)) {
+        const inner = trimmed.slice(1, -1).replace(/\*/g, '').trim();
+        const actDiv = document.createElement('div');
+        actDiv.className = 'narrative-block user-action';
+        actDiv.innerText = inner;
+        const wrapDiv = document.createElement('div');
+        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
+        wrapDiv.appendChild(actDiv);
+        const bar = document.createElement('div');
+        bar.className = 'msg-action-bar';
+        bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
         wrapDiv.appendChild(bar);
         container.appendChild(wrapDiv);
         return;
@@ -2354,35 +3001,46 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       }
     }
 
-    function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
+    function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers) {
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
-      fullText = fullText.replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
-
-      const transferMatch = fullText.match(/\[SYSTEM_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\]/);
-      if (transferMatch) {
-        const amount = parseInt(transferMatch[1], 10);
-        const note = transferMatch[2] || 'Chuyển khoản';
-
-        window.state.walletBalance = (window.state.walletBalance || 0) + amount;
-        saveStorage();
-        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
-
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'transfer-card';
-        cardDiv.innerHTML = `
-          <div class="transfer-card-header">
-            <span>💳 <b>NHẬN TIỀN CHUYỂN KHOẢN</b></span>
-            <span style="color:#38a169; font-weight:bold;">Success ✔</span>
-          </div>
-          <div class="transfer-card-amount">+${amount.toLocaleString('vi-VN')} VNĐ</div>
-          <div class="transfer-card-note">"${escapeHtml(note)}"</div>
-        `;
-        container.appendChild(cardDiv);
-
-        fullText = fullText.replace(/\[SYSTEM_TRANSFER:.*?\]/g, '').trim();
-      }
+      fullText = (fullText || '').replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
+
+      // Thẻ nhận tiền kiểu Momo/Zalo: chỉ VẼ, tiền đã được cộng 1 lần lúc nhận tin
+      if (transfers && transfers.length) {
+        let tName = 'Nhân vật', tAvatar = (story && story.avatar) || DEFAULT_LOGO;
+        if (story && story.characters && story.characters.length) {
+          let found = null;
+          for (const ln of lines) {
+            const cm = ln.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:/);
+            if (cm) {
+              found = story.characters.find(c => (c.name || '').trim().toLowerCase() === cm[1].trim().toLowerCase());
+              if (found) break;
+            }
+          }
+          if (!found) found = story.characters[0];
+          tName = found.name; if (found.avatar) tAvatar = found.avatar;
+        }
+        transfers.forEach((tr, ti) => {
+          const isLastCard = (ti === transfers.length - 1) && lines.length === 0;
+          const bar = isLastCard ? `
+            <div class="msg-action-bar">
+              <button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button>
+              <button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>
+            </div>` : '';
+          const row = document.createElement('div');
+          row.className = 'chat-message ai';
+          row.innerHTML = `
+            <img src="${tAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+            <div class="msg-bubble-wrap">
+              <div class="msg-sender">${escapeHtml(tName)}</div>
+              ${buildTransferCardHtml('in', tr.amount, tr.note, tName, tr.ts)}
+              ${bar}
+            </div>`;
+          container.appendChild(row);
+        });
+      }
 
       lines.forEach((line, lineIdx) => {
         const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
@@ -2501,14 +3159,28 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       if (newText !== null) { history[idx].text = newText; saveStorage(); renderChatHistory(); }
     }
 
+    // Hoàn lại tiền nếu xóa / tạo lại tin AI đã chuyển tiền
+    function revertTransfers(m) {
+      if (m && m.sender === 'ai' && m.transfers && m.transfers.length) {
+        const sum = m.transfers.reduce((s, t) => s + (t.amount || 0), 0);
+        window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) - sum);
+      }
+    }
+
     function deleteMessage(idx) {
-      if (confirm('Xóa tin nhắn?')) { window.state.chatHistories[window.state.activeStoryId].splice(idx, 1); saveStorage(); renderChatHistory(); }
+      if (confirm('Xóa tin nhắn?')) {
+        const hist = window.state.chatHistories[window.state.activeStoryId];
+        revertTransfers(hist[idx]);
+        hist.splice(idx, 1);
+        saveStorage(); renderChatHistory();
+      }
     }
 
     function regenerateAiResponse(idx) {
       const history = window.state.chatHistories[window.state.activeStoryId];
       if (!history) return;
-      history.splice(idx);
+      const removed = history.splice(idx);
+      removed.forEach(revertTransfers);
       saveStorage();
       renderChatHistory();
       sendMessage(null, false, true);
@@ -2530,8 +3202,12 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         return openModal('modal-settings');
       }
 
+      // Ghi chú ẩn dùng 1 lần cho lượt này (VD: phản ứng với quà thủ công)
+      const hintText = window.__nextHint || '';
+      window.__nextHint = '';
+
       if (!isRegen && !isAutoPlay && text) {
-        window.state.chatHistories[storyId].push({ sender: 'user', text: text, img: overrideImg || null });
+        window.state.chatHistories[storyId].push({ sender: 'user', text: text, img: overrideImg || null, ts: Date.now() });
         saveStorage();
         renderChatHistory();
         if (inputEl) inputEl.value = '';
@@ -2550,6 +3226,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       }
 
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
+
+      const hintBlock = hintText ? `\n[GHI CHÚ HỆ THỐNG CHO LƯỢT NÀY]\n${hintText}\n` : '';
       
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
@@ -2584,27 +3262,42 @@ ${charAffectionSummary}
 [ĐỊNH DẠNG ĐẦU RA]
 Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
+${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];
 
       rawHistory.forEach(m => {
-        if (m.sender === 'system') return;
+        let mText = m.text || '';
+        if (m.sender === 'system') {
+          // Chỉ tin sự kiện mới được gửi cho AI; cảnh mở đầu đã nằm trong system prompt
+          if (!m.event) return;
+          mText = `[Sự kiện trong truyện] ${mText}`;
+        }
         const role = m.sender === 'ai' ? 'model' : 'user';
-        const partsArr = [{ text: m.text || '' }];
+        if (m.sender === 'ai' && m.transfers && m.transfers.length) {
+          mText += '\n' + m.transfers.map(t => `(Đã chuyển ${t.amount} VNĐ cho người chơi, lời nhắn: ${t.note})`).join(' ');
+        }
+        const partsArr = [{ text: mText }];
         if (m.img) {
           partsArr.push({ inline_data: { mime_type: "image/jpeg", data: m.img.split(',')[1] || m.img } });
         }
         
         if (contents.length > 0 && contents[contents.length - 1].role === role) {
-          contents[contents.length - 1].parts[0].text += "\n" + (m.text || '');
+          contents[contents.length - 1].parts[0].text += "\n" + mText;
         } else {
           contents.push({ role, parts: partsArr });
         }
       });
 
       if (isAutoPlay) {
-        contents.push({ role: 'user', parts: [{ text: 'Tự tiếp tục diễn biến câu chuyện.' }] });
+        // Nếu có lệnh ẩn (VD: phản ứng với sự kiện) thì dùng lệnh đó thay cho câu mặc định
+        const autoText = overrideText ? overrideText : 'Tự tiếp tục diễn biến câu chuyện.';
+        if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+          contents[contents.length - 1].parts[0].text += "\n" + autoText;
+        } else {
+          contents.push({ role: 'user', parts: [{ text: autoText }] });
+        }
       }
 
       const payload = {
@@ -2646,8 +3339,24 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
       
       if (responseText) {
-        window.state.chatHistories[storyId].push({ sender: 'ai', text: responseText });
+        // XỬ LÝ CHUYỂN TIỀN ĐÚNG 1 LẦN NGAY KHI NHẬN TIN (không xử lý lúc vẽ chat)
+        const transfers = [];
+        const tre = /\[SYSTEM_TRANSFER:\s*([\d.,]+)\s*\|\s*([^\]]*)\]/g;
+        let tm;
+        while ((tm = tre.exec(responseText)) !== null) {
+          const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
+          if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
+        }
+        const cleaned = responseText.replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
+
+        const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
+        if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
+
+        const aiMsg = { sender: 'ai', text: cleaned, ts: Date.now() };
+        if (transfers.length) aiMsg.transfers = transfers;
+        window.state.chatHistories[storyId].push(aiMsg);
         saveStorage(); 
+        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
         renderChatHistory();
       } else {
         alert('Lỗi kết nối API!');
@@ -2657,6 +3366,7 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
     function saveAppSettings() {
       window.state.apiKeys = document.getElementById('cfg-api-keys').value.split('\n').map(k => k.trim()).filter(Boolean);
+      saveKeys(window.state.apiKeys);
       window.state.currentModel = document.getElementById('cfg-model-select').value.trim() || 'gemini-2.5-flash';
       saveStorage(); closeModal('modal-settings'); alert('Đã lưu!');
     }
@@ -2667,14 +3377,19 @@ Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
       saveStorage(); closeModal('modal-persona'); alert('Đã lưu!');
     }
     function exportToFile() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.state, null, 2));
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getSyncableState(), null, 2));
       const a = document.createElement('a'); a.href = dataStr; a.download = `teechat_backup_${Date.now()}.json`; document.body.appendChild(a); a.click(); a.remove();
     }
     function importFromFile(e) {
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = function(evt) {
-        try { window.state = JSON.parse(evt.target.result); saveStorage(); loadStorage(); renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth'); } catch(err) { alert('File không hợp lệ!'); }
+        try {
+          const p = JSON.parse(evt.target.result);
+          if (Array.isArray(p.apiKeys) && p.apiKeys.length) saveKeys(p.apiKeys); // file backup cũ có thể còn key
+          delete p.apiKeys;
+          window.state = p; saveStorage(); loadStorage(); renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth');
+        } catch(err) { alert('File không hợp lệ!'); }
       };
       reader.readAsText(file);
     }
