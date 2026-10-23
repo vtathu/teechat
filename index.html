@@ -1655,83 +1655,147 @@
       }
     }
 
-    function maybeTriggerRandomEvent() {
-      if (Math.random() > 0.1) return;
+    // 🤖 HÀM TẠO SỰ KIỆN NGẪU NHIÊN BÁM SÁT LỊCH SỬ CHAT VÀ AI TỰ SINH
+    async function maybeTriggerRandomEvent() {
+      if (Math.random() > 0.35) return; // Xác suất 35% kích hoạt khi chuyển sang tab Cuộc Sống
 
-      const currentStory = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
+      const storyId = window.state.activeStoryId;
+      const currentStory = window.state.stories ? window.state.stories.find(s => s.id === storyId) : null;
       const activeChar = (currentStory && currentStory.characters && currentStory.characters.length > 0) ? currentStory.characters[0] : null;
       
       if (!activeChar) return;
 
       const charId = activeChar.id;
       const charName = activeChar.name;
+      const userName = (window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
 
-      const randomEventsPool = [
-        {
-          desc: `Đang đi dạo phố cùng ${charName}, bạn bất ngờ bắt gặp một chiếc ví da rơi trên đường chứa rất nhiều tiền mặt và giấy tờ quan trọng.`,
+      // Lấy lịch sử chat gần đây nhất để làm ngữ cảnh (tối đa 10 tin nhắn cuối)
+      const chatHistory = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
+      const recentHistory = chatHistory.slice(-10).map(m => `${m.sender === 'ai' ? charName : userName}: ${m.text}`).join('\n');
+
+      // Chọn ngẫu nhiên 1 phần thưởng vật phẩm từ cửa hàng
+      const randomRewardItem = SHOP_CATALOG[Math.floor(Math.random() * SHOP_CATALOG.length)];
+
+      // Prompt yêu cầu AI dựa vào lịch sử chat để tạo biến cố
+      const prompt = `Bạn là Trợ lý Hệ thống Game Cốt Truyện. 
+Dựa vào ngữ cảnh đoạn chat gần đây giữa người chơi (${userName}) và nhân vật (${charName}):
+---
+${recentHistory || "Mới bắt đầu trò chuyện"}
+---
+
+Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
+Yêu cầu tạo 2 lựa chọn cho người chơi:
+- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền, tặng vật phẩm hoặc tăng thân mật).
+- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền, giảm thân mật hoặc tạo drama).
+
+Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
+{
+  "desc": "Mô tả sự kiện ngắn gọn tiếp nối mạch chat, có chứa tên ${charName} và ${userName}...",
+  "choice1": {
+    "text": "Nội dung lựa chọn 1",
+    "moneyChange": 200000,
+    "affectionChange": 0.02,
+    "getItem": true,
+    "log": "Kết quả xử lý..."
+  },
+  "choice2": {
+    "text": "Nội dung lựa chọn 2",
+    "moneyChange": -100000,
+    "affectionChange": -0.04,
+    "getItem": false,
+    "log": "Kết quả xử lý..."
+  }
+}`;
+
+      let eventData = null;
+      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+
+      for (const rawKey of window.state.apiKeys || []) {
+        const key = rawKey.trim().replace(/^["']|["']$/g, '');
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            let rawText = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+            rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const start = rawText.indexOf('{');
+            const end = rawText.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+              eventData = JSON.parse(rawText.substring(start, end + 1));
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (eventData && eventData.desc && eventData.choice1 && eventData.choice2) {
+        const dynamicEvent = {
+          desc: eventData.desc,
           choices: [
             {
-              text: `Đem nộp công an cùng ${charName}`,
-              action: () => {
-                window.state.walletBalance = (window.state.walletBalance || 0) + 300000;
-                if (!window.state.affection) window.state.affection = {};
-                window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 0.015);
-                saveStorage();
-                alert(`Bạn và ${charName} nhận được 300k tiền thưởng cảm ơn. ${charName} nhìn bạn với ánh mắt trìu mến!`);
-              }
+              text: eventData.choice1.text,
+              action: () => executeEventChoice(charId, charName, userName, eventData.desc, eventData.choice1, randomRewardItem)
             },
             {
-              text: `Lén giấu ví làm của riêng, bảo ${charName} đừng lo chuyện bao đồng`,
-              action: () => {
-                window.state.walletBalance = (window.state.walletBalance || 0) + 3000000;
-                if (!window.state.affection) window.state.affection = {};
-                window.state.affection[charId] = Math.max(0, (window.state.affection[charId] || 20) - 0.30);
-                saveStorage();
-                
-                handleEventAndChat(charId, charName, 
-                  `Bạn vừa lén lấy trộm ví tiền rơi ngoài đường trước mặt ${charName} thay vì đem trả lại.`, 
-                  `Lén giấu ví làm của riêng và bảo ${charName} đừng lo chuyện bao đồng.`
-                );
-              }
+              text: eventData.choice2.text,
+              action: () => executeEventChoice(charId, charName, userName, eventData.desc, eventData.choice2, null)
             }
           ]
-        },
-        {
-          desc: `☕ ${charName} nhắn tin gọi gấp: "Đang ở quán cà phê quen chờ cậu có việc cực kỳ quan trọng, ra ngay đi đừng lề mề!"`,
-          choices: [
-            {
-              text: `Lập tức phóng xe ra điểm hẹn ngay lập tức`,
-              action: () => {
-                if (!window.state.affection) window.state.affection = {};
-                window.state.affection[charId] = Math.min(100, (window.state.affection[charId] || 20) + 0.010);
-                saveStorage();
-                handleEventAndChat(charId, charName, 
-                  `${charName} gọi gấp ra quán cà phê có việc quan trọng và bạn đã lập tức có mặt ngay.`, 
-                  `Lập tức phóng xe ra điểm hẹn.`
-                );
-              }
-            },
-            {
-              text: `Nhắn tin từ chối phũ phàng vì đang bận chơi game`,
-              action: () => {
-                if (!window.state.affection) window.state.affection = {};
-                window.state.affection[charId] = Math.max(0, (window.state.affection[charId] || 20) - 0.35);
-                saveStorage();
-                handleEventAndChat(charId, charName, 
-                  `${charName} gọi gấp ra quán có việc nhưng bị bạn nhắn tin từ chối phũ phàng để bận việc riêng.`, 
-                  `Nhắn tin từ chối phũ phàng vì đang bận.`
-                );
-              }
-            }
-          ]
-        }
-      ];
-
-      const chosenEvent = randomEventsPool[Math.floor(Math.random() * randomEventsPool.length)];
-      triggerEventModal(chosenEvent);
+        };
+        triggerEventModal(dynamicEvent);
+      }
     }
 
-   function handleEventAndChat(charId, charName, eventContext, playerChoice) {
+    // Hàm xử lý cộng/trừ tiền, thân mật, nhận Item và đẩy hội thoại sang tab Chat
+    function executeEventChoice(charId, charName, userName, eventDesc, choiceObj, rewardItem) {
+      if (choiceObj.moneyChange) {
+        window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) + choiceObj.moneyChange);
+      }
+
+      if (!window.state.affection) window.state.affection = {};
+      if (choiceObj.affectionChange) {
+        const currentAff = window.state.affection[charId] || 20;
+        window.state.affection[charId] = Math.min(100, Math.max(0, currentAff + choiceObj.affectionChange));
+      }
+
+      let itemReceivedText = '';
+      if (choiceObj.getItem && rewardItem) {
+        if (!window.state.inventory) window.state.inventory = [];
+        window.state.inventory.push({
+          id: rewardItem.id,
+          name: `${rewardItem.name} (x1)`,
+          singleName: rewardItem.name,
+          qty: 1,
+          tag: rewardItem.tag,
+          desc: rewardItem.desc,
+          uniqueId: 'inv-' + Date.now() + Math.random()
+        });
+        itemReceivedText = ` | 🎁 Nhận vật phẩm: ${rewardItem.name}`;
+      }
+
+      saveStorage();
+      if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+
+      const moneySign = choiceObj.moneyChange >= 0 ? '+' : '';
+      const affSign = choiceObj.affectionChange >= 0 ? '+' : '';
+      const moneyTxt = choiceObj.moneyChange ? ` | 💵 Ví: ${moneySign}${choiceObj.moneyChange.toLocaleString('vi-VN')} VNĐ` : '';
+      const affTxt = choiceObj.affectionChange ? ` | ❤️ Thân mật: ${affSign}${(choiceObj.affectionChange * 100).toFixed(1)}%` : '';
+      
+      alert(`📢 ${choiceObj.log || 'Kết quả xử lý'}\n(${moneyTxt}${affTxt}${itemReceivedText})`);
+
+      handleEventAndChat(
+        charId, 
+        charName, 
+        eventDesc, 
+        `${userName} lựa chọn: "${choiceObj.text}". (${choiceObj.log || ''})`
+      );
+    }
+
+    function handleEventAndChat(charId, charName, eventContext, playerChoice) {
       if (typeof switchStoryTab === 'function') {
         switchStoryTab('chat');
       }
@@ -1747,7 +1811,7 @@
       saveStorage();
       renderChatHistory();
 
-      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU ĐẶC BIỆT]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi tin nhắn thoại/hành động phản ứng trực tiếp, bám sát chặt chẽ vào tình huống này (nếu người chơi làm sai trái/phũ phàng thì hãy tức giận, thất vọng hoặc chì chiết; nếu người chơi tốt thì hãy vui vẻ, cảm động). Tuyệt đối không nói lạc đề!`;
+      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU BẮT BUỘC]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi lời thoại và hành động phản ứng trực tiếp với diễn biến trên. Bám sát tính cách nhân vật, thể hiện cảm xúc rõ ràng (vui vẻ, bất ngờ, tức giận, thất vọng hay ngại ngùng) tùy theo kết quả lựa chọn của người chơi!`;
 
       sendMessage(hiddenAiPrompt, false, true);
     }
