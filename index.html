@@ -799,7 +799,7 @@
       jobChangeTimestamp: 0,
       dailyWorkCount: 0,
       lastWorkDate: '',
-      affection: {},
+      affectionLevels: {}, // { charId: { level: 1, points: 0 } }
       aiBubbleBg: '#ffffff',
       userBubbleBg: '#c1ebd9'
     };
@@ -1089,6 +1089,28 @@
       confirmSendGiftToChar(charId, charName);
     }
 
+    function addAffectionPoints(charId, points) {
+      if (!window.state.affectionLevels) window.state.affectionLevels = {};
+      if (!window.state.affectionLevels[charId]) {
+        window.state.affectionLevels[charId] = { level: 1, points: 0 };
+      }
+      
+      let affData = window.state.affectionLevels[charId];
+      affData.points += points;
+
+      // Công thức tính điểm level thân mật dãn rộng dạng số mũ nhẹ nhàng
+      while (true) {
+        let pointsNeeded = Math.floor(15 * Math.pow(affData.level, 1.4));
+        if (affData.points >= pointsNeeded) {
+          affData.points -= pointsNeeded;
+          affData.level += 1;
+        } else {
+          break;
+        }
+      }
+      saveStorage();
+    }
+
     function confirmSendGiftToChar(charId, charName) {
       const inv = window.state.inventory || [];
       const itemIdx = inv.findIndex(i => i.uniqueId === pendingGiftUniqueId);
@@ -1108,33 +1130,22 @@
 
       const userName = (window.state && window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
 
-      if (!window.state.affection) window.state.affection = {};
-      const currentAff = window.state.affection[charId] || 20;
+      let bonusPts = Math.floor(Math.random() * 5) + 1; // 1-5 điểm cho quà thường
+      if (giftedItem.tag === 'romantic') bonusPts = Math.floor(Math.random() * 5) + 3; // 3-7 điểm
+      if (giftedItem.tag === 'luxury') bonusPts = Math.floor(Math.random() * 6) + 5; // 5-10 điểm
+      if (giftedItem.tag === 'propose') bonusPts = 15;
 
-      let bonusAff = 1 * giftQty;
-      if (giftedItem.tag === 'romantic') bonusAff = 0.005 * giftQty;
-      if (giftedItem.tag === 'luxury') bonusAff = 0.01 * giftQty;
-      if (giftedItem.tag === 'estate') bonusAff = 0.015 * giftQty;
-      if (giftedItem.tag === 'propose') bonusAff = 3; 
+      addAffectionPoints(charId, bonusPts);
+      const affData = window.state.affectionLevels[charId];
 
-      const newAff = Math.min(100, currentAff + bonusAff);
-      window.state.affection[charId] = newAff;
-      saveStorage();
       closeModal('modal-select-char-gift');
-
       switchStoryTab('chat');
-
-      let levelText = '';
-      if (newAff <= 30) levelText = 'Mức 1: Xã giao';
-      else if (newAff <= 60) levelText = 'Mức 2: Bạn bè';
-      else if (newAff <= 85) levelText = 'Mức 3: Tâm giao';
-      else levelText = 'Mức 4: Tri kỷ';
 
       let giftActionText = '';
       if (giftedItem.tag === 'propose') {
-        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. (${newAff}%: ${levelText})]`;
+        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. (Lv.${affData.level} - Tích lũy: ${affData.points}pts)]`;
       } else {
-        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. (${newAff}%: ${levelText})]`;
+        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. (Lv.${affData.level} - Tích lũy: ${affData.points}pts)]`;
       }
 
       sendMessage(giftActionText);
@@ -1157,7 +1168,7 @@
       if (!window.state.chatHistories) window.state.chatHistories = {};
       if (typeof window.state.walletBalance !== 'number') window.state.walletBalance = 10000000;
       if (!window.state.inventory) window.state.inventory = [];
-      if (!window.state.affection) window.state.affection = {};
+      if (!window.state.affectionLevels) window.state.affectionLevels = {};
       if (!window.state.currentJob) window.state.currentJob = 'barista';
       if (!window.state.jobChangeTimestamp) window.state.jobChangeTimestamp = Date.now();
       if (typeof window.state.dailyWorkCount !== 'number') window.state.dailyWorkCount = 0;
@@ -1374,6 +1385,11 @@
         return openModal('modal-settings');
       }
 
+      // TRỪ LƯỢT NGAY KHI BẤM MỞ NHIỆM VỤ CÔNG VIỆC
+      window.state.dailyWorkCount++;
+      saveStorage();
+      renderLifeModeUI();
+
       jobGameState.job = job;
       jobGameState.wrongCount = 0;
       jobGameState.currentSessionEarned = 0;
@@ -1525,9 +1541,6 @@
 
     function finishJobGame() {
       closeModal('modal-job-game');
-      window.state.dailyWorkCount++;
-      saveStorage();
-      renderLifeModeUI();
       alert(`🛑 KẾT THÚC CA LÀM VIỆC DO ĐÃ SAI QUÁ 5 LẦN!\nTổng số tiền bạn kiếm được trong ca này: ${jobGameState.currentSessionEarned.toLocaleString('vi-VN')} VNĐ đã được cộng thẳng vào ví.`);
     }
 
@@ -1585,6 +1598,11 @@
         return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay!');
       }
 
+      // TRỪ LƯỢT NGAY KHI MỞ SUDOKU
+      window.state.dailyWorkCount++;
+      saveStorage();
+      renderLifeModeUI();
+
       generateRandomSudoku();
 
       const grid = document.getElementById('sudoku-grid-9');
@@ -1620,7 +1638,6 @@
       });
 
       closeModal('modal-sudoku');
-      window.state.dailyWorkCount++;
 
       if (isAllCorrect) {
         const reward = 10000000000;
@@ -1635,7 +1652,6 @@
 
     // ⚡ HÀM SỰ KIỆN NGẪU NHIÊN: TỈ LỆ THẤP (15%) VÀ CHỈ CỘNG/TRỪ KHI THƯ BẤM LỰA CHỌN
     async function maybeTriggerRandomEvent() {
-      // Giảm tỷ lệ xuống 15% để sự kiện xuất hiện hi hữu, không bị dồn dập
       if (Math.random() > 0.15) return; 
 
       const storyId = window.state.activeStoryId;
@@ -1661,8 +1677,8 @@ ${recentHistory || "Mới bắt đầu trò chuyện"}
 
 Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
 Yêu cầu tạo 2 lựa chọn cho người chơi:
-- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền, tặng vật phẩm hoặc tăng thân mật).
-- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền, giảm thân mật hoặc tạo drama).
+- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền, tặng vật phẩm hoặc tăng điểm thân mật nhẹ 1-10 điểm).
+- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền, giảm điểm thân mật 1-10 điểm hoặc tạo drama).
 
 Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
 {
@@ -1670,14 +1686,14 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
   "choice1": {
     "text": "Nội dung lựa chọn 1",
     "moneyChange": 200000,
-    "affectionChange": 0.02,
+    "affectionChange": 5,
     "getItem": true,
     "log": "Kết quả xử lý..."
   },
   "choice2": {
     "text": "Nội dung lựa chọn 2",
     "moneyChange": -100000,
-    "affectionChange": -0.04,
+    "affectionChange": -5,
     "getItem": false,
     "log": "Kết quả xử lý..."
   }
@@ -1708,7 +1724,6 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         } catch (e) {}
       }
 
-      // CHỈ HIỆN MODAL KHI CÓ ĐỦ DỮ LIỆU. TUYỆT ĐỐI KHÔNG CỘNG TRỪ TIỀN NGẦM.
       if (eventData && eventData.desc && eventData.choice1 && eventData.choice2) {
         const dynamicEvent = {
           desc: eventData.desc,
@@ -1732,10 +1747,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) + choiceObj.moneyChange);
       }
 
-      if (!window.state.affection) window.state.affection = {};
       if (choiceObj.affectionChange) {
-        const currentAff = window.state.affection[charId] || 20;
-        window.state.affection[charId] = Math.min(100, Math.max(0, currentAff + choiceObj.affectionChange));
+        addAffectionPoints(charId, choiceObj.affectionChange);
       }
 
       let itemReceivedText = '';
@@ -1756,10 +1769,11 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       saveStorage();
       if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
 
+      const affData = window.state.affectionLevels[charId] || { level: 1, points: 0 };
       const moneySign = choiceObj.moneyChange >= 0 ? '+' : '';
       const affSign = choiceObj.affectionChange >= 0 ? '+' : '';
       const moneyTxt = choiceObj.moneyChange ? ` | 💵 Ví: ${moneySign}${choiceObj.moneyChange.toLocaleString('vi-VN')} VNĐ` : '';
-      const affTxt = choiceObj.affectionChange ? ` | ❤️ Thân mật: ${affSign}${(choiceObj.affectionChange * 100).toFixed(1)}%` : '';
+      const affTxt = choiceObj.affectionChange ? ` | ❤️ Thân mật: ${affSign}${choiceObj.affectionChange} pts (Lv.${affData.level})` : '';
       
       alert(`📢 ${choiceObj.log || 'Kết quả xử lý'}\n(${moneyTxt}${affTxt}${itemReceivedText})`);
 
@@ -1787,7 +1801,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       saveStorage();
       renderChatHistory();
 
-      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU BẮT BUỘC]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi lời thoại và hành động phản ứng trực tiếp với diễn biến trên. Bám sát tính cách nhân vật, thể hiện cảm xúc rõ ràng (vui vẻ, bất ngờ, tức giận, thất vọng hay ngại ngùng) tùy theo kết quả lựa chọn của người chơi!`;
+      const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU BẮT BUỘC]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi lời thoại và hành động phản ứng trực tiếp với diễn biến trên. Bám sát tính cách nhân vật, thể hiện cảm xúc rõ ràng tùy theo kết quả lựa chọn của người chơi!`;
 
       sendMessage(hiddenAiPrompt, false, true);
     }
@@ -2153,8 +2167,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         return;
       }
       story.characters.forEach(char => {
-        if (!window.state.affection) window.state.affection = {};
-        const aff = window.state.affection[char.id] || 20;
+        if (!window.state.affectionLevels) window.state.affectionLevels = {};
+        const affData = window.state.affectionLevels[char.id] || { level: 1, points: 0 };
 
         const div = document.createElement('div');
         div.className = 'char-card';
@@ -2162,7 +2176,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="char-info-body">
-              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ ${aff}%</span></h4>
+              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}pts)</span></h4>
               <p>${escapeHtml(char.personality)}</p>
             </div>
           </div>
@@ -2341,6 +2355,9 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
     }
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
+      // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
+      fullText = fullText.replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
+
       const transferMatch = fullText.match(/\[SYSTEM_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\]/);
       if (transferMatch) {
         const amount = parseInt(transferMatch[1], 10);
@@ -2523,6 +2540,15 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       const histLen = window.state.chatHistories[storyId].length;
       const histStart = Math.max(0, histLen - 20);
 
+      // Lấy cấp độ thân mật hiện tại để đưa vào System Prompt cho AI nhận thức mức độ gắn bó (Yêu đương sâu đậm 18+ hay anh em bạn bè thân thiết tâm sự nhiệt tình)
+      let charAffectionSummary = '';
+      if (story && story.characters) {
+        story.characters.forEach(c => {
+          const aff = window.state.affectionLevels[c.id] || { level: 1, points: 0 };
+          charAffectionSummary += `- Nhân vật ${c.name}: Cấp độ thân mật hiện tại là Lv.${aff.level} (Điểm tích lũy: ${aff.points}).\n`;
+        });
+      }
+
       let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
       
       const systemInstruction = `
@@ -2531,7 +2557,13 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
+${charAffectionSummary}
+5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+
+[QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ]
+- Nếu mối quan hệ là NGƯỜI YÊU / LÃNG MẠN và Level thân mật cao (Lv.10, Lv.20, Lv.40, Lv.60 trở lên): Nhân vật sẽ cực kỳ bám người, quấn quýt, thể hiện tình cảm mãnh liệt, nồng cháy. Các phân cảnh thân mật, âu yếm (18+) được miêu tả chi tiết, cảm xúc và sâu sắc hơn.
+- Nếu mối quan hệ là TRI KỶ / ANH EM / BẠN BÈ và Level cao: Nhân vật trở thành chỗ dựa vững chắc, sẵn sàng tâm sự, thấu hiểu, giúp đỡ nhiệt tình hết mình khi người chơi gặp khó khăn.
 
 [CẤM TUYỆT ĐỐI - LỖI NGHÊM TRỌNG]
 ⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}".
@@ -2539,7 +2571,6 @@ ${charsPrompt}
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
 - GIỮ VỮNG MỐC THỜI GIAN (BẮT BUỘC): Tuyệt đối không tự ý nhảy cóc mốc thời gian.
-- KIỂM TRA MỐI QUAN HỆ NHÂN VẬT (BẮT BUỘC): Kiểm tra kỹ quan hệ giữa nhân vật và User.
 - BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
