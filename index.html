@@ -119,6 +119,45 @@
     .dialogue-text { font-weight: bold; margin-top: 4px; display: block; }
     .msg-img { max-width: 200px; max-height: 200px; border-radius: 12px; margin-top: 4px; object-fit: cover; display: block; }
 
+    /* 💳 STYLE KHUNG CHUYỂN KHOẢN TRONG CHAT */
+    .transfer-card {
+      background: #ffffff;
+      border: 1.5px solid #319795;
+      border-radius: 14px;
+      padding: 12px;
+      margin: 6px 0;
+      width: 240px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .transfer-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px dashed #e2e8f0;
+      padding-bottom: 6px;
+      font-size: 0.78rem;
+      color: #4a5568;
+    }
+    .transfer-card-amount {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #2b6cb0;
+      text-align: center;
+      margin: 4px 0;
+    }
+    .transfer-card-note {
+      font-size: 0.8rem;
+      color: #718096;
+      font-style: italic;
+      text-align: center;
+      background: #f7faf8;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
     .msg-action-bar { display: flex; gap: 6px; margin-top: 4px; }
     .ai .msg-action-bar { justify-content: flex-start; }
     .user .msg-action-bar { justify-content: flex-end; }
@@ -754,7 +793,7 @@
       currentModel: 'gemini-2.5-flash',
       activeStoryId: null,
       stories: [],
-      persona: { name: 'User', dob: '', avatar: DEFAULT_LOGO, memories: '' },
+      persona: { name: 'Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
       walletBalance: 10000000,
       inventory: [],
@@ -936,7 +975,7 @@
     let selectedBuyQty = 1;
     let selectedEstateMap = 'map-1';
 
-    // 🔄 HÀM TỰ ĐỘNG SYNC LÊN CLOUD MỖI KHÍ LƯU
+    // 🔄 HÀM TỰ ĐỘNG SYNC LÊN CLOUD MỖI KHI LƯU
     async function autoSyncToCloud() {
       try {
         if (window.auth && window.auth.currentUser) {
@@ -952,14 +991,12 @@
 
     function saveStorage() {
       try { 
-        // Đánh dấu thời điểm lưu mới nhất
         window.state.lastUpdated = Date.now();
-        
         localStorage.setItem('teechat_state_v10', JSON.stringify(window.state)); 
-        // 🔄 Tự động sync ngầm lên cloud
         autoSyncToCloud();
       } catch(e) {}
     }
+
     function openBuyDetailModal(itemId) {
       selectedBuyItem = SHOP_CATALOG.find(i => i.id === itemId);
       if (!selectedBuyItem) return;
@@ -1085,7 +1122,7 @@
         inv.splice(itemIdx, 1); 
       }
 
-      const userName = (window.state && window.state.userName) ? window.state.userName : 'Bạn';
+      const userName = (window.state && window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
 
       if (!window.state.affection) window.state.affection = {};
       const currentAff = window.state.affection[charId] || 20;
@@ -1693,7 +1730,6 @@
         switchStoryTab('chat');
       }
 
-      // 1. Chỉ đưa nội dung tình huống và lựa chọn lên màn hình chat để lưu lịch sử cho tự nhiên
       const chatNarrativeText = `[SỰ KIỆN]: ${eventContext}\n[HÀNH ĐỘNG]: ${playerChoice}`;
       
       const storyId = window.state.activeStoryId;
@@ -1701,18 +1737,15 @@
         window.state.chatHistories[storyId] = [];
       }
 
-      // Đẩy vào lịch sử chat dưới dạng sự kiện hệ thống (system)
       window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText });
       saveStorage();
       renderChatHistory();
 
-      // 2. Tạo câu lệnh ngầm (prompt) riêng biệt để ép AI nhập vai phản ứng mà không bị hiện code thô ra màn hình
       const hiddenAiPrompt = `[HỆ THỐNG SỰ KIỆN VỪA XẢY RA]: ${eventContext}\n[HÀNH ĐỘNG CỦA NGƯỜI CHƠI]: ${playerChoice}\n\n[YÊU CẦU ĐẶC BIỆT]: Hãy ngay lập tức nhập vai nhân vật "${charName}" để gửi tin nhắn thoại/hành động phản ứng trực tiếp, bám sát chặt chẽ vào tình huống này (nếu người chơi làm sai trái/phũ phàng thì hãy tức giận, thất vọng hoặc chì chiết; nếu người chơi tốt thì hãy vui vẻ, cảm động). Tuyệt đối không nói lạc đề!`;
 
-      // Gửi ngầm prompt này cho AI xử lý phản hồi
       sendMessage(hiddenAiPrompt, false, true);
     }
-    // 🛠️ HÀM TẠO POPUP SỰ KIỆN ĐÃ ĐƯỢC CHỈNH SỬA CHỐNG TRÀN CHỮ
+
     function triggerEventModal(eventObj) {
       document.getElementById('revent-desc').innerText = eventObj.desc;
       const bContainer = document.getElementById('revent-btns');
@@ -1723,10 +1756,10 @@
         btn.className = 'btn btn-pink';
         btn.style.width = '100%';
         btn.style.padding = '10px 14px';
-        btn.style.whiteSpace = 'normal';       // Cho phép chữ xuống hàng
-        btn.style.wordBreak = 'break-word';    // Tự ngắt từ hợp lý
-        btn.style.textAlign = 'left';          // Căn trái dễ đọc
-        btn.style.lineHeight = '1.4';          // Độ cao dòng vừa vặn
+        btn.style.whiteSpace = 'normal';
+        btn.style.wordBreak = 'break-word';
+        btn.style.textAlign = 'left';
+        btn.style.lineHeight = '1.4';
         btn.innerText = ch.text;
         
         btn.onclick = () => { 
@@ -1819,9 +1852,9 @@
       closeModal('modal-transfer');
       switchStoryTab('chat');
 
-      let transferMsg = `[GIAO DỊCH CHUYỂN KHOẢN: Bạn đã chuyển ${amt.toLocaleString('vi-VN')} VNĐ cho ${targetChar === 'system' ? 'hệ thống' : targetChar} - Lời nhắn: "${note}" | Số dư ví còn lại: ${window.state.walletBalance.toLocaleString('vi-VN')} VNĐ]`;
-
-      sendMessage(transferMsg);
+      // Gửi cú pháp User chuyển tiền để hiển thị card dạng MoMo/ZaloPay
+      const userTransferTag = `[USER_TRANSFER: ${amt} | ${note} | ${targetChar === 'system' ? 'Hệ thống' : targetChar}]`;
+      sendMessage(userTransferTag);
     }
 
     function openGiftModal() {
@@ -2166,6 +2199,37 @@
 
     function renderUserFormattedMessage(rawText, imgData, container, idx) {
       const text = (rawText || '').replace(/[“”]/g, '"');
+
+      // 💳 Xử lý bắt cú pháp User chuyển tiền (USER_TRANSFER)
+      const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
+      if (userTransferMatch) {
+        const amt = parseInt(userTransferMatch[1], 10);
+        const note = userTransferMatch[2] || 'Chuyển khoản';
+        const target = userTransferMatch[3] || 'Nhân vật';
+
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'transfer-card';
+        cardDiv.innerHTML = `
+          <div class="transfer-card-header">
+            <span>💳 <b>CHUYỂN KHOẢN ĐI</b></span>
+            <span style="color:#38a169; font-weight:bold;">Success ✔</span>
+          </div>
+          <div class="transfer-card-amount" style="color:#e53e3e;">-${amt.toLocaleString('vi-VN')} VNĐ</div>
+          <div class="transfer-card-note">Đến: <b>${escapeHtml(target)}</b><br>"${escapeHtml(note)}"</div>
+        `;
+
+        const wrapDiv = document.createElement('div');
+        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
+        wrapDiv.appendChild(cardDiv);
+
+        const bar = document.createElement('div');
+        bar.className = 'msg-action-bar';
+        bar.innerHTML = `<button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
+        wrapDiv.appendChild(bar);
+        container.appendChild(wrapDiv);
+        return;
+      }
+
       const hasQuote = (text.match(/"/g) || []).length >= 2;
       const segs = []; let m;
       if (hasQuote) {
@@ -2199,6 +2263,7 @@
             const bar = document.createElement('div');
             bar.className = 'msg-action-bar';
             bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button>`;
+            wrapDiv.appendChild(wrapDiv.appendChild ? wrapDiv : bar); // fix style
             wrapDiv.appendChild(bar);
             container.appendChild(wrapDiv);
           } else {
@@ -2230,6 +2295,34 @@
     }
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex) {
+      // 🟢 Xử lý bắt cú pháp AI chuyển tiền (SYSTEM_TRANSFER)
+      const transferMatch = fullText.match(/\[SYSTEM_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\]/);
+      if (transferMatch) {
+        const amount = parseInt(transferMatch[1], 10);
+        const note = transferMatch[2] || 'Chuyển khoản';
+
+        // Cộng tiền vào ví ngầm của User
+        window.state.walletBalance = (window.state.walletBalance || 0) + amount;
+        saveStorage();
+        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+
+        // Tạo khung thẻ chuyển tiền vuông
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'transfer-card';
+        cardDiv.innerHTML = `
+          <div class="transfer-card-header">
+            <span>💳 <b>NHẬN TIỀN CHUYỂN KHOẢN</b></span>
+            <span style="color:#38a169; font-weight:bold;">Success ✔</span>
+          </div>
+          <div class="transfer-card-amount">+${amount.toLocaleString('vi-VN')} VNĐ</div>
+          <div class="transfer-card-note">"${escapeHtml(note)}"</div>
+        `;
+        container.appendChild(cardDiv);
+
+        // Lọc bỏ tag ngầm ra khỏi nội dung lời thoại text
+        fullText = fullText.replace(/\[SYSTEM_TRANSFER:.*?\]/g, '').trim();
+      }
+
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
       lines.forEach((line, lineIdx) => {
@@ -2396,10 +2489,10 @@
 2. Cảnh mở đầu: "${(story && story.openingScene) || ''}".
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
-4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'User'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+4. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
 [CẤM TUYỆT ĐỐI - LỖI NGHÊM TRỌNG]
-⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'User'}".
+⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}".
 ⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
@@ -2408,8 +2501,12 @@ ${charsPrompt}
 - BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
-[TÍNH NĂNG TỰ ĐỘNG CHUYỂN TIỀN CỦA NHÂN VẬT]:
-- [SYSTEM_TRANSFER: số_tiền | nội_dung_lời_nhắn]
+[TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
+- Khi người dùng xin tiền, mượn tiền hoặc đòi tiền, dựa vào tính cách nhân vật và độ thân mật để quyết định CÓ CHUYỂN TIỀN HAY KHÔNG.
+- Nếu ĐỒNG Ý, chèn cú pháp sau vào cuối hoặc trong câu trả lời:
+  [SYSTEM_TRANSFER: số_tiền_nguyên | Lời nhắn kèm theo]
+  (Ví dụ: [SYSTEM_TRANSFER: 20000000 | Tiền tiêu vặt cho em đấy])
+- Nếu KHÔNG, chỉ từ chối bằng lời thoại đúng tính cách.
 
 [ĐỊNH DẠNG ĐẦU RA]
 Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
