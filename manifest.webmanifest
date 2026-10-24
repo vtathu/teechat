@@ -1,0 +1,19 @@
+{
+  "name": "Teechat - Story Platform",
+  "short_name": "Teechat",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e7f5ee",
+  "theme_color": "#e7f5ee",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
