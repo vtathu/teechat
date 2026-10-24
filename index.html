@@ -237,6 +237,7 @@
     .craft-cell { aspect-ratio: 1; border: 1px solid #d0ebd8; border-radius: 5px; background: #f7faf8; font-size: clamp(11px, 3.6vw, 20px); padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1; user-select: none; }
     .craft-cell.sel { outline: 2px solid var(--app-pink); background: #fff0f3 !important; transform: scale(1.08); }
     .jg-btn { padding: 10px 12px; font-size: 0.85rem; }
+    .craft-lv { position: absolute; right: 2px; bottom: 0; font-size: 8px; font-weight: bold; color: #555; line-height: 1; }
   </style>
 </head>
 <body>
@@ -371,14 +372,14 @@
       <div id="life-sub-craft" class="life-sub hidden">
         <div class="life-card">
           <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🧶 Thủ Công Mỹ Nghệ</h3>
-          <div style="font-size: 0.8rem; color: #718096;">Ghép các nguyên liệu giống nhau để nâng cấp. Hết giờ hoặc bấm hoàn thành, món có cấp cao nhất sẽ vào túi.</div>
+          <div style="font-size: 0.8rem; color: #718096;">Ghép các nguyên liệu giống nhau để nâng cấp, tối đa Lv15. Mỗi lần mua nguyên liệu tốn tiền. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng.</div>
           <div class="form-group">
             <label>Chọn món muốn làm:</label>
             <select id="craft-select" onchange="updateCraftPreview()"></select>
           </div>
           <div id="craft-chain-preview" style="font-size: 1.3rem; text-align: center; background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px; word-break: break-word;"></div>
           <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
-          <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Làm</button>
+          <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Làm</button>
         </div>
         <div class="life-card">
           <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎒 Túi Thủ Công</h3>
@@ -442,8 +443,9 @@
         <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">✖</button>
       </div>
       <div class="form-group" style="margin-bottom:14px;">
-        <label style="font-size:0.85rem; color:#4a5568;">Chọn nhân vật:</label>
-        <select id="gift-target-char-select" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e0; margin-top:4px;"></select>
+        <label style="font-size:0.85rem; color:#4a5568;">Chọn người nhận (tick nhiều người hoặc "Tất cả"):</label>
+        <div style="font-size:0.72rem; color:#718096;">Bữa ăn/tiệc dùng chung: 1 cái cho cả nhóm. Món khác: mỗi người một cái.</div>
+        <div id="gift-target-char-select" style="display:flex; flex-direction:column; max-height:220px; overflow-y:auto; border:1px solid #cbd5e0; border-radius:8px; padding:4px; margin-top:4px;"></div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn btn-outline" onclick="closeModal('modal-select-char-gift')">Hủy</button>
@@ -491,16 +493,20 @@
     <div class="modal-content" style="max-width: 480px; padding: 14px; gap: 10px;">
       <div class="modal-header">
         <h3 id="craft-title" style="font-size: 1rem;">🧶 Thủ công</h3>
-        <button class="btn btn-outline" onclick="requestFinishCraft()">✖</button>
+        <button class="btn btn-outline" onclick="closeCraft()">✖</button>
       </div>
       <div class="status-badge" id="craft-stats">...</div>
       <div id="craft-board" class="craft-grid"></div>
-      <div style="font-size: 0.72rem; color: #718096; text-align: center;">Chạm 1 ô rồi chạm ô thứ hai cùng cấp để ghép. Cấp cao nhất sẽ được lưu vào túi.</div>
+      <div style="font-size: 0.72rem; color: #718096; text-align: center;">Chạm 1 ô rồi chạm ô thứ hai cùng cấp để ghép. Không giới hạn thời gian, ván được lưu tự động. Khi kết thúc chỉ các món từ Lv10 trở lên được giữ lại để bán.</div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-outline" style="flex: 1;" onclick="addCraftMaterials()">➕ Thêm nguyên liệu</button>
+        <button class="btn btn-outline" id="craft-buy-btn" style="flex: 1;" onclick="addCraftMaterials()">➕ Mua nguyên liệu</button>
         <button class="btn btn-pink" style="flex: 1;" onclick="requestFinishCraft()">✅ Hoàn thành</button>
       </div>
     </div>
+  </div>
+
+  <div id="modal-affection" class="modal" onclick="if(event.target===this) closeModal('modal-affection')">
+    <div class="modal-content" id="aff-card-body" style="max-width: 300px; align-items: center; text-align: center; gap: 10px;"></div>
   </div>
 
   <div id="modal-random-event" class="modal">
@@ -1171,6 +1177,8 @@
     }
 
     let pendingGiftUniqueId = null;
+    // Quà dùng chung (bữa ăn/tiệc/hộp chia được): tặng 1 cái cho cả nhóm. Món khác: mỗi người một cái.
+    const SHARED_GIFT_IDS = ['item-603','item-604','item-605','item-606','item-607','item-608','item-609','item-610','item-612','item-613','item-614','item-615'];
 
     function openSelectCharGiftModal(uniqueId) {
       pendingGiftUniqueId = uniqueId;
@@ -1179,23 +1187,43 @@
         return alert('Chưa có nhân vật nào trong cốt truyện hiện tại để tặng!');
       }
 
-      const selectEl = document.getElementById('gift-target-char-select');
-      if (selectEl) {
-        selectEl.innerHTML = story.characters.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-      }
+      renderGiftTargets();
 
       openModal('modal-select-char-gift');
     }
 
-    function executeSendGift() {
-      const selectEl = document.getElementById('gift-target-char-select');
-      if (!selectEl) return;
-      const charId = selectEl.value;
+    function renderGiftTargets() {
+      const box = document.getElementById('gift-target-char-select');
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      const char = story ? story.characters.find(c => c.id === charId) : null;
-      const charName = char ? char.name : 'Nhân vật';
-      
-      confirmSendGiftToChar(charId, charName);
+      if (!box || !story || !story.characters) return;
+      box.innerHTML = `
+        <label style="display:flex;align-items:center;gap:8px;font-weight:bold;color:#d53f8c;padding:6px 4px;border-bottom:1px dashed #e2e8f0;">
+          <input type="checkbox" id="gift-all-chk" onchange="toggleGiftAll(this.checked)"> Tất cả
+        </label>` + story.characters.map(c => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;">
+          <input type="checkbox" class="gift-chk" value="${c.id}" onchange="syncGiftAll()"> ${escapeHtml(c.name)}
+        </label>`).join('');
+    }
+
+    function toggleGiftAll(v) {
+      document.querySelectorAll('#gift-target-char-select .gift-chk').forEach(c => c.checked = v);
+    }
+
+    function syncGiftAll() {
+      const all = document.querySelectorAll('#gift-target-char-select .gift-chk');
+      const chk = document.querySelectorAll('#gift-target-char-select .gift-chk:checked');
+      const a = document.getElementById('gift-all-chk');
+      if (a) a.checked = all.length > 0 && all.length === chk.length;
+    }
+
+    function executeSendGift() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const targets = [];
+      document.querySelectorAll('#gift-target-char-select .gift-chk:checked').forEach(c => {
+        const ch = story && story.characters ? story.characters.find(x => x.id === c.value) : null;
+        if (ch) targets.push({ id: ch.id, name: ch.name });
+      });
+      confirmSendGiftToChar(targets);
     }
 
     function affectionNeeded(level) {
@@ -1268,51 +1296,68 @@
       return { liked, pts, reason };
     }
 
-    function confirmSendGiftToChar(charId, charName) {
+    function confirmSendGiftToChar(targets) {
+      if (!targets || targets.length === 0) return alert('Hãy chọn ít nhất một nhân vật!');
       const inv = window.state.inventory || [];
       const itemIdx = inv.findIndex(i => i.uniqueId === pendingGiftUniqueId);
       if (itemIdx === -1) return;
-      
-      const giftedItem = inv[itemIdx];
-      const giftQty = giftedItem.qty || 1; 
-      const baseSingleName = giftedItem.singleName || giftedItem.name.replace(/\s*\(x\d+\).*/, '');
-      const giftDisplayName = `${giftQty}x ${baseSingleName}`;
 
-      if (giftedItem.qty && giftedItem.qty > 1) {
-        giftedItem.qty -= 1;
+      const giftedItem = inv[itemIdx];
+      const shared = SHARED_GIFT_IDS.includes(giftedItem.id);
+      const need = shared ? 1 : targets.length;
+      const have = giftedItem.qty || 1;
+      if (giftedItem.tag === 'propose' && targets.length > 1) return alert('Quà cầu hôn chỉ tặng được cho 1 người!');
+      if (have < need) return alert(`Cần ${need} cái để tặng ${targets.length} người (mỗi người một cái), nhưng bạn chỉ có ${have}.`);
+
+      const baseSingleName = giftedItem.singleName || giftedItem.name.replace(/\s*\(x\d+\).*/, '');
+
+      if (have > need) {
+        giftedItem.qty = have - need;
         giftedItem.name = `${baseSingleName} (x${giftedItem.qty})`;
       } else {
-        inv.splice(itemIdx, 1); 
+        inv.splice(itemIdx, 1);
       }
 
       const userName = (window.state && window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
+      const results = [];
+      const hints = [];
 
-      let bonusPts = Math.floor(Math.random() * 5) + 1; // 1-5 điểm cho quà thường
-      if (giftedItem.tag === 'romantic') bonusPts = Math.floor(Math.random() * 5) + 3; // 3-7 điểm
-      if (giftedItem.tag === 'luxury') bonusPts = Math.floor(Math.random() * 6) + 5; // 5-10 điểm
-      if (giftedItem.tag === 'propose') bonusPts = 15;
+      targets.forEach(t => {
+        let bonusPts = Math.floor(Math.random() * 5) + 1; // 1-5 điểm cho quà thường
+        if (giftedItem.tag === 'romantic') bonusPts = Math.floor(Math.random() * 5) + 3; // 3-7 điểm
+        if (giftedItem.tag === 'luxury') bonusPts = Math.floor(Math.random() * 6) + 5; // 5-10 điểm
+        if (giftedItem.tag === 'propose') bonusPts = 15;
 
-      let craftReact = null;
-      if (giftedItem.kind === 'craft') {
-        craftReact = craftGiftReaction(charId, giftedItem);
-        bonusPts = craftReact.pts;
-      }
+        let craftReact = null;
+        if (giftedItem.kind === 'craft') {
+          craftReact = craftGiftReaction(t.id, giftedItem);
+          bonusPts = craftReact.pts;
+          hints.push(`${t.name} ${craftReact.liked ? 'THÍCH' : 'KHÔNG THÍCH'} món quà thủ công này (${craftReact.reason}).`);
+        }
 
-      addAffectionPoints(charId, bonusPts);
-      const affData = window.state.affectionLevels[charId];
+        addAffectionPoints(t.id, bonusPts);
+        results.push({ name: t.name, aff: window.state.affectionLevels[t.id] });
+      });
 
       closeModal('modal-select-char-gift');
       switchStoryTab('chat');
 
+      const names = targets.map(t => t.name).join(', ');
+      const lv = results.map(r => `${r.name} Lv.${r.aff.level} (${r.aff.points}pts)`).join('; ');
+      const r0 = results[0].aff;
       let giftActionText = '';
       if (giftedItem.tag === 'propose') {
-        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${charName}. (Lv.${affData.level} - Tích lũy: ${affData.points}pts)]`;
+        giftActionText = `[${userName} trao tặng "${baseSingleName}" cho ${names}. {{Thân mật: Lv.${r0.level}, ${r0.points}pts}}]`;
+      } else if (targets.length === 1) {
+        giftActionText = `[${userName} tặng ${names} 1x ${baseSingleName}. {{Thân mật: Lv.${r0.level}, ${r0.points}pts}}]`;
+      } else if (shared) {
+        giftActionText = `[${userName} mời cả nhóm (${names}) cùng thưởng thức "${baseSingleName}". {{${lv}}}]`;
       } else {
-        giftActionText = `[${userName} tặng ${charName} ${giftDisplayName}. (Lv.${affData.level} - Tích lũy: ${affData.points}pts)]`;
+        giftActionText = `[${userName} tặng mỗi người (${names}) 1x ${baseSingleName}. {{${lv}}}]`;
       }
 
-      if (craftReact) {
-        window.__nextHint = `${charName} ${craftReact.liked ? 'THÍCH' : 'KHÔNG THÍCH'} món quà thủ công này (${craftReact.reason}). Hãy để nhân vật phản ứng đúng như vậy theo tính cách, không nhắc đến điểm số.`;
+      if (hints.length) {
+        window.__nextHint = hints.join(' ') + ' Hãy để từng nhân vật phản ứng đúng như vậy theo tính cách, không nhắc đến điểm số.';
       }
 
       sendMessage(giftActionText);
@@ -1447,11 +1492,11 @@
     // ===================== NGHỀ NGHIỆP =====================
     // Nghề càng khó thắng thì lương càng cao
     const JOBS = {
-      barista: { unit: 170000, desc: 'Pha đúng công thức khách gọi trong 15 giây mỗi ly (3 ly/ca). Lương 170.000 VNĐ/ly đúng.' },
-      cleaner: { unit: 200000, desc: 'Lau sạch mọi vết bẩn trên sàn trong 30 giây. Lương 200.000 VNĐ nếu sạch hết (chưa sạch hết nhận theo tỷ lệ).' },
-      cashier: { unit: 120000, desc: 'Thối tiền chính xác cho 3 khách. Lương 120.000 VNĐ/khách thối đúng.' },
-      driver:  { unit: 900000, desc: 'Né chướng ngại vật 25 giây (3 mạng). Lương 900.000 VNĐ nếu về đích an toàn.' },
-      teacher: { unit: 600000, desc: 'Chấm bài: tìm hết các phép tính sai. Lương 600.000 VNĐ nếu chấm chuẩn, sai 1 lỗi chỉ còn 40%.' },
+      cleaner: { unit: 27000, desc: 'Lau sạch vết bẩn, 10 màn: càng về sau vết càng nhiều, nhỏ và cứng đầu, thời gian càng ít. Sai/hết giờ mất 1 mạng (3 mạng). Qua đủ 10 màn nhận khoảng 450.000 VNĐ.' },
+      cashier: { unit: 36000, desc: 'Thối tiền cho khách, 10 màn: hóa đơn dài dần, tiền thối lẻ hơn, thời gian càng ít. Sai/hết giờ mất 1 mạng (3 mạng). Qua đủ 10 màn nhận khoảng 600.000 VNĐ.' },
+      barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi, 10 màn: nhiều nguyên liệu hơn, ít thời gian hơn, từ màn 6 các nút đảo vị trí sau mỗi lần bấm. Sai/hết giờ mất 1 mạng (3 mạng). Qua đủ 10 màn nhận khoảng 800.000 VNĐ.' },
+      teacher: { unit: 60000, desc: 'Chấm bài, 10 màn: nhiều phép tính hơn, số lớn hơn, lỗi sai tinh vi hơn, thời gian càng ít. Phải chấm chuẩn 100% mới qua màn, sai hay hết giờ mất 1 mạng (3 mạng). Qua đủ 10 màn nhận khoảng 1.000.000 VNĐ.' },
+      driver:  { unit: 84000, desc: 'Né chướng ngại vật, 10 màn: xe chạy càng nhanh, chướng ngại dày dần. Mỗi lần đâm mất 1 mạng (3 mạng cho cả ca). Qua đủ 10 màn nhận khoảng 1.400.000 VNĐ.' },
       sudoku:  { unit: 5000000, desc: 'Giải mã sudoku (rất khó). Lương 5.000.000 VNĐ nếu giải đúng.' }
     };
 
@@ -1566,8 +1611,7 @@
         const badge = document.createElement('div');
         badge.style.background = '#fff'; badge.style.border = '1px solid #90d4b8'; badge.style.padding = '4px 8px'; badge.style.borderRadius = '8px'; badge.style.fontSize = '0.78rem';
         if (obj.kind === 'craft') {
-          const price = craftPrice(obj.craftType, obj.level);
-          badge.innerHTML = `<span>${obj.name}</span> <button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}')">Bán ~${price.toLocaleString('vi-VN')}</button> <button class="action-text-btn" onclick="openSelectCharGiftModal('${obj.uniqueId}')">Tặng</button>`;
+          badge.innerHTML = `<span>${obj.name}</span> ${craftBagButtons(obj)}`;
         } else {
           badge.innerHTML = `<span>${obj.name}</span>`;
         }
@@ -1637,30 +1681,62 @@
       jgSetStats('Bắt đầu ca làm...');
       openModal('modal-job-game');
 
-      if (job === 'barista') startBaristaGame();
-      else if (job === 'cleaner') startCleanerGame();
-      else if (job === 'cashier') startCashierGame();
-      else if (job === 'driver') startDriverGame();
-      else if (job === 'teacher') startTeacherGame();
+      const plays = { barista: playBarista, cleaner: playCleaner, cashier: playCashier, driver: playDriver, teacher: playTeacher };
+      if (plays[job]) runJobLevels(plays[job], JOBS[job].unit);
+    }
+
+    // ---------- KHUNG 10 MÀN: càng về sau càng khó, thời gian càng ít ----------
+    const JOB_LEVELS = 10, JOB_LIVES = 3;
+    function jgPayForLevel(base, lv) { return Math.round(base * (1 + 0.15 * (lv - 1)) / 100) * 100; }
+
+    function runJobLevels(playFn, base) {
+      const F = { lv: 0, lives: JOB_LIVES, earned: 0, passed: 0, busy: false };
+      const stats = () => jgSetStats(`Màn ${F.lv}/${JOB_LEVELS} | ❤️ ${F.lives} | Đã kiếm: ${F.earned.toLocaleString('vi-VN')}đ`);
+      const ctx = { hit() { F.lives--; stats(); return F.lives; } };
+
+      function endAll() {
+        endJobGame(F.earned, F.lives <= 0 ? '🛑 Hết mạng!' : '🏁 Hoàn thành ca làm!', `Bạn qua ${F.passed}/${JOB_LEVELS} màn.`);
+      }
+      function next() {
+        if (F.lv >= JOB_LEVELS) return endAll();
+        F.lv++; F.busy = false; stats();
+        playFn(F.lv, ctx, finish);
+      }
+      function finish(ok, msg, alreadyLost) {
+        if (F.busy) return;
+        F.busy = true;
+        jgClear();
+        if (ok) {
+          const pay = jgPayForLevel(base, F.lv);
+          F.earned += pay; F.passed++;
+          jgSetQ(`✅ ${msg || 'Qua màn!'} +${pay.toLocaleString('vi-VN')}đ`);
+        } else {
+          if (!alreadyLost) F.lives--;
+          jgSetQ(`❌ ${msg || 'Hỏng màn!'}`);
+        }
+        stats();
+        jgAddTimer(setTimeout(F.lives <= 0 ? endAll : next, 1100));
+      }
+      next();
     }
 
     // ---------- 1. VỆ SINH: chùi vết bẩn ----------
-    function startCleanerGame() {
-      const reward = JOBS.cleaner.unit;
-      const total = jgRand(6, 10);
-      const TIME = 30;
-      jgSetQ('🧹 Kéo ngón tay (hoặc chuột) lên vết bẩn để lau sạch hết trước khi hết giờ!');
-      const area = jgArea();
-      area.innerHTML = `<div id="cl-board" style="position:relative;width:100%;max-width:320px;aspect-ratio:1/1;margin:0 auto;background:linear-gradient(135deg,#e6f2ff,#fdfdfd);border:2px solid var(--app-green);border-radius:14px;overflow:hidden;touch-action:none;user-select:none;"></div>`;
+    function playCleaner(lv, ctx, finish) {
+      const total = 4 + lv;
+      const TIME = Math.max(11, Math.round(24 - lv * 1.3));
+      const sMin = Math.max(30, 66 - lv * 3), sMax = Math.max(40, 78 - lv * 3);
+      const hpBase = 60 + lv * 8;
+      jgSetQ(`🧹 Lau sạch ${total} vết bẩn! Kéo ngón tay (hoặc chuột) lên vết bẩn.`);
+      jgArea().innerHTML = `<div id="cl-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${TIME}s</div><div id="cl-board" style="position:relative;width:100%;max-width:320px;aspect-ratio:1/1;margin:0 auto;background:linear-gradient(135deg,#e6f2ff,#fdfdfd);border:2px solid var(--app-green);border-radius:14px;overflow:hidden;touch-action:none;user-select:none;"></div>`;
       const board = document.getElementById('cl-board');
       const stains = [];
       for (let i = 0; i < total; i++) {
-        const size = jgRand(40, 66);
+        const size = jgRand(sMin, sMax);
         const el = document.createElement('div');
         const x = jgRand(12, 88), y = jgRand(12, 88);
-        el.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;margin:-${size/2}px 0 0 -${size/2}px;border-radius:${jgRand(35,50)}% ${jgRand(35,50)}% ${jgRand(35,50)}% ${jgRand(35,50)}%;background:radial-gradient(circle,rgba(110,70,30,.9),rgba(110,70,30,.35));pointer-events:none;`;
+        el.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:${jgRand(35, 50)}% ${jgRand(35, 50)}% ${jgRand(35, 50)}% ${jgRand(35, 50)}%;background:radial-gradient(circle,rgba(110,70,30,.9),rgba(110,70,30,.35));pointer-events:none;`;
         board.appendChild(el);
-        stains.push({ el, x, y, size, hp: jgRand(80, 150), alive: true });
+        stains.push({ el, x, y, size, hp: jgRand(hpBase, hpBase + 50), alive: true });
       }
       let cleared = 0, left = TIME, down = false;
 
@@ -1668,13 +1744,13 @@
         if (!down) return;
         const r = board.getBoundingClientRect();
         const px = e.clientX - r.left, py = e.clientY - r.top;
-        stains.forEach(s => {
-          if (!s.alive) return;
-          const cx = r.width * s.x / 100, cy = r.height * s.y / 100;
-          if (Math.hypot(px - cx, py - cy) < s.size / 2 + 12) {
-            s.hp -= 9;
-            s.el.style.opacity = Math.max(0, s.hp / 120).toFixed(2);
-            if (s.hp <= 0) { s.alive = false; s.el.remove(); cleared++; update(); if (cleared >= total) finish(); }
+        stains.forEach(st => {
+          if (!st.alive) return;
+          const cx = r.width * st.x / 100, cy = r.height * st.y / 100;
+          if (Math.hypot(px - cx, py - cy) < st.size / 2 + 10) {
+            st.hp -= 9;
+            st.el.style.opacity = Math.max(0, st.hp / (hpBase + 30)).toFixed(2);
+            if (st.hp <= 0) { st.alive = false; st.el.remove(); cleared++; if (cleared >= total) finish(true, 'Sạch bong!'); }
           }
         });
       };
@@ -1684,18 +1760,15 @@
       window.addEventListener('pointerup', up);
       jobGameState.listeners.push(() => window.removeEventListener('pointerup', up));
 
-      function update() { jgSetStats(`⏱ ${left}s | Đã sạch: ${cleared}/${total}`); }
-      function finish() {
-        const earned = reward * (cleared / total);
-        endJobGame(earned, cleared >= total ? '✨ Sạch bong!' : '⏰ Hết giờ!', `Bạn lau sạch ${cleared}/${total} vết bẩn.`);
-      }
-      update();
-      jgAddTimer(setInterval(() => { left--; update(); if (left <= 0) finish(); }, 1000));
+      jgAddTimer(setInterval(() => {
+        left--;
+        const t = document.getElementById('cl-time'); if (t) t.innerText = `⏱ ${left}s`;
+        if (left <= 0) finish(false, `Hết giờ! Còn ${total - cleared} vết bẩn.`);
+      }, 1000));
     }
 
     // ---------- 2. THU NGÂN: thối tiền ----------
-    function startCashierGame() {
-      const unit = JOBS.cashier.unit;
+    function playCashier(lv, ctx, finish) {
       const DEN = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000];
       const ITEMS = [
         ['🥤 Nước ngọt', 8, 15], ['🍞 Bánh mì', 12, 25], ['🍜 Mì ly', 10, 20], ['🧃 Sữa hộp', 7, 18],
@@ -1703,117 +1776,106 @@
         ['🧻 Giấy vệ sinh', 20, 55], ['🍪 Bánh quy', 10, 35]
       ];
       const NAMES = ['Cô Hoa', 'Anh Nam', 'Bé Mi', 'Chú Tư', 'Chị Lan', 'Bạn Khoa', 'Bà Sáu', 'Anh Dũng'];
-      let idx = 0, earned = 0, good = 0, cur = null, picked = [];
-      jgSetQ('💵 Thối đúng số tiền khách cần nhận lại.');
+      const n = Math.min(5, 2 + Math.floor(lv / 3));
+      const items = jgShuffle(ITEMS.slice()).slice(0, n).map(it => ({ name: it[0], price: jgRand(it[1], it[2]) * 1000 }));
+      const bill = items.reduce((t, i) => t + i.price, 0);
+      const bills = [20000, 50000, 100000, 200000, 500000].filter(d => d > bill);
+      const maxDiff = 60000 + lv * 45000;
+      let opts = bills.filter(d => d - bill <= maxDiff);
+      if (opts.length === 0) opts = [bills[0] || 500000];
+      const paid = opts[jgRand(0, opts.length - 1)];
+      const change = paid - bill;
+      const name = NAMES[jgRand(0, NAMES.length - 1)];
+      let left = Math.max(10, Math.round(26 - lv * 1.5));
+      let picked = [];
+      const sum = () => picked.reduce((t, v) => t + v, 0);
+      const showSum = () => { const el = document.getElementById('cs-sum'); if (el) el.innerText = sum().toLocaleString('vi-VN') + 'đ'; };
 
-      function nextCustomer() {
-        if (idx >= 3) return endJobGame(earned, '🧾 Hết ca thu ngân', `Bạn thối đúng ${good}/3 khách.`);
-        idx++;
-        const n = jgRand(2, 4);
-        const items = jgShuffle(ITEMS.slice()).slice(0, n).map(it => ({ name: it[0], price: jgRand(it[1], it[2]) * 1000 }));
-        const bill = items.reduce((s, i) => s + i.price, 0);
-        const bills = [20000, 50000, 100000, 200000, 500000].filter(d => d > bill);
-        let opts = bills.filter(d => d - bill <= 300000);
-        if (opts.length === 0) opts = [bills[0] || 500000];
-        const paid = opts[jgRand(0, opts.length - 1)];
-        cur = { name: NAMES[jgRand(0, NAMES.length - 1)], items, bill, paid, change: paid - bill };
-        picked = [];
-        render();
-      }
-      function sum() { return picked.reduce((s, v) => s + v, 0); }
-      function render() {
-        jgSetStats(`Khách ${idx}/3 | Đúng: ${good}`);
-        jgArea().innerHTML = `
-          <div style="text-align:left;background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.85rem;line-height:1.6;">
-            <b>👤 ${cur.name}</b><br>
-            ${cur.items.map(i => `${i.name}: ${i.price.toLocaleString('vi-VN')}đ`).join('<br>')}
-            <hr style="border:0;border-top:1px dashed #cbd5e0;margin:4px 0;">
-            Tổng: <b>${cur.bill.toLocaleString('vi-VN')}đ</b> &nbsp;|&nbsp; Khách đưa: <b style="color:#e53e3e;">${cur.paid.toLocaleString('vi-VN')}đ</b>
-          </div>
-          <div style="margin:8px 0;font-size:0.95rem;">Thối lại: <b id="cs-sum" style="color:#2b6cb0;">0đ</b></div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-            ${DEN.map(d => `<button class="btn btn-outline jg-btn" data-d="${d}" style="padding:8px 2px;">${d >= 1000 ? (d / 1000) + 'k' : d}</button>`).join('')}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button class="btn btn-outline" style="flex:1;" id="cs-undo">↩ Hoàn tác</button>
-            <button class="btn btn-pink" style="flex:1;" id="cs-ok">✅ Đưa tiền</button>
-          </div>`;
-        const area = jgArea();
-        area.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { picked.push(parseInt(b.dataset.d, 10)); document.getElementById('cs-sum').innerText = sum().toLocaleString('vi-VN') + 'đ'; });
-        document.getElementById('cs-undo').onclick = () => { picked.pop(); document.getElementById('cs-sum').innerText = sum().toLocaleString('vi-VN') + 'đ'; };
-        document.getElementById('cs-ok').onclick = () => {
-          if (sum() === cur.change) {
-            earned += unit; good++;
-            jgSetQ('✅ Chính xác! Khách tiếp theo...');
-          } else {
-            jgSetQ(`❌ Sai rồi! Cần thối ${cur.change.toLocaleString('vi-VN')}đ, bạn đưa ${sum().toLocaleString('vi-VN')}đ.`);
-          }
-          jgArea().innerHTML = '';
-          jgAddTimer(setTimeout(() => { jgSetQ('💵 Thối đúng số tiền khách cần nhận lại.'); nextCustomer(); }, 1100));
-        };
-      }
-      nextCustomer();
+      jgSetQ('💵 Thối đúng số tiền khách cần nhận lại.');
+      jgArea().innerHTML = `
+        <div id="cs-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${left}s</div>
+        <div style="text-align:left;background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.85rem;line-height:1.6;">
+          <b>👤 ${name}</b><br>
+          ${items.map(i => `${i.name}: ${i.price.toLocaleString('vi-VN')}đ`).join('<br>')}
+          <hr style="border:0;border-top:1px dashed #cbd5e0;margin:4px 0;">
+          Tổng: <b>${bill.toLocaleString('vi-VN')}đ</b> &nbsp;|&nbsp; Khách đưa: <b style="color:#e53e3e;">${paid.toLocaleString('vi-VN')}đ</b>
+        </div>
+        <div style="margin:8px 0;font-size:0.95rem;">Thối lại: <b id="cs-sum" style="color:#2b6cb0;">0đ</b></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+          ${DEN.map(d => `<button class="btn btn-outline jg-btn" data-d="${d}" style="padding:8px 2px;">${d / 1000}k</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-outline" style="flex:1;" id="cs-undo">↩ Hoàn tác</button>
+          <button class="btn btn-pink" style="flex:1;" id="cs-ok">✅ Đưa tiền</button>
+        </div>`;
+      jgArea().querySelectorAll('[data-d]').forEach(b => b.onclick = () => { picked.push(parseInt(b.dataset.d, 10)); showSum(); });
+      document.getElementById('cs-undo').onclick = () => { picked.pop(); showSum(); };
+      document.getElementById('cs-ok').onclick = () => {
+        if (sum() === change) finish(true, 'Thối chính xác!');
+        else finish(false, `Sai rồi! Cần thối ${change.toLocaleString('vi-VN')}đ, bạn đưa ${sum().toLocaleString('vi-VN')}đ.`);
+      };
+      jgAddTimer(setInterval(() => {
+        left--;
+        const t = document.getElementById('cs-time'); if (t) t.innerText = `⏱ ${left}s`;
+        if (left <= 0) finish(false, `Hết giờ! Cần thối ${change.toLocaleString('vi-VN')}đ.`);
+      }, 1000));
     }
 
     // ---------- 3. PHA CHẾ: làm đúng công thức ----------
-    function startBaristaGame() {
-      const unit = JOBS.barista.unit;
+    function playBarista(lv, ctx, finish) {
       const ING = [
         { k: 'cf', e: '☕', n: 'Cà phê' }, { k: 'milk', e: '🥛', n: 'Sữa' }, { k: 'sug', e: '🍬', n: 'Đường' },
         { k: 'ice', e: '🧊', n: 'Đá' }, { k: 'tea', e: '🍵', n: 'Trà' }, { k: 'syr', e: '🍓', n: 'Siro' }, { k: 'cream', e: '🍦', n: 'Kem' }
       ];
       const DRINKS = ['Latte đặc biệt', 'Trà sữa chiều', 'Cà phê muối', 'Mocha lạ', 'Trà trái cây', 'Cacao kem', 'Bạc xỉu'];
-      let orderNo = 0, earned = 0, good = 0, order = {}, cup = {}, timeLeft = 15, tm = null, busy = false;
+      const nTypes = lv <= 3 ? 2 : (lv <= 7 ? 3 : 4);
+      const pieces = 3 + Math.ceil(lv * 0.8);
+      const picks = jgShuffle(ING.slice()).slice(0, nTypes);
+      const order = {};
+      picks.forEach(i => order[i.k] = 1);
+      for (let t = nTypes; t < pieces; t++) order[picks[jgRand(0, nTypes - 1)].k]++;
+      let cup = {};
+      let left = Math.max(8, Math.round(16 - lv * 0.8));
       const fmt = (o) => ING.filter(i => o[i.k]).map(i => `${i.e}${i.n} ×${o[i.k]}`).join('  ');
 
-      function newOrder() {
-        if (orderNo >= 3) return endJobGame(earned, '☕ Hết ca pha chế', `Bạn pha đúng ${good}/3 ly.`);
-        orderNo++; busy = false;
-        const n = jgRand(2, 3);
-        order = {};
-        jgShuffle(ING.slice()).slice(0, n).forEach(i => order[i.k] = jgRand(1, 3));
-        cup = {}; timeLeft = 15;
-        jgSetQ(`🧾 Khách gọi "${DRINKS[jgRand(0, DRINKS.length - 1)]}":\n${fmt(order)}`);
-        render();
-        if (tm) clearInterval(tm);
-        tm = jgAddTimer(setInterval(() => {
-          timeLeft--; stats();
-          if (timeLeft <= 0) { clearInterval(tm); resolve(false, 'Hết giờ!'); }
-        }, 1000));
+      jgSetQ(`🧾 Khách gọi "${DRINKS[jgRand(0, DRINKS.length - 1)]}":\n${fmt(order)}`);
+      jgArea().innerHTML = `
+        <div id="bs-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${left}s</div>
+        <div style="background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.9rem;">🥤 Trong ly: <b id="bs-cup">(trống)</b></div>
+        <div id="bs-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" style="flex:1;" id="bs-reset">🗑 Đổ đi</button>
+          <button class="btn btn-pink" style="flex:1;" id="bs-ok">✅ Giao khách</button>
+        </div>`;
+      const upCup = () => { const el = document.getElementById('bs-cup'); if (el) el.innerText = fmt(cup) || '(trống)'; };
+      function drawGrid() {
+        const grid = document.getElementById('bs-grid');
+        if (!grid) return;
+        grid.innerHTML = jgShuffle(ING.slice()).map(i => `<button class="btn btn-outline jg-btn" data-k="${i.k}" style="flex-direction:column;padding:8px 2px;font-size:0.7rem;"><span style="font-size:1.4rem;">${i.e}</span>${i.n}</button>`).join('');
+        grid.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+          cup[b.dataset.k] = (cup[b.dataset.k] || 0) + 1; upCup();
+          if (lv >= 6) drawGrid(); // từ màn 6: nút đảo vị trí sau mỗi lần bấm
+        });
       }
-      function stats() { jgSetStats(`Ly ${orderNo}/3 | ⏱ ${timeLeft}s | Đúng: ${good}`); }
-      function render() {
-        stats();
-        jgArea().innerHTML = `
-          <div style="background:#f7faf8;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:0.9rem;">🥤 Trong ly: <b id="bs-cup">(trống)</b></div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;">
-            ${jgShuffle(ING.slice()).map(i => `<button class="btn btn-outline jg-btn" data-k="${i.k}" style="flex-direction:column;padding:8px 2px;font-size:0.7rem;"><span style="font-size:1.4rem;">${i.e}</span>${i.n}</button>`).join('')}
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-outline" style="flex:1;" id="bs-reset">🗑 Đổ đi</button>
-            <button class="btn btn-pink" style="flex:1;" id="bs-ok">✅ Giao khách</button>
-          </div>`;
-        jgArea().querySelectorAll('[data-k]').forEach(b => b.onclick = () => { if (busy) return; cup[b.dataset.k] = (cup[b.dataset.k] || 0) + 1; upCup(); });
-        document.getElementById('bs-reset').onclick = () => { if (busy) return; cup = {}; upCup(); };
-        document.getElementById('bs-ok').onclick = () => { if (busy) return; resolve(ING.every(i => (cup[i.k] || 0) === (order[i.k] || 0)), null); };
-      }
-      function upCup() { const el = document.getElementById('bs-cup'); if (el) el.innerText = fmt(cup) || '(trống)'; }
-      function resolve(ok, why) {
-        if (busy) return; busy = true;
-        if (tm) clearInterval(tm);
-        if (ok) { earned += unit; good++; jgSetQ('✅ Khách khen ngon!'); }
-        else jgSetQ(`❌ ${why || 'Sai công thức rồi!'} Công thức đúng: ${fmt(order)}`);
-        jgAddTimer(setTimeout(newOrder, 1300));
-      }
-      newOrder();
+      drawGrid();
+      document.getElementById('bs-reset').onclick = () => { cup = {}; upCup(); };
+      document.getElementById('bs-ok').onclick = () => {
+        const ok = ING.every(i => (cup[i.k] || 0) === (order[i.k] || 0));
+        finish(ok, ok ? 'Khách khen ngon!' : `Sai công thức! Đúng là: ${fmt(order)}`);
+      };
+      jgAddTimer(setInterval(() => {
+        left--;
+        const t = document.getElementById('bs-time'); if (t) t.innerText = `⏱ ${left}s`;
+        if (left <= 0) finish(false, `Hết giờ! Công thức đúng: ${fmt(order)}`);
+      }, 1000));
     }
 
     // ---------- 4. TÀI XẾ / SHIPPER: né chướng ngại ----------
-    function startDriverGame() {
-      const reward = JOBS.driver.unit;
-      const TOTAL = 25;
-      jgSetQ('🛵 Chạm nửa trái/phải màn hình, bấm ◀ ▶ hoặc phím mũi tên để đổi làn. Sống sót 25 giây!');
+    function playDriver(lv, ctx, finish) {
+      const DUR = 10;
+      jgSetQ('🛵 Chạm nửa trái/phải màn hình, bấm ◀ ▶ hoặc phím mũi tên để đổi làn.');
       jgArea().innerHTML = `
+        <div id="dr-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${DUR}s</div>
         <div id="dr-board" style="position:relative;width:100%;max-width:300px;height:380px;margin:0 auto;background:#4a5568;border-radius:14px;overflow:hidden;touch-action:none;user-select:none;">
           <div style="position:absolute;left:33.33%;top:0;bottom:0;border-left:3px dashed #cbd5e0;opacity:.6;"></div>
           <div style="position:absolute;left:66.66%;top:0;bottom:0;border-left:3px dashed #cbd5e0;opacity:.6;"></div>
@@ -1825,11 +1887,12 @@
         </div>`;
       const board = document.getElementById('dr-board');
       const car = document.getElementById('dr-car');
+      const timeEl = document.getElementById('dr-time');
       const H = board.clientHeight || 380;
       const OBS = ['🚧', '🕳️', '🐕', '🚗', '🛢️', '🪨'];
-      let lane = 1, lives = 3, elapsed = 0, spawnT = 0.4, last = null;
+      let lane = 1, elapsed = 0, spawnT = 0.4, last = null;
       const obstacles = [];
-      const baseSpeed = jgRand(150, 180);
+      const baseSpeed = 140 + lv * 22;
 
       function setLane(l) { lane = Math.max(0, Math.min(2, l)); car.style.left = (lane * 33.33) + '%'; }
       setLane(1);
@@ -1843,12 +1906,11 @@
       window.addEventListener('keydown', keyH);
       jobGameState.listeners.push(() => window.removeEventListener('keydown', keyH));
 
-      function stats() { jgSetStats(`❤️ ${lives} | ⏱ ${Math.max(0, Math.ceil(TOTAL - elapsed))}s`); }
       function loop(ts) {
         if (last === null) last = ts;
         const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
         elapsed += dt;
-        const speed = baseSpeed + elapsed * 8;
+        const speed = baseSpeed + elapsed * 6;
 
         spawnT -= dt;
         if (spawnT <= 0) {
@@ -1861,7 +1923,7 @@
             board.appendChild(el);
             obstacles.push({ el, lane: l, y: -40 });
           }
-          spawnT = Math.max(0.35, 0.55 + Math.random() * 0.7 - elapsed * 0.01);
+          spawnT = Math.max(0.33, 0.8 - lv * 0.04 + Math.random() * 0.5);
         }
 
         for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -1869,66 +1931,67 @@
           o.y += speed * dt;
           o.el.style.top = o.y + 'px';
           if (o.lane === lane && o.y + 34 > H - 54 + 6 && o.y < H - 10 - 6) {
-            lives--; o.el.remove(); obstacles.splice(i, 1);
+            o.el.remove(); obstacles.splice(i, 1);
             board.style.background = '#e53e3e';
             setTimeout(() => { if (board) board.style.background = '#4a5568'; }, 120);
+            if (ctx.hit() <= 0) { finish(false, 'Tai nạn!', true); return; }
             continue;
           }
           if (o.y > H) { o.el.remove(); obstacles.splice(i, 1); }
         }
-        stats();
+        timeEl.innerText = `⏱ ${Math.max(0, Math.ceil(DUR - elapsed))}s`;
 
-        if (lives <= 0) {
-          return endJobGame(reward * 0.3 * Math.min(1, elapsed / TOTAL), '💥 Tai nạn!', `Bạn chạy được ${Math.floor(elapsed)}/${TOTAL} giây.`);
-        }
-        if (elapsed >= TOTAL) {
-          return endJobGame(reward, '🏁 Giao hàng thành công!', `Bạn còn ${lives} mạng.`);
-        }
+        if (elapsed >= DUR) { finish(true, 'Qua đoạn đường!'); return; }
         jobGameState.raf = requestAnimationFrame(loop);
       }
-      stats();
       jobGameState.raf = requestAnimationFrame(loop);
     }
 
     // ---------- 5. GIÁO VIÊN: chấm bài ----------
-    function startTeacherGame() {
-      const reward = JOBS.teacher.unit;
-      jgSetQ('🎓 Chạm vào những phép tính SAI để khoanh đỏ, rồi bấm Nộp bài.');
-      const N = 8;
-      const numWrong = jgRand(2, 4);
+    function playTeacher(lv, ctx, finish) {
+      const N = 6 + Math.floor(lv / 2);
+      const numWrong = 2 + Math.floor(lv / 3);
+      let left = Math.max(14, Math.round(32 - lv * 1.8));
+      const M = 20 + lv * 12;
+      const dMax = Math.max(2, 10 - lv);
+      const ops = lv < 3 ? ['+', '−'] : ['+', '−', '×'];
       const wrongIdx = new Set();
       while (wrongIdx.size < numWrong) wrongIdx.add(jgRand(0, N - 1));
       const eqs = [];
       for (let i = 0; i < N; i++) {
-        const op = ['+', '−', '×'][jgRand(0, 2)];
+        const op = ops[jgRand(0, ops.length - 1)];
         let a, b, r;
-        if (op === '+') { a = jgRand(5, 60); b = jgRand(5, 60); r = a + b; }
-        else if (op === '−') { a = jgRand(20, 90); b = jgRand(3, a - 1); r = a - b; }
-        else { a = jgRand(3, 12); b = jgRand(3, 12); r = a * b; }
+        if (op === '+') { a = jgRand(5, M); b = jgRand(5, M); r = a + b; }
+        else if (op === '−') { a = jgRand(10, M + 20); b = jgRand(3, a - 1); r = a - b; }
+        else { a = jgRand(3, 6 + lv); b = jgRand(3, 6 + lv); r = a * b; }
         let shown = r;
-        if (wrongIdx.has(i)) { let d = 0; while (d === 0) d = jgRand(-9, 9); shown = r + d; if (shown < 0) shown = r + Math.abs(d); }
+        if (wrongIdx.has(i)) { let d = 0; while (d === 0) d = jgRand(-dMax, dMax); shown = r + d; if (shown < 0) shown = r + Math.abs(d); }
         eqs.push({ text: `${a} ${op} ${b} = ${shown}`, wrong: wrongIdx.has(i) });
       }
       const marked = new Set();
-      jgSetStats(`Đã khoanh: 0 | Bài có ${numWrong} lỗi sai`);
+      jgSetQ(`🎓 Có ${numWrong} phép tính SAI. Chạm để khoanh đỏ, rồi bấm Nộp bài.`);
       jgArea().innerHTML = `
+        <div id="tc-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${left}s</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          ${eqs.map((q, i) => `<button class="btn btn-outline jg-btn" data-i="${i}" style="font-size:1rem;padding:12px 4px;">${q.text}</button>`).join('')}
+          ${eqs.map((q, i) => `<button class="btn btn-outline jg-btn" data-i="${i}" style="font-size:0.95rem;padding:12px 4px;">${q.text}</button>`).join('')}
         </div>
         <button class="btn btn-pink" style="width:100%;margin-top:10px;" id="tc-submit">📝 Nộp bài</button>`;
       jgArea().querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
         const i = parseInt(b.dataset.i, 10);
         if (marked.has(i)) { marked.delete(i); b.style.background = 'transparent'; b.style.borderColor = 'var(--app-green)'; b.style.color = 'var(--app-dark-green)'; }
         else { marked.add(i); b.style.background = '#fed7d7'; b.style.borderColor = '#e53e3e'; b.style.color = '#c53030'; }
-        jgSetStats(`Đã khoanh: ${marked.size} | Bài có ${numWrong} lỗi sai`);
       });
       document.getElementById('tc-submit').onclick = () => {
         let missed = 0, falseMarks = 0;
         eqs.forEach((q, i) => { if (q.wrong && !marked.has(i)) missed++; if (!q.wrong && marked.has(i)) falseMarks++; });
-        const errs = missed + falseMarks;
-        const earned = errs === 0 ? reward : (errs === 1 ? reward * 0.4 : 0);
-        endJobGame(earned, errs === 0 ? '🎉 Chấm chuẩn từng câu!' : '📝 Chấm xong', `Bỏ sót ${missed} câu sai, khoanh nhầm ${falseMarks} câu đúng.`);
+        if (missed + falseMarks === 0) finish(true, 'Chấm chuẩn từng câu!');
+        else finish(false, `Chấm sai: bỏ sót ${missed} câu sai, khoanh nhầm ${falseMarks} câu đúng.`);
       };
+      jgAddTimer(setInterval(() => {
+        left--;
+        const t = document.getElementById('tc-time'); if (t) t.innerText = `⏱ ${left}s`;
+        if (left <= 0) finish(false, 'Hết giờ nộp bài!');
+      }, 1000));
     }
 
     // ---------- 6. CÔNG NGHỆ: sudoku (khó, thưởng cao) ----------
@@ -2046,15 +2109,17 @@
 
     // ===================== THỦ CÔNG MỸ NGHỆ (MERGE 12x12) =====================
     const CRAFTS = {
-      cake: { label: '🎂 Bánh', chain: [['🌾', 'Bột mì'], ['🥚', 'Trứng gà'], ['🍞', 'Bột nhào'], ['🥐', 'Bánh ra lò'], ['🧁', 'Cupcake'], ['🍰', 'Bánh kem'], ['🎂', 'Bánh sinh nhật']] },
-      flower: { label: '🌷 Hoa', chain: [['🌱', 'Hạt giống'], ['🌿', 'Mầm non'], ['🍀', 'Cây con'], ['🌷', 'Nụ hoa'], ['🌻', 'Hoa nở'], ['🌹', 'Hoa hồng'], ['💐', 'Bó hoa']] },
-      necklace: { label: '📿 Dây chuyền', chain: [['🪨', 'Đá thô'], ['🔹', 'Hạt cườm'], ['📿', 'Chuỗi hạt'], ['🔗', 'Dây xích'], ['🦪', 'Ngọc trai'], ['💎', 'Kim cương'], ['💫', 'Dây chuyền lấp lánh']] },
-      lego: { label: '🧱 Lego (đồ ghép)', chain: [['🧱', 'Viên gạch'], ['🟦', 'Khối ghép'], ['🚗', 'Xe nhỏ'], ['🏠', 'Ngôi nhà'], ['🏰', 'Lâu đài'], ['🚀', 'Tên lửa'], ['🌆', 'Thành phố mô hình']] },
-      teddy: { label: '🧸 Gấu len', chain: [['🧶', 'Cuộn len'], ['🧵', 'Sợi len se'], ['🧣', 'Khăn len'], ['🧦', 'Tất len'], ['🐥', 'Thú len nhỏ'], ['🧸', 'Gấu bông'], ['🎀', 'Gấu bông nơ']] }
+      cake: { label: '🎂 Bánh', chain: [['🌾', 'Bột mì'], ['🥚', 'Trứng gà'], ['🍞', 'Bột nhào'], ['🥐', 'Bánh ra lò'], ['🧁', 'Cupcake'], ['🍰', 'Bánh kem'], ['🎂', 'Bánh sinh nhật'], ['🍮', 'Flan caramel'], ['🥧', 'Tart hoa quả'], ['🥞', 'Bánh ngàn lớp'], ['🍓', 'Bánh dâu hoàng gia'], ['🍯', 'Bánh mật ong thượng hạng'], ['💒', 'Bánh cưới ba tầng'], ['🏆', 'Bánh quán quân'], ['👑', 'Bánh hoàng gia kim tuyến']] },
+      flower: { label: '🌷 Hoa', chain: [['🌱', 'Hạt giống'], ['🌿', 'Mầm non'], ['🍀', 'Cây con'], ['🌷', 'Nụ hoa'], ['🌻', 'Hoa nở'], ['🌹', 'Hoa hồng'], ['💐', 'Bó hoa'], ['🌸', 'Cành anh đào'], ['🪷', 'Sen hồng'], ['🌺', 'Giỏ hoa nhiệt đới'], ['🏵️', 'Vòng hoa rực rỡ'], ['🪻', 'Vườn oải hương'], ['🌼', 'Cánh đồng hoa'], ['🦋', 'Vườn hoa bướm'], ['🌈', 'Vườn hoa cầu vồng']] },
+      necklace: { label: '📿 Dây chuyền', chain: [['🪨', 'Đá thô'], ['🔹', 'Hạt cườm'], ['📿', 'Chuỗi hạt'], ['🔗', 'Dây xích'], ['🦪', 'Ngọc trai'], ['💎', 'Kim cương'], ['💫', 'Dây chuyền lấp lánh'], ['🌟', 'Mặt dây ngôi sao'], ['💠', 'Mặt dây đá quý'], ['🔮', 'Lục bảo huyền bí'], ['💖', 'Mặt dây trái tim'], ['🪙', 'Vòng cổ vàng khối'], ['💍', 'Bộ trang sức đôi'], ['👸', 'Vòng cổ công chúa'], ['👑', 'Dây chuyền hoàng hậu']] },
+      lego: { label: '🧱 Lego (đồ ghép)', chain: [['🧱', 'Viên gạch'], ['🟦', 'Khối ghép'], ['🚗', 'Xe nhỏ'], ['🏠', 'Ngôi nhà'], ['🏰', 'Lâu đài'], ['🚀', 'Tên lửa'], ['🌆', 'Thành phố mô hình'], ['🚢', 'Tàu thủy'], ['✈️', 'Máy bay'], ['🎡', 'Công viên giải trí'], ['🏟️', 'Sân vận động'], ['🛰️', 'Trạm vũ trụ'], ['🌉', 'Cây cầu khổng lồ'], ['🗼', 'Tháp mô hình'], ['🌍', 'Thế giới thu nhỏ']] },
+      teddy: { label: '🧸 Gấu len', chain: [['🧶', 'Cuộn len'], ['🧵', 'Sợi len se'], ['🧣', 'Khăn len'], ['🧦', 'Tất len'], ['🐥', 'Thú len nhỏ'], ['🧸', 'Gấu bông'], ['🎀', 'Gấu bông nơ'], ['🐰', 'Thỏ len'], ['🐻', 'Gấu len cỡ lớn'], ['🪆', 'Búp bê len'], ['🎠', 'Ngựa len'], ['🐘', 'Voi len khổng lồ'], ['🦄', 'Kỳ lân len'], ['🐉', 'Rồng len'], ['🌠', 'Gấu bông ngôi sao']] }
     };
-    const CRAFT_PRICE = [0, 10000, 30000, 80000, 200000, 500000, 1200000, 3000000];
-    const CRAFT_MAX = 7;
-    const CRAFT_TIME = 120;
+    // Đồ cũ (Lv1-7) còn trong túi vẫn giữ giá cũ. Đồ mới chỉ bán được từ Lv10.
+    const CRAFT_PRICE_OLD = [0, 10000, 30000, 80000, 200000, 500000, 1200000, 3000000];
+    const CRAFT_PRICE_HI = { 10: 4000000, 11: 7000000, 12: 12000000, 13: 21000000, 14: 37000000, 15: 65000000 };
+    const CRAFT_MAX = 15;
+    const CRAFT_SELL_MIN = 10;
 
     // Thời giá: mỗi ngày mỗi loại có hệ số 0.7 - 1.4
     function craftMarketMult(type) {
@@ -2063,8 +2128,32 @@
       for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
       return 0.7 + (h % 71) / 100;
     }
-    function craftPrice(type, level) {
-      return Math.round((CRAFT_PRICE[level] || 0) * craftMarketMult(type) / 1000) * 1000;
+    function craftPrice(type, level, giftOnly) {
+      let base;
+      if (level >= CRAFT_SELL_MIN) base = CRAFT_PRICE_HI[level] || 0;
+      else if (giftOnly) return 0;
+      else base = CRAFT_PRICE_OLD[level] || 0;
+      return Math.round(base * craftMarketMult(type) / 1000) * 1000;
+    }
+    function craftSellable(it) { return it.level >= CRAFT_SELL_MIN || !it.giftOnly; }
+    // Giá 1 lần mua nguyên liệu (6 miếng), tăng dần theo cấp cao nhất
+    function craftBuyCost(best) { return 8000 + 2000 * best; }
+    function refreshWalletDisplay() {
+      const el = document.getElementById('life-wallet-display');
+      if (el) el.innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
+    }
+
+    function craftBagButtons(obj) {
+      const price = craftPrice(obj.craftType, obj.level, obj.giftOnly);
+      let h = '';
+      if (craftSellable(obj)) {
+        h += `<button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}')">Bán ~${price.toLocaleString('vi-VN')}</button> `;
+        if ((obj.qty || 1) > 1) h += `<button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}', true)">Bán hết</button> `;
+      } else {
+        h += `<span style="font-size:0.7rem;color:#718096;">Chỉ để tặng</span> `;
+      }
+      h += `<button class="action-text-btn" onclick="openSelectCharGiftModal('${obj.uniqueId}')">Tặng</button>`;
+      return h;
     }
 
     function updateCraftPreview() {
@@ -2073,12 +2162,18 @@
       if (sel.options.length === 0) {
         sel.innerHTML = Object.keys(CRAFTS).map(k => `<option value="${k}">${CRAFTS[k].label}</option>`).join('');
       }
+      const sess = window.state.craftSession;
+      if (sess && CRAFTS[sess.type]) sel.value = sess.type;
+      sel.disabled = !!sess;
       const type = sel.value || 'cake';
       const c = CRAFTS[type];
       document.getElementById('craft-chain-preview').innerText = c.chain.map(x => x[0]).join(' ➜ ');
       document.getElementById('craft-market-info').innerHTML =
         '<b>Thời giá hôm nay:</b> ' + Object.keys(CRAFTS).map(k => `${CRAFTS[k].label.split(' ')[0]} ×${craftMarketMult(k).toFixed(2)}`).join(' | ') +
-        `<br>Giá bán cấp 1 → 7 (món đang chọn): ` + [1,2,3,4,5,6,7].map(l => craftPrice(type, l).toLocaleString('vi-VN')).join(' / ');
+        `<br>Giá bán (chỉ từ Lv10): ` + [10, 11, 12, 13, 14, 15].map(l => `Lv${l} ${craftPrice(type, l).toLocaleString('vi-VN')}`).join(' | ') +
+        `<br>Mua nguyên liệu: từ ${craftBuyCost(1).toLocaleString('vi-VN')} VNĐ/lần (6 miếng), tăng theo cấp cao nhất.`;
+      const btn = document.getElementById('craft-start-btn');
+      if (btn) btn.innerText = sess ? `▶ Tiếp tục ván ${CRAFTS[sess.type].label} đang làm` : '🛠 Bắt Đầu Làm';
     }
 
     function renderCraftBag() {
@@ -2089,45 +2184,105 @@
       box.innerHTML = '';
       items.forEach(obj => {
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:6px;background:#fff;border:1px solid #90d4b8;border-radius:8px;padding:6px 8px;font-size:0.8rem;';
-        const price = craftPrice(obj.craftType, obj.level);
-        row.innerHTML = `<span>${obj.name}</span><span style="display:flex;gap:4px;flex-shrink:0;"><button class="action-text-btn" onclick="sellCraftItem('${obj.uniqueId}')">Bán ~${price.toLocaleString('vi-VN')}</button><button class="action-text-btn" onclick="openSelectCharGiftModal('${obj.uniqueId}')">Tặng</button></span>`;
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:6px;background:#fff;border:1px solid #90d4b8;border-radius:8px;padding:6px 8px;font-size:0.8rem;flex-wrap:wrap;';
+        row.innerHTML = `<span>${obj.name}</span><span style="display:flex;gap:4px;flex-shrink:0;align-items:center;flex-wrap:wrap;">${craftBagButtons(obj)}</span>`;
         box.appendChild(row);
       });
     }
 
-    function sellCraftItem(uniqueId) {
+    function setCraftQty(it, q) {
+      const base = it.name.replace(/\s*\(x\d+\)$/, '');
+      it.qty = q;
+      it.name = q > 1 ? `${base} (x${q})` : base;
+    }
+
+    function addCraftToBag(type, lvl, giftOnly) {
+      if (!window.state.inventory) window.state.inventory = [];
+      const inv = window.state.inventory;
+      const ex = inv.find(i => i.kind === 'craft' && i.craftType === type && i.level === lvl && !!i.giftOnly === !!giftOnly);
+      if (ex) { setCraftQty(ex, (ex.qty || 1) + 1); return; }
+      const info = CRAFTS[type].chain[lvl - 1];
+      const baseName = `${info[0]} ${info[1]} (Lv.${lvl})`;
+      inv.push({
+        id: 'craft-' + type + '-' + lvl,
+        kind: 'craft',
+        craftType: type,
+        level: lvl,
+        giftOnly: !!giftOnly,
+        name: baseName,
+        singleName: baseName + ' tự làm',
+        qty: 1,
+        tag: 'handmade',
+        desc: `Đồ thủ công tự làm cấp ${lvl}` + (giftOnly ? ' (chỉ để tặng)' : ''),
+        uniqueId: 'inv-' + Date.now() + Math.random()
+      });
+    }
+
+    function sellCraftItem(uniqueId, all) {
       const inv = window.state.inventory || [];
       const idx = inv.findIndex(i => i.uniqueId === uniqueId);
       if (idx === -1) return;
       const it = inv[idx];
-      const price = craftPrice(it.craftType, it.level);
-      if (!confirm(`Bán "${it.name}" với giá ${price.toLocaleString('vi-VN')} VNĐ (thời giá hôm nay ×${craftMarketMult(it.craftType).toFixed(2)})?`)) return;
-      inv.splice(idx, 1);
-      window.state.walletBalance = (window.state.walletBalance || 0) + price;
+      if (!craftSellable(it)) return alert('Món này chỉ để tặng, không bán được (chỉ bán từ Lv10 trở lên).');
+      const have = it.qty || 1;
+      const qty = all ? have : 1;
+      const unit = craftPrice(it.craftType, it.level, it.giftOnly);
+      const total = unit * qty;
+      const nm = it.name.replace(/\s*\(x\d+\)$/, '');
+      if (!confirm(`Bán ${qty}x "${nm}" với giá ${total.toLocaleString('vi-VN')} VNĐ (thời giá hôm nay ×${craftMarketMult(it.craftType).toFixed(2)})?`)) return;
+      if (qty >= have) inv.splice(idx, 1); else setCraftQty(it, have - qty);
+      window.state.walletBalance = (window.state.walletBalance || 0) + total;
       saveStorage();
       renderLifeModeUI();
-      alert(`💰 Đã bán, nhận ${price.toLocaleString('vi-VN')} VNĐ.`);
+      alert(`💰 Đã bán, nhận ${total.toLocaleString('vi-VN')} VNĐ.`);
     }
 
-    let craftState = { type: 'cake', board: [], sel: -1, best: 1, timeLeft: 0, timer: null, active: false };
+    // ---------- Ván merge 12x12: không giới hạn thời gian, lưu tự động ----------
+    let craftSel = -1;
+    let craftSaveTimer = null;
+
+    function craftPersist(now) {
+      if (craftSaveTimer) { clearTimeout(craftSaveTimer); craftSaveTimer = null; }
+      if (now) { saveStorage(); return; }
+      craftSaveTimer = setTimeout(() => { craftSaveTimer = null; saveStorage(); }, 1200);
+    }
+
+    // Nguyên liệu sinh ra theo cấp cao nhất đã đạt (không bao giờ vượt Lv4)
+    function pickSpawnLevel(best) {
+      const r = Math.random() * 100;
+      if (best < 4) return 1;
+      if (best <= 6) return r < 85 ? 1 : 2;
+      if (best <= 9) return r < 70 ? 1 : 2;
+      if (best <= 12) return r < 50 ? 1 : (r < 90 ? 2 : 3);
+      return r < 30 ? 1 : (r < 70 ? 2 : (r < 95 ? 3 : 4));
+    }
+
+    function placeCraftMaterials(n, initial) {
+      const s = window.state.craftSession;
+      const free = [];
+      s.board.forEach((v, i) => { if (v === 0) free.push(i); });
+      jgShuffle(free);
+      const take = free.slice(0, n);
+      take.forEach(i => { s.board[i] = initial ? 1 : pickSpawnLevel(s.best); });
+      return take.length;
+    }
 
     function startCraftGame() {
       checkDailyReset();
-      if ((window.state.dailyCraftCount || 0) >= 4) {
-        return alert('Bạn đã hết 4 lượt thủ công trong ngày hôm nay! Hãy quay lại vào ngày mai.');
+      if (!window.state.craftSession) {
+        if ((window.state.dailyCraftCount || 0) >= 4) {
+          return alert('Bạn đã hết 4 lượt thủ công trong ngày hôm nay! Hãy quay lại vào ngày mai.');
+        }
+        const type = document.getElementById('craft-select').value || 'cake';
+        window.state.dailyCraftCount = (window.state.dailyCraftCount || 0) + 1;
+        window.state.craftSession = { type, board: Array(144).fill(0), best: 1, spent: 0 };
+        placeCraftMaterials(24, true);
+        saveStorage();
+        renderLifeModeUI();
       }
-      const type = document.getElementById('craft-select').value || 'cake';
-
-      window.state.dailyCraftCount = (window.state.dailyCraftCount || 0) + 1;
-      saveStorage();
-      renderLifeModeUI();
-
-      if (craftState.timer) clearInterval(craftState.timer);
-      craftState = { type, board: Array(144).fill(0), sel: -1, best: 1, timeLeft: CRAFT_TIME, timer: null, active: true };
-      placeCraftMaterials(24);
-
-      document.getElementById('craft-title').innerText = `🧶 Làm ${CRAFTS[type].label}`;
+      const s = window.state.craftSession;
+      craftSel = -1;
+      document.getElementById('craft-title').innerText = `🧶 Làm ${CRAFTS[s.type].label}`;
       const boardEl = document.getElementById('craft-board');
       boardEl.onclick = (e) => {
         const c = e.target.closest('[data-i]');
@@ -2135,96 +2290,141 @@
       };
       renderCraftBoard();
       openModal('modal-craft');
-
-      craftState.timer = setInterval(() => {
-        craftState.timeLeft--;
-        updateCraftStats();
-        if (craftState.timeLeft <= 0) finishCraft(true);
-      }, 1000);
     }
 
-    function placeCraftMaterials(n) {
-      const free = [];
-      craftState.board.forEach((v, i) => { if (v === 0) free.push(i); });
-      jgShuffle(free);
-      const take = free.slice(0, n);
-      take.forEach(i => { craftState.board[i] = 1; });
-      return take.length;
-    }
-
-    function addCraftMaterials() {
-      if (!craftState.active) return;
-      const placed = placeCraftMaterials(6);
-      if (placed === 0) alert('Bàn đã đầy! Hãy ghép bớt nguyên liệu.');
-      renderCraftBoard();
-    }
-
-    function tapCraftCell(i) {
-      if (!craftState.active) return;
-      const b = craftState.board;
-      if (b[i] === 0) { craftState.sel = -1; renderCraftBoard(); return; }
-      if (craftState.sel === -1) { craftState.sel = i; renderCraftBoard(); return; }
-      if (craftState.sel === i) { craftState.sel = -1; renderCraftBoard(); return; }
-      const s = craftState.sel;
-      if (b[s] === b[i] && b[i] < CRAFT_MAX) {
-        b[i] = b[i] + 1;
-        b[s] = 0;
-        if (b[i] > craftState.best) craftState.best = b[i];
-        craftState.sel = -1;
-      } else {
-        craftState.sel = i;
-      }
-      renderCraftBoard();
+    function craftHighCount(s) {
+      let n = 0;
+      s.board.forEach(v => { if (v >= CRAFT_SELL_MIN) n++; });
+      return n;
     }
 
     function updateCraftStats() {
-      const c = CRAFTS[craftState.type];
-      const bst = c.chain[craftState.best - 1];
-      document.getElementById('craft-stats').innerText = `⏱ ${Math.max(0, craftState.timeLeft)}s | Cao nhất: ${bst[0]} ${bst[1]} (Lv.${craftState.best})`;
+      const s = window.state.craftSession;
+      if (!s) return;
+      const bst = CRAFTS[s.type].chain[s.best - 1];
+      document.getElementById('craft-stats').innerText = `Cao nhất: ${bst[0]} ${bst[1]} (Lv.${s.best}) | Lv10+: ${craftHighCount(s)} món | Đã chi: ${(s.spent || 0).toLocaleString('vi-VN')}đ`;
+      const free = s.board.filter(v => v === 0).length;
+      const n = Math.min(6, free);
+      const cost = Math.round(craftBuyCost(s.best) * n / 6 / 100) * 100;
+      const btn = document.getElementById('craft-buy-btn');
+      if (btn) btn.innerText = `➕ Mua nguyên liệu (-${cost.toLocaleString('vi-VN')}đ)`;
     }
 
     function renderCraftBoard() {
-      const c = CRAFTS[craftState.type];
+      const s = window.state.craftSession;
+      if (!s) return;
+      const c = CRAFTS[s.type];
       const el = document.getElementById('craft-board');
-      el.innerHTML = craftState.board.map((lv, i) => {
+      el.innerHTML = s.board.map((lv, i) => {
         if (lv === 0) return `<div class="craft-cell" data-i="${i}"></div>`;
-        const bg = `hsl(${110 + lv * 28}, 70%, ${92 - lv * 2}%)`;
-        return `<div class="craft-cell${craftState.sel === i ? ' sel' : ''}" data-i="${i}" style="background:${bg};" title="${c.chain[lv - 1][1]} (Lv.${lv})">${c.chain[lv - 1][0]}</div>`;
+        const bg = lv >= CRAFT_SELL_MIN ? 'linear-gradient(135deg,#fff3b0,#ffd166)' : `hsl(${110 + lv * 28}, 70%, ${92 - lv * 2}%)`;
+        const bd = lv >= CRAFT_SELL_MIN ? 'border-color:#d69e2e;' : '';
+        return `<div class="craft-cell${craftSel === i ? ' sel' : ''}" data-i="${i}" style="background:${bg};${bd}" title="${c.chain[lv - 1][1]} (Lv.${lv})">${c.chain[lv - 1][0]}<span class="craft-lv">${lv}</span></div>`;
       }).join('');
       updateCraftStats();
     }
 
+    function addCraftMaterials() {
+      const s = window.state.craftSession;
+      if (!s) return;
+      const free = s.board.filter(v => v === 0).length;
+      if (free === 0) return alert('Bàn đã đầy! Hãy ghép bớt nguyên liệu hoặc kết thúc ván.');
+      const n = Math.min(6, free);
+      const cost = Math.round(craftBuyCost(s.best) * n / 6 / 100) * 100;
+      if ((window.state.walletBalance || 0) < cost) return alert(`Không đủ tiền! Cần ${cost.toLocaleString('vi-VN')} VNĐ để mua nguyên liệu.`);
+      window.state.walletBalance -= cost;
+      s.spent = (s.spent || 0) + cost;
+      placeCraftMaterials(n, false);
+      refreshWalletDisplay();
+      renderCraftBoard();
+      craftPersist();
+      checkCraftStuck();
+    }
+
+    function tapCraftCell(i) {
+      const s = window.state.craftSession;
+      if (!s) return;
+      const b = s.board;
+      if (b[i] === 0) { craftSel = -1; renderCraftBoard(); return; }
+      if (craftSel === -1) { craftSel = i; renderCraftBoard(); return; }
+      if (craftSel === i) { craftSel = -1; renderCraftBoard(); return; }
+      const sel = craftSel;
+      if (b[sel] === b[i] && b[i] < CRAFT_MAX) {
+        b[i] = b[i] + 1;
+        b[sel] = 0;
+        if (b[i] > s.best) s.best = b[i];
+        craftSel = -1;
+        craftPersist();
+      } else {
+        craftSel = i;
+      }
+      renderCraftBoard();
+      checkCraftStuck();
+    }
+
+    // Bàn đầy và không còn cặp nào ghép được thì tự kết thúc
+    function checkCraftStuck() {
+      const s = window.state.craftSession;
+      if (!s) return;
+      if (s.board.some(v => v === 0)) return;
+      const cnt = {};
+      for (const v of s.board) {
+        cnt[v] = (cnt[v] || 0) + 1;
+        if (v < CRAFT_MAX && cnt[v] >= 2) return;
+      }
+      alert('🧩 Bàn đã kẹt, không ghép được nữa! Ván tự động kết thúc.');
+      finishCraft(true);
+    }
+
+    function closeCraft() {
+      craftPersist(true);
+      closeModal('modal-craft');
+      renderLifeModeUI();
+    }
+
     function requestFinishCraft() {
-      if (!craftState.active) { closeModal('modal-craft'); return; }
-      if (confirm('Nộp thành phẩm cao nhất hiện tại và kết thúc lượt?')) finishCraft(false);
+      const s = window.state.craftSession;
+      if (!s) { closeModal('modal-craft'); return; }
+      const hi = craftHighCount(s);
+      const msg = hi > 0
+        ? `Kết thúc ván? Bạn có ${hi} món từ Lv10 trở lên sẽ vào túi để bán/tặng. Các món dưới Lv10 sẽ bị bỏ.`
+        : 'Kết thúc ván? Chưa có món nào từ Lv10, chỉ món cao nhất được giữ lại để TẶNG (không bán được). Các món còn lại bị bỏ.';
+      if (confirm(msg)) finishCraft(false);
     }
 
     function finishCraft(auto) {
-      if (!craftState.active) return;
-      craftState.active = false;
-      if (craftState.timer) { clearInterval(craftState.timer); craftState.timer = null; }
+      const s = window.state.craftSession;
+      if (!s) return;
+      if (craftSaveTimer) { clearTimeout(craftSaveTimer); craftSaveTimer = null; }
       closeModal('modal-craft');
 
-      let best = 1;
-      craftState.board.forEach(v => { if (v > best) best = v; });
-      const c = CRAFTS[craftState.type];
-      const info = c.chain[best - 1];
-      if (!window.state.inventory) window.state.inventory = [];
-      window.state.inventory.push({
-        id: 'craft-' + craftState.type + '-' + best,
-        kind: 'craft',
-        craftType: craftState.type,
-        level: best,
-        name: `${info[0]} ${info[1]} (Lv.${best})`,
-        singleName: `${info[0]} ${info[1]} (Lv.${best}) tự làm`,
-        qty: 1,
-        tag: 'handmade',
-        desc: `Đồ thủ công tự làm cấp ${best}`,
-        uniqueId: 'inv-' + Date.now() + Math.random()
-      });
+      const counts = {};
+      s.board.forEach(v => { if (v >= CRAFT_SELL_MIN) counts[v] = (counts[v] || 0) + 1; });
+      const levels = Object.keys(counts).map(Number).sort((a, b) => b - a);
+      let summary = '', est = 0;
+
+      if (levels.length > 0) {
+        levels.forEach(lv => {
+          for (let k = 0; k < counts[lv]; k++) addCraftToBag(s.type, lv, false);
+          est += craftPrice(s.type, lv) * counts[lv];
+          const info = CRAFTS[s.type].chain[lv - 1];
+          summary += `${counts[lv]}x ${info[0]} ${info[1]} (Lv.${lv})\n`;
+        });
+        summary = `Thu về:\n${summary}Giá bán ước tính hôm nay: ~${est.toLocaleString('vi-VN')} VNĐ.`;
+      } else {
+        let best = 1;
+        s.board.forEach(v => { if (v > best) best = v; });
+        addCraftToBag(s.type, best, true);
+        const info = CRAFTS[s.type].chain[best - 1];
+        summary = `Chưa có món nào từ Lv10 nên không có gì để bán.\nBạn giữ lại 1 món để tặng: ${info[0]} ${info[1]} (Lv.${best}).`;
+      }
+
+      const spent = s.spent || 0;
+      window.state.craftSession = null;
+      craftSel = -1;
       saveStorage();
       renderLifeModeUI();
-      alert(`${auto ? '⏰ Hết giờ! ' : ''}🎉 Thành phẩm: ${info[0]} ${info[1]} (Lv.${best}) đã vào túi.\nGiá bán hôm nay: ~${craftPrice(craftState.type, best).toLocaleString('vi-VN')} VNĐ. Bạn có thể bán hoặc tặng nhân vật.`);
+      alert(`${auto ? '' : '✅ '}Kết thúc ván!\n${summary}\nĐã chi nguyên liệu: ${spent.toLocaleString('vi-VN')} VNĐ.`);
     }
 
     // ===================== SỰ KIỆN NGẪU NHIÊN =====================
@@ -2390,7 +2590,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       const moneyTxt = choiceObj.moneyChange ? ` | 💵 Ví: ${moneySign}${choiceObj.moneyChange.toLocaleString('vi-VN')} VNĐ` : '';
       const affTxt = choiceObj.affectionChange ? ` | ❤️ Thân mật: ${affSign}${choiceObj.affectionChange} pts (Lv.${affData.level})` : '';
       
-      alert(`📢 ${choiceObj.log || 'Kết quả xử lý'}\n(${moneyTxt}${affTxt}${itemReceivedText})`);
+      alert(`📢 ${choiceObj.log || 'Kết quả xử lý'}\n(${moneyTxt}${itemReceivedText})`);
 
       handleEventAndChat(
         charId, 
@@ -2557,17 +2757,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
     function openTargetCharForGift(uniqueId) {
       pendingGiftUniqueId = uniqueId;
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      const container = document.getElementById('gift-target-char-select');
-      container.innerHTML = '';
-
       if (!story || !story.characters || story.characters.length === 0) return alert('Truyện chưa có nhân vật nào!');
-
-      story.characters.forEach(char => {
-        const opt = document.createElement('option');
-        opt.value = char.id;
-        opt.innerText = char.name;
-        container.appendChild(opt);
-      });
+      renderGiftTargets();
       closeModal('modal-gift');
       openModal('modal-select-char-gift');
     }
@@ -2867,7 +3058,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, msg.img, container, idx, msg.ts);
         } else {
-          parseAndRenderAiMessage(msg.text, story, container, idx, msg.transfers);
+          parseAndRenderAiMessage(msg.text, story, container, idx, msg.transfers, msg.affection);
         }
       });
       
@@ -2923,7 +3114,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       // Tin dạng [nội dung] (tặng quà, voice...) hiển thị như hành động, không kèm ngoặc vuông
       const trimmed = text.trim();
       if (!imgData && /^\[[\s\S]*\]$/.test(trimmed)) {
-        const inner = trimmed.slice(1, -1).replace(/\*/g, '').trim();
+        const inner = trimmed.slice(1, -1).replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim();
         const actDiv = document.createElement('div');
         actDiv.className = 'narrative-block user-action';
         actDiv.innerText = inner;
@@ -3001,7 +3192,87 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       }
     }
 
-    function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers) {
+    // Avatar nhân vật phụ: vòng tròn màu + chữ cái đầu, cố định theo tên
+    function npcAvatar(name) {
+      let h = 0;
+      for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+      const hue = h % 360;
+      const initial = (Array.from(name.trim())[0] || '?').toUpperCase();
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72'><rect width='72' height='72' rx='36' fill='hsl(${hue},55%,62%)'/><text x='36' y='47' font-size='34' font-family='sans-serif' font-weight='bold' text-anchor='middle' fill='white'>${escapeHtml(initial)}</text></svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    // Xác định người nói: nhân vật trong truyện, nhiều người ("A&B"), hoặc nhân vật phụ có thoại
+    function resolveSpeakers(speakerRaw, restText, story) {
+      if (!speakerRaw) return [];
+      const chars = (story && story.characters) || [];
+      const find = (n) => chars.find(c => (c.name || '').trim().toLowerCase() === n.trim().toLowerCase());
+      const mk = (c) => ({ id: c.id, name: c.name, avatar: c.avatar || DEFAULT_LOGO });
+
+      const whole = find(speakerRaw);
+      if (whole) return [mk(whole)];
+
+      const userName = ((window.state.persona && window.state.persona.name) || '').trim().toLowerCase();
+      if (speakerRaw.trim().toLowerCase() === userName) return [];
+
+      const q = (restText || '').replace(/[“”]/g, '"');
+      const hasDlg = (q.match(/"/g) || []).length >= 2;
+      const okNpcName = (n) => n.length <= 30 && n.split(/\s+/).length <= 4 && !/^(lưu ý|chú thích|ghi chú|bối cảnh|hệ thống|dẫn truyện|tóm tắt)/i.test(n);
+
+      const parts = speakerRaw.split(/\s*(?:&|\+|,|\/)\s*|\s+và\s+/i).map(s => s.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        const out = [];
+        parts.forEach(p => {
+          const f = find(p);
+          if (f) { if (!out.some(o => o.name === f.name)) out.push(mk(f)); }
+          else if (hasDlg && okNpcName(p)) out.push({ name: p, avatar: npcAvatar(p) });
+        });
+        if (out.length === parts.length) return out;
+        return [];
+      }
+
+      if (hasDlg && okNpcName(speakerRaw.trim())) return [{ name: speakerRaw.trim(), avatar: npcAvatar(speakerRaw.trim()) }];
+      return [];
+    }
+
+    // Giai đoạn quan hệ theo cấp thân mật
+    function affectionStage(lv) {
+      if (lv >= 60) return 'Tri kỷ';
+      if (lv >= 40) return 'Tâm giao';
+      if (lv >= 20) return 'Hảo hữu';
+      if (lv >= 10) return 'Thân thiết';
+      return 'Mới quen';
+    }
+    function nextAffectionMilestone(lv) {
+      for (const m of [10, 20, 40, 60]) if (lv < m) return m;
+      return null;
+    }
+
+    function showAffectionCard(sp) {
+      const body = document.getElementById('aff-card-body');
+      if (!body || !sp) return;
+      const av = `<img src="${sp.avatar}" onerror="this.src='${DEFAULT_LOGO}'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--app-green);">`;
+      if (!sp.id) {
+        body.innerHTML = `${av}<h3 style="font-size:1.1rem;color:var(--app-dark-green);">${escapeHtml(sp.name)}</h3><div style="font-size:0.82rem;color:#718096;">Nhân vật phụ</div>`;
+      } else {
+        const aff = (window.state.affectionLevels && window.state.affectionLevels[sp.id]) || { level: 1, points: 0 };
+        const need = affectionNeeded(aff.level);
+        const pct = Math.max(0, Math.min(100, Math.round(aff.points / need * 100)));
+        const nm = nextAffectionMilestone(aff.level);
+        body.innerHTML = `
+          ${av}
+          <h3 style="font-size:1.1rem;color:var(--app-dark-green);">${escapeHtml(sp.name)}</h3>
+          <div style="font-size:0.95rem;font-weight:bold;color:#d53f8c;">❤️ Lv.${aff.level} · ${affectionStage(aff.level)}</div>
+          <div style="width:100%;height:12px;background:#edf2f7;border-radius:8px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#ff8fa3,#d53f8c);"></div>
+          </div>
+          <div style="font-size:0.78rem;color:#4a5568;">${aff.points}/${need} điểm để lên Lv.${aff.level + 1}</div>
+          <div style="font-size:0.75rem;color:#718096;">${nm ? `Mốc tiếp theo: Lv.${nm} · ${affectionStage(nm)}` : 'Đã đạt mốc cao nhất'}</div>`;
+      }
+      openModal('modal-affection');
+    }
+
+    function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
       fullText = (fullText || '').replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
 
@@ -3051,21 +3322,15 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           let restText = charMatch ? (charMatch[2] || '').trim() : line.trim();
 
           let matchedAvatar = (story && story.avatar) || DEFAULT_LOGO;
-          let isKnownChar = false;
-          if (story && story.characters && speakerRaw) {
-            const foundChar = story.characters.find(c => (c.name || '').trim().toLowerCase() === speakerRaw.toLowerCase());
-            if (foundChar) {
-              isKnownChar = true;
-              if (foundChar.avatar) matchedAvatar = foundChar.avatar;
-            }
-          }
+          const speakers = resolveSpeakers(speakerRaw, restText, story);
+          const isKnownChar = speakers.length > 0;
 
           if (!isKnownChar) {
             const narrText = restText.replace(/\*/g, '').trim();
             if (narrText) {
               const nDiv = document.createElement('div');
               nDiv.className = 'narrative-block ai-action';
-              nDiv.innerText = speakerRaw ? `${speakerRaw}: ${narrText}` : narrText;
+              nDiv.innerText = narrText; // văn tả: bỏ tiền tố "Tên:" của người không có thoại
               
               if (lineIdx === lines.length - 1) {
                 const wrapDiv = document.createElement('div');
@@ -3105,9 +3370,11 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
+          speakers.forEach((sp, spIdx) => {
+          matchedAvatar = sp.avatar; speakerName = sp.name;
           segs.forEach((seg, segIdx) => {
             if (!seg.text) return;
-            const isLastSeg = (lineIdx === lines.length - 1 && segIdx === segs.length - 1);
+            const isLastSeg = (lineIdx === lines.length - 1 && segIdx === segs.length - 1 && spIdx === speakers.length - 1);
 
             if (seg.type === 'action') {
               const actDiv = document.createElement('div');
@@ -3145,11 +3412,15 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
                   ${bar}
                 </div>
               `;
+              const av = div.querySelector('.msg-avatar');
+              if (av) { av.style.cursor = 'pointer'; av.onclick = () => showAffectionCard(sp); }
               container.appendChild(div);
             }
           });
+          });
         }
       });
+
     }
 
     function editMessage(idx) {
@@ -3164,6 +3435,9 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       if (m && m.sender === 'ai' && m.transfers && m.transfers.length) {
         const sum = m.transfers.reduce((s, t) => s + (t.amount || 0), 0);
         window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) - sum);
+      }
+      if (m && m.sender === 'ai' && m.affection && m.affection.length) {
+        m.affection.forEach(a => addAffectionPoints(a.id, -a.pts));
       }
     }
 
@@ -3248,7 +3522,8 @@ ${charAffectionSummary}
 ⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
-- GIỮ VỮNG MỐC THỜI GIAN (BẮT BUỘC): Tuyệt đối không tự ý nhảy cóc mốc thời gian.
+- QUY TẮC THỜI GIAN: ĐƯỢC PHÉP chuyển/nhảy thời gian (sang buổi sau, hôm sau, vài ngày sau...) khi mạch truyện hợp lý, nhưng phải nói rõ mốc thời gian mới và không bỏ qua phản ứng hay hậu quả của những gì vừa xảy ra.
+- CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ tiến triển một bước nhỏ, hợp lý.
 - BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
@@ -3259,9 +3534,13 @@ ${charAffectionSummary}
   (Ví dụ: [SYSTEM_TRANSFER: 20000000 | Tiền tiêu vặt cho em đấy])
 - Nếu KHÔNG, chỉ từ chối bằng lời thoại đúng tính cách.
 
-[ĐỊNH DẠNG ĐẦU RA]
-Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
+[ĐỊNH DẠNG ĐẦU RA - BẮT BUỘC]
+- Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
+- Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
+- Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
+- Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
+- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +1] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm). Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
 ${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
@@ -3303,6 +3582,7 @@ ${hintBlock}
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: contents,
+        generationConfig: { temperature: 0.85 },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -3352,8 +3632,24 @@ ${hintBlock}
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
 
+        // THÂN MẬT KHI CHAT: đọc thẻ [AFFECTION: Tên | +n] đúng 1 lần, ép về -3..+3
+        const affChanges = [];
+        const are = /\[AFFECTION:\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/g;
+        let am;
+        while ((am = are.exec(responseText)) !== null) {
+          const nm = am[1].trim().toLowerCase();
+          const ch = (story && story.characters) ? story.characters.find(c => (c.name || '').trim().toLowerCase() === nm) : null;
+          if (!ch || affChanges.some(a => a.id === ch.id)) continue;
+          let v = parseInt(am[2].replace(/[−–]/g, '-').replace(/\s/g, ''), 10);
+          if (isNaN(v) || v === 0) continue;
+          v = Math.max(-3, Math.min(3, v));
+          affChanges.push({ id: ch.id, name: ch.name, pts: v });
+        }
+        affChanges.forEach(a => addAffectionPoints(a.id, a.pts));
+
         const aiMsg = { sender: 'ai', text: cleaned, ts: Date.now() };
         if (transfers.length) aiMsg.transfers = transfers;
+        if (affChanges.length) aiMsg.affection = affChanges;
         window.state.chatHistories[storyId].push(aiMsg);
         saveStorage(); 
         if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
