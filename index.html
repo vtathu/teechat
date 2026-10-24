@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
   <link rel="shortcut icon" href="https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png">
 
-  <link rel="manifest" href='data:application/json,{"name":"Teechat - Story Platform","short_name":"Teechat","start_url":"./","display":"standalone","background_color":"#e7f5ee","theme_color":"#e7f5ee","icons":[{"src":"https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+  <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#e7f5ee">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -514,6 +514,7 @@
         <p style="font-size:0.85rem;color:#555;margin:0;">Mỗi màn thắng nhận <b>100.000.000 VNĐ</b>. Không báo đúng/sai, nộp sai là hết ca. Chọn độ khó:</p>
         <button class="btn btn-outline" onclick="startSudoku('easy')">🟢 Dễ (nhiều số gợi ý)</button>
         <button class="btn btn-pink" onclick="startSudoku('hard')">🔴 Cực khó (siêu ít số)</button>
+        <button class="btn" style="background:#2d3748;color:#fff;" onclick="startSudoku('hell')">💀 Địa ngục</button>
       </div>
       <div id="sdk-play" style="display:none;">
         <div id="sdk-status" style="font-size:0.85rem;color:#555;margin-bottom:4px;"></div>
@@ -1612,7 +1613,7 @@
       barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi, không giới hạn màn: nhiều nguyên liệu hơn, ít thời gian hơn, từ màn 6 các nút đảo vị trí sau mỗi lần bấm. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       teacher: { unit: 60000, desc: 'Chấm bài, không giới hạn màn: nhiều phép tính hơn, số lớn hơn, lỗi sai tinh vi hơn, thời gian càng ít. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       driver:  { unit: 84000, desc: 'Né chướng ngại vật: mỗi màn chạy không giới hạn, xe càng lúc càng nhanh, đâm 5 lần thì hết màn. 3 màn là 1 ca làm. Tiền tính theo thời gian sống sót mỗi màn.' },
-      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku: chọn Dễ hoặc Cực khó (rất ít số gợi ý, không báo đúng/sai, có chế độ viết nháp, bấm Nộp bài mới chấm). Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
+      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku: chọn Dễ, Cực khó hoặc Địa ngục (rất ít số gợi ý, không báo đúng/sai, có chế độ viết nháp, bấm Nộp bài mới chấm). Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
     };
 
     function canChangeJob() {
@@ -2176,6 +2177,38 @@
       return aborted ? 99 : count;
     }
 
+    // Giải thử chỉ bằng 2 kỹ thuật dễ (ô chỉ còn 1 số, số chỉ có 1 chỗ trong hàng/cột/khối); true nếu giải xong
+    function sdkSolvableBySingles(p) {
+      const g = p.map(row => row.map(v => v || 0));
+      const units = [];
+      for (let i = 0; i < 9; i++) {
+        const row = [], col = [], box = [];
+        for (let j = 0; j < 9; j++) { row.push(i * 9 + j); col.push(j * 9 + i); box.push((Math.floor(i / 3) * 3 + Math.floor(j / 3)) * 9 + (i % 3) * 3 + (j % 3)); }
+        units.push(row, col, box);
+      }
+      const cand = (idx) => {
+        const r = Math.floor(idx / 9), c = idx % 9, br = r - r % 3, bc = c - c % 3; let used = 0;
+        for (let k = 0; k < 9; k++) { used |= 1 << g[r][k]; used |= 1 << g[k][c]; used |= 1 << g[br + Math.floor(k / 3)][bc + k % 3]; }
+        return used;
+      };
+      let progress = true;
+      while (progress) {
+        progress = false;
+        for (let idx = 0; idx < 81; idx++) {
+          const r = Math.floor(idx / 9), c = idx % 9; if (g[r][c]) continue;
+          const used = cand(idx); let n = 0, last = 0;
+          for (let v = 1; v <= 9; v++) if (!(used & (1 << v))) { n++; last = v; }
+          if (n === 1) { g[r][c] = last; progress = true; }
+        }
+        for (const u of units) for (let v = 1; v <= 9; v++) {
+          let place = -1, cnt = 0, has = false;
+          for (const idx of u) { const r = Math.floor(idx / 9), c = idx % 9; if (g[r][c] === v) { has = true; break; } if (!g[r][c] && !(cand(idx) & (1 << v))) { cnt++; place = idx; } }
+          if (!has && cnt === 1) { g[Math.floor(place / 9)][place % 9] = v; progress = true; }
+        }
+      }
+      return g.every(row => row.every(v => v));
+    }
+
     function generateRandomSudoku(targetGivens) {
       let grid = Array(9).fill(0).map(() => Array(9).fill(0));
       
@@ -2208,22 +2241,39 @@
       fillGrid(0, 0);
       currentSudokuSolution = grid.map(row => [...row]);
 
-      let puzzle = grid.map(row => [...row]);
-      const order = [];
-      for (let i = 0; i < 81; i++) order.push(i);
-      order.sort(() => Math.random() - 0.5);
-      let givens = 81;
-      for (const idx of order) {
-        if (givens <= targetGivens) break;
-        const r = Math.floor(idx / 9), c = idx % 9, keep = puzzle[r][c];
-        puzzle[r][c] = null;
-        if (sdkCountSolutions(puzzle) === 1) givens--; else puzzle[r][c] = keep;
+      function carve(target) {
+        const p = grid.map(row => [...row]);
+        const order = [];
+        for (let i = 0; i < 81; i++) order.push(i);
+        order.sort(() => Math.random() - 0.5);
+        let givens = 81;
+        for (const idx of order) {
+          if (givens <= target) break;
+          const r = Math.floor(idx / 9), c = idx % 9, keep = p[r][c];
+          p[r][c] = null;
+          if (sdkCountSolutions(p) === 1) givens--; else p[r][c] = keep;
+        }
+        return { p, givens };
+      }
+      let puzzle;
+      if (targetGivens <= 20) {
+        // Địa ngục: thử nhiều lần trong ~1,2 giây, giữ đề ít số nhất mà chỉ dùng "điền số duy nhất" thì không giải xong
+        let best = null; const t0 = Date.now();
+        do {
+          const t = carve(targetGivens);
+          if (!sdkSolvableBySingles(t.p) && (!best || t.givens < best.givens)) best = t;
+          if (best && best.givens <= targetGivens + 1) break;
+        } while (Date.now() - t0 < 1200);
+        puzzle = (best || carve(targetGivens)).p;
+      } else {
+        puzzle = carve(targetGivens).p;
       }
       currentSudokuPuzzle = puzzle;
     }
 
     const SDK_REWARD = 100000000;
-    const SDK_GIVENS = { easy: 38, hard: 24 };
+    const SDK_GIVENS = { easy: 38, hard: 24, hell: 17 };
+    const SDK_LABEL = { easy: '🟢 Dễ', hard: '🔴 Cực khó', hell: '💀 Địa ngục' };
     let sdk = null;
 
     function openSudoku9Minigame() {
@@ -2260,16 +2310,21 @@
     function sdkNextStage() {
       sdk.stage++;
       sdk.noteMode = false; sdk.sel = null;
-      generateRandomSudoku(SDK_GIVENS[sdk.level]);
-      sdk.vals = Array(9).fill(0).map(() => Array(9).fill(0));
-      sdk.notes = Array(9).fill(0).map(() => Array(9).fill(0));
-      sdkRender();
+      document.getElementById('sdk-status').innerText = '⏳ Đang tạo đề...';
+      const cur = sdk;
+      setTimeout(() => {
+        if (sdk !== cur) return;
+        generateRandomSudoku(SDK_GIVENS[cur.level]);
+        cur.vals = Array(9).fill(0).map(() => Array(9).fill(0));
+        cur.notes = Array(9).fill(0).map(() => Array(9).fill(0));
+        sdkRender();
+      }, 40);
     }
 
     function sdkRender() {
       const grid = document.getElementById('sudoku-grid-9');
       grid.innerHTML = '';
-      document.getElementById('sdk-status').innerText = `${sdk.level === 'hard' ? '🔴 Cực khó' : '🟢 Dễ'} | Màn ${sdk.stage} | Đã nhận: ${sdk.earned.toLocaleString('vi-VN')}đ`;
+      document.getElementById('sdk-status').innerText = `${SDK_LABEL[sdk.level]} | Màn ${sdk.stage} | Đã nhận: ${sdk.earned.toLocaleString('vi-VN')}đ`;
       const nb = document.getElementById('sdk-note-btn');
       nb.innerText = '✏️ Nháp: ' + (sdk.noteMode ? 'Bật' : 'Tắt');
       nb.style.background = sdk.noteMode ? '#fefcbf' : '';
