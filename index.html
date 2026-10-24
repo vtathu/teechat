@@ -508,18 +508,19 @@
     <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header">
         <h3>⚡ Hacker</h3>
-        <button class="btn btn-outline" onclick="closeModal('modal-sudoku')">✖</button>
+        <button class="btn btn-outline" onclick="sdkClose()">✖</button>
       </div>
       <div id="sdk-menu" style="display:flex;flex-direction:column;gap:8px;margin:8px 0;">
-        <p style="font-size:0.85rem;color:#555;margin:0;">Mỗi màn thắng nhận <b>100.000.000 VNĐ</b>. Không báo đúng/sai, nộp sai là hết ca. Chọn độ khó:</p>
+        <div id="sdk-resume"></div>
+        <p style="font-size:0.85rem;color:#555;margin:0;">Mỗi màn thắng nhận <b>100.000.000 VNĐ</b>. Chơi không giới hạn lượt, thoát giữa chừng sẽ tự lưu ván. Không báo đúng/sai, nộp sai là hết ca.</p>
         <button class="btn btn-outline" onclick="startSudoku('easy')">🟢 Dễ (nhiều số gợi ý)</button>
         <button class="btn btn-pink" onclick="startSudoku('hard')">🔴 Cực khó (siêu ít số)</button>
         <button class="btn" style="background:#2d3748;color:#fff;" onclick="startSudoku('hell')">💀 Địa ngục</button>
       </div>
       <div id="sdk-play" style="display:none;">
         <div id="sdk-status" style="font-size:0.85rem;color:#555;margin-bottom:4px;"></div>
-        <div id="sudoku-grid-9" style="display:grid;grid-template-columns:repeat(9,1fr);gap:0;margin:6px auto;width:100%;max-width:420px;border:3px solid #2d3748;box-sizing:border-box;touch-action:manipulation;"></div>
-        <div id="sdk-pad" style="display:grid;grid-template-columns:repeat(9,1fr);gap:4px;max-width:420px;margin:6px auto;"></div>
+        <div id="sudoku-grid-9" style="display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:0;margin:6px auto;width:100%;max-width:420px;border:3px solid #2d3748;box-sizing:border-box;touch-action:manipulation;"></div>
+        <div id="sdk-pad" style="display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;max-width:420px;margin:6px auto;"></div>
         <div style="display:flex;gap:8px;max-width:420px;margin:6px auto;">
           <button class="btn btn-outline" id="sdk-note-btn" style="flex:1;" onclick="sdkToggleNote()">✏️ Nháp: Tắt</button>
           <button class="btn btn-outline" style="flex:1;" onclick="sdkInput(0)">⌫ Xóa ô</button>
@@ -1613,7 +1614,7 @@
       barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi, không giới hạn màn: nhiều nguyên liệu hơn, ít thời gian hơn, từ màn 6 các nút đảo vị trí sau mỗi lần bấm. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       teacher: { unit: 60000, desc: 'Chấm bài, không giới hạn màn: nhiều phép tính hơn, số lớn hơn, lỗi sai tinh vi hơn, thời gian càng ít. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       driver:  { unit: 84000, desc: 'Né chướng ngại vật: mỗi màn chạy không giới hạn, xe càng lúc càng nhanh, đâm 5 lần thì hết màn. 3 màn là 1 ca làm. Tiền tính theo thời gian sống sót mỗi màn.' },
-      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku: chọn Dễ, Cực khó hoặc Địa ngục (rất ít số gợi ý, không báo đúng/sai, có chế độ viết nháp, bấm Nộp bài mới chấm). Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
+      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku: chọn Dễ, Cực khó hoặc Địa ngục (rất ít số gợi ý, không báo đúng/sai, có chế độ viết nháp, bấm Nộp bài mới chấm). Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca. Chơi không giới hạn lượt mỗi ngày, thoát giữa chừng được lưu ván.' }
     };
 
     function canChangeJob() {
@@ -1776,15 +1777,14 @@
     }
 
     function executeWorkMinigame() {
-      checkDailyReset();
-      if (window.state.dailyWorkCount >= 5) {
-        return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay! Hãy quay lại vào ngày mai.');
-      }
-
       const job = window.state.currentJob;
       if (job === 'sudoku') {
         openSudoku9Minigame();
         return;
+      }
+      checkDailyReset();
+      if (window.state.dailyWorkCount >= 5) {
+        return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay! Hãy quay lại vào ngày mai.');
       }
 
       // TRỪ LƯỢT NGAY KHI BẤM MỞ NHIỆM VỤ CÔNG VIỆC
@@ -2276,34 +2276,59 @@
     const SDK_LABEL = { easy: '🟢 Dễ', hard: '🔴 Cực khó', hell: '💀 Địa ngục' };
     let sdk = null;
 
-    function openSudoku9Minigame() {
-      checkDailyReset();
-      if (window.state.dailyWorkCount >= 5) {
-        return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay!');
+    let sdkSaveTimer = null;
+    function sdkPersist(now) {
+      if (sdkSaveTimer) { clearTimeout(sdkSaveTimer); sdkSaveTimer = null; }
+      const write = () => {
+        sdkSaveTimer = null;
+        if (!sdk || !sdk.vals) return;
+        window.state.sudokuSave = { level: sdk.level, stage: sdk.stage, earned: sdk.earned, puzzle: currentSudokuPuzzle, vals: sdk.vals, notes: sdk.notes };
+        saveStorage();
+      };
+      if (now) write(); else sdkSaveTimer = setTimeout(write, 1200);
+    }
+    function sdkClose() { if (sdk) sdkPersist(true); closeModal('modal-sudoku'); }
+    document.addEventListener('visibilitychange', () => { if (document.hidden && sdk && sdk.vals) sdkPersist(true); });
+
+    function sdkBuildPad() {
+      const pad = document.getElementById('sdk-pad');
+      pad.innerHTML = '';
+      for (let n = 1; n <= 9; n++) {
+        const b = document.createElement('button');
+        b.className = 'btn btn-outline'; b.style.cssText = 'padding:0;height:42px;min-height:0;border-radius:10px;font-size:1.05rem;font-weight:bold;';
+        b.innerText = n; b.onclick = () => sdkInput(n);
+        pad.appendChild(b);
       }
+    }
+
+    function openSudoku9Minigame() {
+      // Sudoku không giới hạn lượt chơi mỗi ngày
+      const sv = window.state.sudokuSave;
+      const box = document.getElementById('sdk-resume');
+      box.innerHTML = sv && sv.puzzle ? `<button class="btn btn-pink" style="width:100%;" onclick="resumeSudoku()">▶ Tiếp tục ván đang chơi (${SDK_LABEL[sv.level]}, màn ${sv.stage})</button><div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>` : '';
       document.getElementById('sdk-menu').style.display = 'flex';
       document.getElementById('sdk-play').style.display = 'none';
       openModal('modal-sudoku');
     }
 
+    function resumeSudoku() {
+      const sv = window.state.sudokuSave;
+      if (!sv || !sv.puzzle) return;
+      currentSudokuPuzzle = sv.puzzle;
+      sdk = { level: sv.level, stage: sv.stage, earned: sv.earned || 0, noteMode: false, sel: null, vals: sv.vals, notes: sv.notes };
+      document.getElementById('sdk-menu').style.display = 'none';
+      document.getElementById('sdk-play').style.display = 'block';
+      sdkBuildPad();
+      sdkRender();
+    }
+
     function startSudoku(level) {
-      checkDailyReset();
-      if (window.state.dailyWorkCount >= 5) { closeModal('modal-sudoku'); return alert('Bạn đã hết 5 lượt làm việc trong ngày hôm nay!'); }
-      // Trừ lượt khi bắt đầu giải (đóng ở bảng chọn độ khó thì không mất lượt)
-      window.state.dailyWorkCount++;
-      saveStorage();
-      renderLifeModeUI();
+      if (window.state.sudokuSave && !confirm('Ván đang lưu sẽ bị xóa. Bắt đầu ván mới?')) return;
+      window.state.sudokuSave = null;
       sdk = { level, stage: 0, earned: 0, noteMode: false };
       document.getElementById('sdk-menu').style.display = 'none';
       document.getElementById('sdk-play').style.display = 'block';
-      const pad = document.getElementById('sdk-pad');
-      pad.innerHTML = '';
-      for (let n = 1; n <= 9; n++) {
-        const b = document.createElement('button');
-        b.className = 'btn btn-outline'; b.style.cssText = 'padding:8px 0;font-size:1.05rem;font-weight:bold;';
-        b.innerText = n; b.onclick = () => sdkInput(n);
-        pad.appendChild(b);
-      }
+      sdkBuildPad();
       sdkNextStage();
     }
 
@@ -2317,6 +2342,7 @@
         generateRandomSudoku(SDK_GIVENS[cur.level]);
         cur.vals = Array(9).fill(0).map(() => Array(9).fill(0));
         cur.notes = Array(9).fill(0).map(() => Array(9).fill(0));
+        sdkPersist(true);
         sdkRender();
       }, 40);
     }
@@ -2336,13 +2362,13 @@
           let bg = (Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1 ? '#f0f9f4' : '#fff';
           if (given) bg = '#edf2f7';
           if (isSel) bg = '#fefcbf';
-          cell.style.cssText = `aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:${bg};border:1px solid #cbd5e0;` +
+          cell.style.cssText = `position:relative;min-width:0;overflow:hidden;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:${bg};border:1px solid #cbd5e0;` +
             (c % 3 === 2 && c < 8 ? 'border-right:3px solid #2d3748;' : '') + (r % 3 === 2 && r < 8 ? 'border-bottom:3px solid #2d3748;' : '');
           const v = given ? currentSudokuPuzzle[r][c] : sdk.vals[r][c];
           if (v) {
             cell.innerHTML = `<span style="font-size:1.15rem;font-weight:bold;color:${given ? '#2d3748' : '#2b6cb0'};">${v}</span>`;
           } else if (sdk.notes[r][c]) {
-            let h = '<div style="display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;font-size:0.55rem;color:#718096;line-height:1;">';
+            let h = '<div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);font-size:0.6rem;color:#718096;line-height:1;">';
             for (let n = 1; n <= 9; n++) h += `<span style="display:flex;align-items:center;justify-content:center;">${sdk.notes[r][c] & (1 << n) ? n : ''}</span>`;
             cell.innerHTML = h + '</div>';
           }
@@ -2360,6 +2386,7 @@
       if (n === 0) { sdk.vals[r][c] = 0; sdk.notes[r][c] = 0; }
       else if (sdk.noteMode) { if (!sdk.vals[r][c]) sdk.notes[r][c] ^= (1 << n); }
       else { sdk.vals[r][c] = sdk.vals[r][c] === n ? 0 : n; sdk.notes[r][c] = 0; }
+      sdkPersist();
       sdkRender();
     }
 
@@ -2385,7 +2412,7 @@
         alert(`🎉 CHÍNH XÁC! Màn ${sdk.stage} +${SDK_REWARD.toLocaleString('vi-VN')} VNĐ. Sang màn tiếp theo!`);
         sdkNextStage();
       } else {
-        const got = sdk.earned; sdk = null;
+        const got = sdk.earned; sdk = null; window.state.sudokuSave = null; saveStorage();
         closeModal('modal-sudoku');
         alert(`❌ GIẢI MÃ THẤT BẠI! Xém tí cảnh sát bắt. Ca làm kết thúc, tổng nhận ${got.toLocaleString('vi-VN')} VNĐ.`);
       }
