@@ -3992,8 +3992,20 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         </div>`;
     }
 
+    // Thống nhất ngoặc: lời thoại dùng "..." ; trích dẫn/từ lóng bên trong dùng ‘...’. Nếu đã có "..." thì “ ” lọt vào bên trong được đổi thành ‘ ’
+    function normQuotes(t) {
+      t = t || '';
+      if ((t.match(/"/g) || []).length >= 2) return t.replace(/“/g, '‘').replace(/”/g, '’');
+      return t.replace(/[“”]/g, '"');
+    }
+    // Từ chửi/từ lóng che bằng dấu * (đ**, c*c...) không được tính là dấu hành động
+    function protectStars(t) {
+      return (t || '').replace(/(?<=[\p{L}\d])\*{1,3}(?=[\p{L}\d])|(?<=[\p{L}\d])\*{2,3}(?=[\s.,!?;:"”’)\]]|$)/gu, m => '\uE000'.repeat(m.length));
+    }
+    function restoreStars(t) { return (t || '').replace(/\uE000/g, '*'); }
+
     function renderUserFormattedMessage(rawText, imgData, container, idx, ts) {
-      const text = (rawText || '').replace(/[“”]/g, '"');
+      const text = normQuotes(rawText);
 
       const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
       if (userTransferMatch) {
@@ -4031,22 +4043,24 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         return;
       }
 
-      const hasQuote = (text.match(/"/g) || []).length >= 2;
+      const ptext = protectStars(text);
+      const hasQuote = (ptext.match(/"/g) || []).length >= 2;
       const segs = []; let m;
       if (hasQuote) {
         const re = /"([^"]*)"|\*([^*]*)\*|([^"*]+)/g;
-        while ((m = re.exec(text)) !== null) {
+        while ((m = re.exec(ptext)) !== null) {
           if (m[1] !== undefined) segs.push({ type: 'dialogue', text: m[1].trim() });
           else if (m[2] !== undefined) segs.push({ type: 'action', text: m[2].trim() });
           else segs.push({ type: 'action', text: m[3].trim() });
         }
       } else {
         const re = /\*([^*]*)\*|([^*]+)/g;
-        while ((m = re.exec(text)) !== null) {
+        while ((m = re.exec(ptext)) !== null) {
           if (m[1] !== undefined) segs.push({ type: 'action', text: m[1].trim() });
           else segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
         }
       }
+      segs.forEach(sg => { sg.text = restoreStars(sg.text); });
       const filled = segs.filter(sg => sg.text);
       let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
       if (lastDialogueIdx === -1 && filled.length > 0) lastDialogueIdx = filled.length - 1;
@@ -4117,7 +4131,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       const userName = ((window.state.persona && window.state.persona.name) || '').trim().toLowerCase();
       if (speakerRaw.trim().toLowerCase() === userName) return [];
 
-      const q = (restText || '').replace(/[“”]/g, '"');
+      const q = normQuotes(restText);
       const hasDlg = (q.match(/"/g) || []).length >= 2;
       const okNpcName = (n) => n.length <= 30 && n.split(/\s+/).length <= 4 && !/^(lưu ý|chú thích|ghi chú|bối cảnh|hệ thống|dẫn truyện|tóm tắt)/i.test(n);
 
@@ -4176,7 +4190,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
-      fullText = (fullText || '').replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
+      fullText = (fullText || '').replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim();
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -4250,7 +4264,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             return;
           }
 
-          restText = restText.replace(/[“”]/g, '"');
+          restText = protectStars(normQuotes(restText));
           const hasQuote = (restText.match(/"/g) || []).length >= 2;
           const segs = [];
           if (hasQuote) {
@@ -4272,6 +4286,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
+          segs.forEach(sg => { sg.text = restoreStars(sg.text); });
           speakers.forEach((sp, spIdx) => {
           matchedAvatar = sp.avatar; speakerName = sp.name;
           segs.forEach((seg, segIdx) => {
@@ -4433,7 +4448,7 @@ ${charAffectionSummary}
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
 - QUY TẮC THỜI GIAN: ĐƯỢC PHÉP chuyển/nhảy thời gian (sang buổi sau, hôm sau, vài ngày sau...) khi mạch truyện hợp lý, nhưng phải nói rõ mốc thời gian mới và không bỏ qua phản ứng hay hậu quả của những gì vừa xảy ra.
 - CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ tiến triển một bước nhỏ, hợp lý.
-- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định.
+- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không đổi hướng đột ngột, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
 [TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
@@ -4443,13 +4458,21 @@ ${charAffectionSummary}
   (Ví dụ: [SYSTEM_TRANSFER: 20000000 | Tiền tiêu vặt cho em đấy])
 - Nếu KHÔNG, chỉ từ chối bằng lời thoại đúng tính cách.
 
+[VĂN PHONG]
+- Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
+
+[QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
+- Lời thoại luôn đặt trong dấu ngoặc kép thẳng "..." (một cặp duy nhất cho mỗi câu nói).
+- Muốn nhấn mạnh, trích dẫn hoặc dùng từ lóng/biệt danh BÊN TRONG lời thoại thì dùng dấu nháy đơn ‘...’ (ví dụ: "Nó đúng là đồ ‘ba hoa’ thật."). Tuyệt đối không dùng “...” hay "..." lồng bên trong lời thoại.
+- KHÔNG dùng dấu * để che chữ trong lời thoại (không viết kiểu đ**, c*c); dấu * chỉ dùng để bao quanh đoạn hành động.
+
 [ĐỊNH DẠNG ĐẦU RA - BẮT BUỘC]
 - Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
 - Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
 - Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
 - Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
-- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +1] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm). Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
+- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
 ${modeBlock}${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
@@ -4536,14 +4559,14 @@ ${modeBlock}${hintBlock}
           const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
           if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
         }
-        const cleaned = responseText.replace(/\[(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION):[\s\S]*?\]/g, '').trim();
+        const cleaned = responseText.replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim();
 
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
 
         // THÂN MẬT KHI CHAT: đọc thẻ [AFFECTION: Tên | +n] đúng 1 lần, ép về -3..+3
         const affChanges = [];
-        const are = /\[AFFECTION:\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/g;
+        const are = /\[\s*AFFECTION\s*[:：]\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/gi;
         let am;
         while ((am = are.exec(responseText)) !== null) {
           const nm = am[1].trim().toLowerCase();
@@ -4551,6 +4574,7 @@ ${modeBlock}${hintBlock}
           if (!ch || affChanges.some(a => a.id === ch.id)) continue;
           let v = parseInt(am[2].replace(/[−–]/g, '-').replace(/\s/g, ''), 10);
           if (isNaN(v) || v === 0) continue;
+          if (v === 1) v = 2; // mỗi lần thân mật tăng ít nhất +2
           v = Math.max(-3, Math.min(3, v));
           affChanges.push({ id: ch.id, name: ch.name, pts: v });
         }
