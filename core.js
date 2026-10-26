@@ -1,4 +1,4 @@
-  const DEFAULT_LOGO = 'https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png';
+const DEFAULT_LOGO = 'https://i.postimg.cc/MT2v8p4Y/Thiet-ke-chua-co-ten.png';
 
     window.state = {
       apiKeys: [],
@@ -43,8 +43,8 @@
         renderMissionTab();
       }
     }
-// Thêm hàm này vào core.js để cung cấp thời gian cho nhiệm vụ
-      function nowTs() {
-          return Date.now();
-    }
 
+    // Hàm cung cấp thời gian cho nhiệm vụ
+    function nowTs() {
+      return Date.now();
+    }
