@@ -956,6 +956,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
     }
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
+      const barsBefore = container.querySelectorAll('.msg-action-bar').length;
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
       fullText = (fullText || '').replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim();
 
@@ -1105,6 +1106,15 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           });
         }
       });
+
+      // Dự phòng: nếu dòng cuối bị bỏ qua (rỗng, dòng thừa...) khiến tin này không có thanh nút, thêm thanh Sửa / Tạo lại / Xóa riêng ở cuối
+      if (container.querySelectorAll('.msg-action-bar').length === barsBefore) {
+        const fb = document.createElement('div');
+        fb.className = 'msg-action-bar';
+        fb.style.cssText = 'margin:2px 0 8px 46px;';
+        fb.innerHTML = `<button class="action-text-btn" onclick="editMessage(${msgIndex})">Sửa</button><button class="action-text-btn" onclick="regenerateAiResponse(${msgIndex})">Tạo lại</button><button class="action-text-btn" onclick="deleteMessage(${msgIndex})">Xóa</button>`;
+        container.appendChild(fb);
+      }
 
     }
 
