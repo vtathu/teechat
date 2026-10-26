@@ -24,7 +24,7 @@
       return b;
     }
     // Box miễn phí từ hoạt động khác (điểm danh, Sudoku...): tối đa 3 box ngẫu nhiên mỗi ngày (điểm danh mốc thưởng thì luôn được)
-    const FREE_BOX_DAILY = 5;
+    const FREE_BOX_DAILY = 3;
     function grantFreeBox(chance, opt) {
       opt = opt || {};
       const st = window.state, today = new Date(nowTs() + 7 * 3600000).toISOString().slice(0, 10);
@@ -226,9 +226,10 @@
       });
     }
     function freeCells(s) { return s.board.filter(v => !v).length; }
-    function buyCost(s, t, n) {
-      const full = 8000 + 3000 * Math.max(1, s.best[t] || 1);
-      return Math.round(full * Math.min(n, CRAFT_CFG.buyPieces) / CRAFT_CFG.buyPieces / 100) * 100;
+    // Mua ngẫu nhiên: giá mỗi miếng = trung bình giá 5 chủ đề (theo cấp cao nhất đã làm), tính theo số miếng thực nhận
+    function buyCost(s, n) {
+      const avg = THEMES.reduce((a, t) => a + 8000 + 3000 * Math.max(1, s.best[t] || 1), 0) / THEMES.length;
+      return Math.round(avg * Math.min(n, CRAFT_CFG.buyPieces) / 12 / 100) * 100;
     }
 
     // ---------- Đơn hàng (tùy chọn) ----------
@@ -528,13 +529,9 @@
 
       if (kind === 'buy') {
         const left = buyTokens().n;
-        html += `<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Còn <b>${left}/${CRAFT_CFG.maxBuys}</b> lượt mua (hồi 1 lượt mỗi 90 phút${buyNextMs() ? ', lượt kế tiếp sau ' + Math.ceil(buyNextMs() / 60000) + ' phút' : ''}). Mỗi lượt được ${CRAFT_CFG.buyPieces} miếng của chủ đề bạn chọn (có thể ra cấp cao hơn nếu bàn đã có món cao của chủ đề đó). Bàn còn ${free} ô trống.</div>`;
-        THEMES.forEach(t => {
-          const n = Math.min(free, CRAFT_CFG.buyPieces);
-          const cost = buyCost(s, t, n);
-          const dis = left <= 0 || free <= 0;
-          html += `<div class="shop-item-row" style="margin-bottom:6px;"><div><b>${CRAFTS[t].label}</b><div style="font-size:0.75rem;color:#718096;">Cao nhất đã làm: ${s.best[t] ? 'Lv' + s.best[t] : 'chưa có'}</div></div><button class="btn btn-pink" ${dis ? 'disabled style="opacity:.5"' : ''} onclick="buyCraftMaterials('${t}')">-${cost.toLocaleString('vi-VN')}đ · +${n}</button></div>`;
-        });
+        html += `<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Còn <b>${left}/${CRAFT_CFG.maxBuys}</b> lượt mua (hồi 1 lượt mỗi 90 phút${buyNextMs() ? ', lượt kế tiếp sau ' + Math.ceil(buyNextMs() / 60000) + ' phút' : ''}). Mỗi lượt nhận ${CRAFT_CFG.buyPieces} miếng thuộc các chủ đề NGẪU NHIÊN (cấp có thể cao hơn nếu bàn đã có món cao của chủ đề đó). Bàn còn ${free} ô trống.</div>`;
+        const n = Math.min(free, CRAFT_CFG.buyPieces), cost = buyCost(s, n), dis = left <= 0 || free <= 0;
+        html += `<div class="shop-item-row" style="margin-bottom:6px;"><div><b>🎲 Mua ngẫu nhiên</b><div style="font-size:0.75rem;color:#718096;">${n} miếng, chủ đề ngẫu nhiên</div></div><button class="btn btn-pink" ${dis ? 'disabled style="opacity:.5"' : ''} onclick="buyCraftMaterials()">-${cost.toLocaleString('vi-VN')}đ · +${n}</button></div>`;
       } else if (kind === 'box') {
         let any = false;
         THEMES.forEach(t => {
@@ -565,19 +562,21 @@
       else renderCraftSheet(kind);
     }
 
-    function buyCraftMaterials(t) {
+    function buyCraftMaterials() {
       const s = window.state.craftSession;
       if (!s) return;
       if (buyTokens().n <= 0) return craftToast(`Hết lượt mua! Lượt kế tiếp hồi sau ${Math.ceil(buyNextMs() / 60000)} phút.`);
       const free = freeCells(s);
       if (free <= 0) return craftToast('Bàn đã đầy! Hãy ghép bớt trước.');
       const n = Math.min(free, CRAFT_CFG.buyPieces);
-      const cost = buyCost(s, t, n);
+      const cost = buyCost(s, n);
       if ((window.state.walletBalance || 0) < cost) return craftToast(`Không đủ tiền! Cần ${cost.toLocaleString('vi-VN')}đ`);
       window.state.walletBalance -= cost;
       s.spent = (s.spent || 0) + cost;
       s.buys++; buyTokens().n--;
-      placePieces(s, THEMES.indexOf(t), n);
+      const cnt = THEMES.map(() => 0);
+      for (let i = 0; i < n; i++) cnt[Math.floor(Math.random() * THEMES.length)]++;
+      cnt.forEach((c, ti) => { if (c > 0) placePieces(s, ti, c); });
       craftPersist(true);
       renderCraftBoard();
       renderCraftSheet('buy');
@@ -668,5 +667,5 @@
       else if (best > 1) addCraftToBag(type, Math.min(best, CRAFT_MAX), true);
       window.state.craftSession = null;
       saveStorage();
-      setTimeout(() => alert('🧶 Ván thủ công cũ (bàn 12×12) đã tự kết thúc, đồ đã được đưa vào túi thủ công. Bàn mới 9×12 gộp 5 chủ đề đã sẵn sàng!'), 600);
+      setTimeout(() => alert('🧶 Ván thủ công cũ đã tự kết thúc, đồ đã được đưa vào túi thủ công. Bàn mới 9×12 gộp 5 chủ đề đã sẵn sàng!'), 600);
     }
