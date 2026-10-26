@@ -271,4 +271,4 @@ const REAL_ESTATE_MAPS = [
 
     let selectedBuyItem = null;
     let selectedBuyQty = 1;
-    let selectedEstateMap = 'loc-dvp';
+    let selectedEstateMap = 'loc-tbn';
