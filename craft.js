@@ -1,4 +1,4 @@
-    // ===================== THỦ CÔNG MỸ NGHỆ (BÀN 9x12, GỘP 5 CHỦ ĐỀ) =====================
+// ===================== THỦ CÔNG MỸ NGHỆ (BÀN 9x12, GỘP 5 CHỦ ĐỀ) =====================
     const CRAFTS = {
       cake: { label: '🎂 Bánh', chain: [['🌾', 'Bột mì'], ['🥚', 'Trứng gà'], ['🍞', 'Bột nhào'], ['🥐', 'Bánh ra lò'], ['🧁', 'Cupcake'], ['🍰', 'Bánh kem'], ['🎂', 'Bánh sinh nhật'], ['🍮', 'Flan caramel'], ['🥧', 'Tart hoa quả'], ['🥞', 'Bánh ngàn lớp'], ['🍓', 'Bánh dâu hoàng gia'], ['🍯', 'Bánh mật ong thượng hạng'], ['💒', 'Bánh cưới ba tầng'], ['🏆', 'Bánh quán quân'], ['🎆', 'Bánh hoàng gia kim tuyến']] },
       flower: { label: '🌷 Hoa', chain: [['🌱', 'Hạt giống'], ['🌿', 'Mầm non'], ['🍀', 'Cây con'], ['🌷', 'Nụ hoa'], ['🌻', 'Hoa nở'], ['🌹', 'Hoa hồng'], ['💐', 'Bó hoa'], ['🌸', 'Cành anh đào'], ['🪷', 'Sen hồng'], ['🌺', 'Giỏ hoa nhiệt đới'], ['🏵️', 'Vòng hoa rực rỡ'], ['🪻', 'Vườn oải hương'], ['🌼', 'Cánh đồng hoa'], ['🦋', 'Vườn hoa bướm'], ['🌈', 'Vườn hoa cầu vồng']] },
@@ -10,7 +10,21 @@
     const THEME_HUE = { cake: 28, flower: 335, necklace: 200, lego: 130, teddy: 265 };
     const CRAFT_COLS = 9, CRAFT_ROWS = 12, CRAFT_CELLS = 108;
     // Các số cân bằng game: chỉnh ở đây nếu thấy quá dễ / quá khó
-    const CRAFT_CFG = { startPieces: 60, buyPieces: 12, maxBuys: 3, orderSlots: 3, dailyRuns: 4 };
+    // Lượt mua nguyên liệu dùng chung mọi ván: tối đa 10, hồi 1 lượt sau mỗi 90 phút
+    const BUY_REGEN_MS = 90 * 60000;
+    function buyTokens() {
+      const st = window.state, now = nowTs(), MAX = CRAFT_CFG.maxBuys;
+      let b = st.craftBuys;
+      if (!b || typeof b.n !== 'number' || typeof b.ts !== 'number') b = st.craftBuys = { n: MAX, ts: now };
+      if (b.n >= MAX) { b.n = MAX; b.ts = now; }
+      else {
+        const k = Math.floor((now - b.ts) / BUY_REGEN_MS);
+        if (k > 0) { b.n = Math.min(MAX, b.n + k); b.ts = b.n >= MAX ? now : b.ts + k * BUY_REGEN_MS; }
+      }
+      return b;
+    }
+    function buyNextMs() { const b = buyTokens(); return b.n >= CRAFT_CFG.maxBuys ? 0 : Math.max(0, b.ts + BUY_REGEN_MS - nowTs()); }
+    const CRAFT_CFG = { startPieces: 60, buyPieces: 12, maxBuys: 10, orderSlots: 3, dailyRuns: 4 };
     const BOX_TIERS = {
       normal: { label: 'thường', icon: '📦', pieces: 12 },
       silver: { label: 'bạc', icon: '🥈', pieces: 10 },
@@ -68,7 +82,7 @@
       if (info) {
         info.innerHTML = '<b>Thời giá hôm nay:</b> ' + THEMES.map(k => `${CRAFTS[k].label.split(' ')[0]} ×${craftMarketMult(k).toFixed(2)}`).join(' | ') +
           `<br>Giá bán gốc (chỉ từ Lv10): ` + [10, 11, 12, 13, 14, 15].map(l => `Lv${l} ${(CRAFT_PRICE_HI[l]).toLocaleString('vi-VN')}`).join(' | ') +
-          `<br>Mỗi ván có ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền). Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
+          `<br>Có tối đa ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền), hồi 1 lượt sau mỗi 90 phút. Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
       }
       const btn = document.getElementById('craft-start-btn');
       if (btn) btn.innerText = window.state.craftSession ? '▶ Tiếp tục ván đang làm' : '🛠 Bắt Đầu Ván Mới';
@@ -344,7 +358,7 @@
           return `<span style="background:hsl(${THEME_HUE[t]},75%,92%);border:1px solid hsl(${THEME_HUE[t]},55%,62%);border-radius:10px;padding:1px 6px;">${info[0]} ${lv ? 'Lv' + lv : '-'}</span>`;
         }).join('');
       }
-      const left = CRAFT_CFG.maxBuys - s.buys;
+      const left = buyTokens().n;
       const bb = document.getElementById('craft-btn-buy'); if (bb) bb.innerText = `🛒 Mua (${left})`;
       const xb = document.getElementById('craft-btn-box'); if (xb) xb.innerText = `🎁 Box (${totalBoxes()})`;
       const ab = document.getElementById('craft-btn-auto'); if (ab) { ab.innerText = s.autoUsed ? '⚡ Gộp (0)' : '⚡ Gộp (1)'; ab.disabled = !!s.autoUsed; }
@@ -500,8 +514,8 @@
       const free = freeCells(s);
 
       if (kind === 'buy') {
-        const left = CRAFT_CFG.maxBuys - s.buys;
-        html += `<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Còn <b>${left}/${CRAFT_CFG.maxBuys}</b> lượt mua trong ván này. Mỗi lượt được ${CRAFT_CFG.buyPieces} miếng của chủ đề bạn chọn (có thể ra cấp cao hơn nếu bàn đã có món cao của chủ đề đó). Bàn còn ${free} ô trống.</div>`;
+        const left = buyTokens().n;
+        html += `<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Còn <b>${left}/${CRAFT_CFG.maxBuys}</b> lượt mua (hồi 1 lượt mỗi 90 phút${buyNextMs() ? ', lượt kế tiếp sau ' + Math.ceil(buyNextMs() / 60000) + ' phút' : ''}). Mỗi lượt được ${CRAFT_CFG.buyPieces} miếng của chủ đề bạn chọn (có thể ra cấp cao hơn nếu bàn đã có món cao của chủ đề đó). Bàn còn ${free} ô trống.</div>`;
         THEMES.forEach(t => {
           const n = Math.min(free, CRAFT_CFG.buyPieces);
           const cost = buyCost(s, t, n);
@@ -541,7 +555,7 @@
     function buyCraftMaterials(t) {
       const s = window.state.craftSession;
       if (!s) return;
-      if (s.buys >= CRAFT_CFG.maxBuys) return craftToast('Đã hết lượt mua của ván này!');
+      if (buyTokens().n <= 0) return craftToast(`Hết lượt mua! Lượt kế tiếp hồi sau ${Math.ceil(buyNextMs() / 60000)} phút.`);
       const free = freeCells(s);
       if (free <= 0) return craftToast('Bàn đã đầy! Hãy ghép bớt trước.');
       const n = Math.min(free, CRAFT_CFG.buyPieces);
@@ -549,7 +563,7 @@
       if ((window.state.walletBalance || 0) < cost) return craftToast(`Không đủ tiền! Cần ${cost.toLocaleString('vi-VN')}đ`);
       window.state.walletBalance -= cost;
       s.spent = (s.spent || 0) + cost;
-      s.buys++;
+      s.buys++; buyTokens().n--;
       placePieces(s, THEMES.indexOf(t), n);
       craftPersist(true);
       renderCraftBoard();
@@ -643,4 +657,3 @@
       saveStorage();
       setTimeout(() => alert('🧶 Ván thủ công cũ (bàn 12×12) đã tự kết thúc, đồ đã được đưa vào túi thủ công. Bàn mới 9×12 gộp 5 chủ đề đã sẵn sàng!'), 600);
     }
-
