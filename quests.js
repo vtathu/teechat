@@ -1,4 +1,4 @@
-    // ===================== NHIỆM VỤ =====================
+// ===================== NHIỆM VỤ =====================
     const MODES = {
       call: { icon: '📞', name: 'Gọi thoại', minLv: 3, prompt: (n) => `[CHẾ ĐỘ: GỌI THOẠI] Cuộc trò chuyện đang diễn ra qua một cuộc gọi điện thoại giữa "${n}" và người chơi. Hai người KHÔNG ở cùng một chỗ: chỉ miêu tả giọng nói, hơi thở, âm thanh xung quanh và nơi "${n}" đang ở, không có tiếp xúc cơ thể. Cách nói chuyện tự nhiên theo tính cách và độ thân mật hiện tại.` },
       date: { icon: '💞', name: 'Hẹn hò', minLv: 8, prompt: (n) => `[CHẾ ĐỘ: HẸN HÒ] Đây là buổi hẹn riêng giữa "${n}" và người chơi tại một địa điểm phù hợp bối cảnh. Miêu tả không khí, hoạt động hai người cùng làm, cử chỉ ngọt ngào ở mức phù hợp độ thân mật; để người chơi chủ động chọn bước tiếp theo, không tự quyết thay họ.` },
@@ -80,16 +80,22 @@
     }
     function missionProgress(kind, def) {
       const md = ensureMissionDay();
-      return kind === 'daily' ? (md.progress[def.metric] || 0) : (window.state.stats[def.metric] || 0);
+      return kind === 'daily' ? (md.progress[def.metric] || 0) : ((window.state.stats && window.state.stats[def.metric]) || 0);
     }
     function missionClaimed(kind, id) {
       const md = ensureMissionDay();
       return kind === 'daily' ? !!md.claimed[id] : !!(window.state.milestoneClaimed && window.state.milestoneClaimed[id]);
     }
     function rewardLabel(r) {
-      if (r.type === 'box') return `${BOX_TIERS[r.tier].icon} Box ${BOX_TIERS[r.tier].label}${r.n > 1 ? ' ×' + r.n : ''} (chủ đề ngẫu nhiên)`;
+      if (r.type === 'box') {
+        const tierObj = (typeof BOX_TIERS !== 'undefined' && BOX_TIERS[r.tier]) ? BOX_TIERS[r.tier] : { icon: '🎁', label: r.tier };
+        return `${tierObj.icon} Box ${tierObj.label}${r.n > 1 ? ' ×' + r.n : ''} (chủ đề ngẫu nhiên)`;
+      }
       if (r.type === 'aff') return `❤️ +${r.pts} thân mật`;
-      if (r.type === 'unlock') return `🔓 Mở khóa ${MODES[r.mode].icon} ${MODES[r.mode].name} (nhân vật cần Lv.${MODES[r.mode].minLv})`;
+      if (r.type === 'unlock') {
+        const mObj = MODES[r.mode] || { icon: '🔓', name: r.mode, minLv: 1 };
+        return `🔓 Mở khóa ${mObj.icon} ${mObj.name} (nhân vật cần Lv.${mObj.minLv})`;
+      }
       return '';
     }
     function missionRowHtml(kind, def) {
@@ -114,23 +120,35 @@
       const d = document.getElementById('mission-daily');
       if (!d) return;
       d.innerHTML = dailyMissionList().map(m => missionRowHtml('daily', m)).join('');
-      document.getElementById('mission-milestone').innerHTML = MISSION_MILESTONE.map(m => missionRowHtml('ms', m)).join('');
+      
+      const milestoneEl = document.getElementById('mission-milestone');
+      if (milestoneEl) {
+        milestoneEl.innerHTML = MISSION_MILESTONE.map(m => missionRowHtml('ms', m)).join('');
+      }
 
       const rows = [];
-      THEMES.forEach(t => {
-        const parts = Object.keys(BOX_TIERS).filter(tier => boxCount(t, tier) > 0).map(tier => `${BOX_TIERS[tier].icon}×${boxCount(t, tier)}`);
-        if (parts.length) rows.push(`<div style="font-size:0.85rem;">${CRAFTS[t].label}: ${parts.join('  ')}</div>`);
-      });
-      document.getElementById('mission-boxes').innerHTML = rows.length ? rows.join('') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Mở box bằng nút 🎁 trong game thủ công.</div>' : '<div style="font-size:0.8rem;color:#888;">Chưa có box nào. Hoàn thành nhiệm vụ để nhận!</div>';
+      if (typeof THEMES !== 'undefined' && typeof BOX_TIERS !== 'undefined' && typeof CRAFTS !== 'undefined' && typeof boxCount === 'function') {
+        THEMES.forEach(t => {
+          const parts = Object.keys(BOX_TIERS).filter(tier => boxCount(t, tier) > 0).map(tier => `${BOX_TIERS[tier].icon}×${boxCount(t, tier)}`);
+          if (parts.length && CRAFTS[t]) rows.push(`<div style="font-size:0.85rem;">${CRAFTS[t].label}: ${parts.join('  ')}</div>`);
+        });
+      }
+      const boxesEl = document.getElementById('mission-boxes');
+      if (boxesEl) {
+        boxesEl.innerHTML = rows.length ? rows.join('') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Mở box bằng nút 🎁 trong game thủ công.</div>' : '<div style="font-size:0.8rem;color:#888;">Chưa có box nào. Hoàn thành nhiệm vụ để nhận!</div>';
+      }
 
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       const un = window.state.unlockedModes || {};
       const mrows = [];
       ((story && story.characters) || []).forEach(c => {
         const list = Object.keys(MODES).filter(k => un[c.id] && un[c.id][k]).map(k => `${MODES[k].icon} ${MODES[k].name}`);
-        mrows.push(`<div style="font-size:0.85rem;"><b>${escapeHtml(c.name)}</b>: ${list.length ? list.join(', ') : '<span style="color:#888;">chưa mở chế độ nào</span>'}</div>`);
+        mrows.push(`<div style="font-size:0.85rem;"><b>${typeof escapeHtml === 'function' ? escapeHtml(c.name) : c.name}</b>: ${list.length ? list.join(', ') : '<span style="color:#888;">chưa mở chế độ nào</span>'}</div>`);
       });
-      document.getElementById('mission-modes').innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Bật chế độ bằng nút ➕ → 🎭 Chế độ trong màn trò chuyện.</div>';
+      const modesEl = document.getElementById('mission-modes');
+      if (modesEl) {
+        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Bật chế độ bằng nút ➕ → 🎭 Chế độ trong màn trò chuyện.</div>';
+      }
     }
 
     let pendingClaim = null;
@@ -140,33 +158,44 @@
       if (!def || missionClaimed(kind, id) || missionProgress(kind, def) < def.target) return;
       const needsChar = def.reward.some(r => r.type === 'aff' || r.type === 'unlock');
       if (!needsChar) { applyMissionReward(kind, id, null); return; }
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       if (!story || !story.characters || story.characters.length === 0) return alert('Truyện chưa có nhân vật nào để nhận phần thưởng này!');
       pendingClaim = { kind, id };
-      document.getElementById('mission-char-select').innerHTML = story.characters.map(c => {
-        const lv = ((window.state.affectionLevels || {})[c.id] || { level: 1 }).level;
-        return `<option value="${c.id}">${escapeHtml(c.name)} (Lv.${lv})</option>`;
-      }).join('');
-      document.getElementById('mission-char-reward').innerText = 'Thưởng: ' + def.reward.map(rewardLabel).join(' + ');
-      openModal('modal-mission-char');
+      
+      const charSelectEl = document.getElementById('mission-char-select');
+      if (charSelectEl) {
+        charSelectEl.innerHTML = story.characters.map(c => {
+          const lv = ((window.state.affectionLevels || {})[c.id] || { level: 1 }).level;
+          const safeName = typeof escapeHtml === 'function' ? escapeHtml(c.name) : c.name;
+          return `<option value="${c.id}">${safeName} (Lv.${lv})</option>`;
+        }).join('');
+      }
+      
+      const rewardEl = document.getElementById('mission-char-reward');
+      if (rewardEl) {
+        rewardEl.innerText = 'Thưởng: ' + def.reward.map(rewardLabel).join(' + ');
+      }
+      if (typeof openModal === 'function') openModal('modal-mission-char');
     }
     function confirmMissionChar() {
       if (!pendingClaim) return;
-      const charId = document.getElementById('mission-char-select').value;
+      const charSelectEl = document.getElementById('mission-char-select');
+      const charId = charSelectEl ? charSelectEl.value : null;
       applyMissionReward(pendingClaim.kind, pendingClaim.id, charId);
     }
     function applyMissionReward(kind, id, charId) {
       const list = kind === 'daily' ? MISSION_DAILY : MISSION_MILESTONE;
       const def = list.find(m => m.id === id);
       if (!def) return;
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      const ch = story && charId ? story.characters.find(c => c.id === charId) : null;
+      const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
+      const ch = story && charId && story.characters ? story.characters.find(c => c.id === charId) : null;
 
       for (const r of def.reward) {
         if (r.type === 'unlock') {
           if (!ch) return;
           const lv = ((window.state.affectionLevels || {})[ch.id] || { level: 1 }).level;
-          if (lv < MODES[r.mode].minLv) return alert(`${ch.name} mới Lv.${lv}, cần Lv.${MODES[r.mode].minLv} để mở khóa "${MODES[r.mode].name}". Hãy tăng thân mật (tặng quà, trò chuyện) rồi nhận lại, hoặc chọn nhân vật khác.`);
+          const modeInfo = MODES[r.mode];
+          if (lv < modeInfo.minLv) return alert(`${ch.name} mới Lv.${lv}, cần Lv.${modeInfo.minLv} để mở khóa "${modeInfo.name}". Hãy tăng thân mật (tặng quà, trò chuyện) rồi nhận lại, hoặc chọn nhân vật khác.`);
           if (window.state.unlockedModes && window.state.unlockedModes[ch.id] && window.state.unlockedModes[ch.id][r.mode]) return alert(`${ch.name} đã mở khóa chế độ này rồi. Hãy chọn nhân vật khác!`);
         }
       }
@@ -175,27 +204,29 @@
       def.reward.forEach(r => {
         if (r.type === 'box') {
           for (let k = 0; k < (r.n || 1); k++) {
-            const t = r.theme === 'rand' ? THEMES[Math.floor(Math.random() * THEMES.length)] : r.theme;
-            addBox(t, r.tier, 1);
-            got.push(`${BOX_TIERS[r.tier].icon} Box ${BOX_TIERS[r.tier].label} ${CRAFTS[t].label}`);
+            const t = (r.theme === 'rand' && typeof THEMES !== 'undefined') ? THEMES[Math.floor(Math.random() * THEMES.length)] : r.theme;
+            if (typeof addBox === 'function') addBox(t, r.tier, 1);
+            const tierObj = (typeof BOX_TIERS !== 'undefined' && BOX_TIERS[r.tier]) ? BOX_TIERS[r.tier] : { icon: '🎁', label: r.tier };
+            const craftObj = (typeof CRAFTS !== 'undefined' && CRAFTS[t]) ? CRAFTS[t] : { label: t };
+            got.push(`${tierObj.icon} Box ${tierObj.label} ${craftObj.label}`);
           }
         } else if (r.type === 'aff' && ch) {
-          addAffectionPoints(ch.id, r.pts);
+          if (typeof addAffectionPoints === 'function') addAffectionPoints(ch.id, r.pts);
           got.push(`❤️ Thân mật với ${ch.name} tăng`);
         } else if (r.type === 'unlock' && ch) {
           if (!window.state.unlockedModes) window.state.unlockedModes = {};
           if (!window.state.unlockedModes[ch.id]) window.state.unlockedModes[ch.id] = {};
           window.state.unlockedModes[ch.id][r.mode] = true;
-          got.push(`🔓 ${ch.name} mở khóa ${MODES[r.mode].icon} ${MODES[r.mode].name}`);
+          const modeInfo = MODES[r.mode];
+          got.push(`🔓 ${ch.name} mở khóa ${modeInfo.icon} ${modeInfo.name}`);
         }
       });
 
       if (kind === 'daily') ensureMissionDay().claimed[id] = true;
       else { if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {}; window.state.milestoneClaimed[id] = true; }
       pendingClaim = null;
-      saveStorage();
-      closeModal('modal-mission-char');
+      if (typeof saveStorage === 'function') saveStorage();
+      if (typeof closeModal === 'function') closeModal('modal-mission-char');
       renderMissionTab();
       alert('🎉 Nhận thưởng!\n' + got.join('\n'));
     }
-
