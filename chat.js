@@ -1400,7 +1400,13 @@ ${modeBlock}${hintBlock}
         window.state.chatHistories[storyId].push(aiMsg);
         window.state.pendingReply = null;
         saveStorage(); 
-        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+        
+        try {
+          if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+        } catch (err) {
+          console.warn(err);
+        }
+        
         renderChatHistory();
       } else {
         window.state.pendingReply = null; saveStorage();
