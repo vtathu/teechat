@@ -43,4 +43,8 @@
         renderMissionTab();
       }
     }
+// Thêm hàm này vào core.js để cung cấp thời gian cho nhiệm vụ
+      function nowTs() {
+          return Date.now();
+    }
 
