@@ -33,33 +33,82 @@
       all.sort((x, y) => (y.ts || 0) - (x.ts || 0));
       all.slice(keep).forEach(m => { m.img = null; });
     }
-    function saveStorage() {
-      // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
-      if (!window.__stateLoaded) { console.warn('saveStorage bị chặn: dữ liệu chưa được nạp'); return; }
-      // Dữ liệu không đổi thì không lưu và không tăng lastUpdated (tránh máy này đè bản mới hơn của máy khác chỉ vì mở app)
-      const sig = stateSig();
-      if (sig === window.__lastSig) return;
-      window.state.lastUpdated = Date.now();
-      const write = () => {
-        const str = JSON.stringify(getSyncableState());
-        // Bản dự phòng: nếu dữ liệu mới nhỏ đi bất thường (mất quá nửa) thì giữ lại bản cũ ở khóa riêng
-        const prev = localStorage.getItem('teechat_state_v10');
-        if (prev && prev.length > 3000 && str.length < prev.length * 0.5) { try { localStorage.setItem('teechat_state_v10_bak', prev); } catch (e2) {} }
-        localStorage.setItem('teechat_state_v10', str);
-      };
-      try { write(); }
+    // ===== Kho lưu trữ: IndexedDB (dung lượng lớn) là chính; localStorage (~5MB) chỉ là bản phụ nhẹ =====
+    const TC_STATE_KEY = 'teechat_state_v10';
+    const TC_LS_MAX = 1500000; // quá ngần này ký tự thì không ghi vào localStorage nữa (dễ làm đầy bộ nhớ)
+    let tcDbP = null, tcIdbQueue = Promise.resolve();
+    function tcDb() {
+      if (!tcDbP) tcDbP = new Promise((res, rej) => {
+        try {
+          if (!window.indexedDB) return rej(new Error('no indexedDB'));
+          const r = indexedDB.open('teechat_db', 1);
+          r.onupgradeneeded = () => { r.result.createObjectStore('kv'); };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        } catch (e) { rej(e); }
+      });
+      return tcDbP;
+    }
+    function tcIdbGet(k) { return tcDb().then(db => new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); })); }
+    function tcIdbSet(k, v) { return tcDb().then(db => new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); })); }
+    // Nạp sẵn bản lưu trong IndexedDB; window.onload sẽ chờ xong bước này rồi mới loadStorage()
+    window.idbReady = tcIdbGet(TC_STATE_KEY).then(v => { window.__idbStr = (typeof v === 'string') ? v : null; }).catch(() => { window.__idbStr = null; });
+
+    function lastUpdatedOf(raw) { try { return JSON.parse(raw).lastUpdated || 0; } catch (e) { return -1; } }
+    // Lấy bản lưu mới nhất giữa localStorage và IndexedDB
+    function readSavedRaw() {
+      let ls = null; try { ls = localStorage.getItem(TC_STATE_KEY); } catch (e) {}
+      const idb = window.__idbStr || null;
+      if (ls && idb) return lastUpdatedOf(ls) > lastUpdatedOf(idb) ? ls : idb;
+      return ls || idb || null;
+    }
+    window.readSavedRaw = readSavedRaw;
+
+    function lsFallbackSave() {
+      const attempt = () => localStorage.setItem(TC_STATE_KEY, JSON.stringify(getSyncableState()));
+      try { attempt(); }
       catch (e) {
-        try { dropOldImages(3); write(); }
+        try { dropOldImages(3); attempt(); }
         catch (e2) {
-          try { dropOldImages(0); write(); }
+          try { dropOldImages(0); attempt(); }
           catch (e3) {
             console.warn('saveStorage lỗi:', e3);
-            if (!window.__quotaWarned) { window.__quotaWarned = true; alert('⚠️ Không lưu được dữ liệu vào máy (bộ nhớ trình duyệt đầy). Hãy bấm Sao lưu rồi xóa bớt tin/ảnh cũ.'); }
-            return;
+            if (!window.__quotaWarned) { window.__quotaWarned = true; alert('⚠️ Không lưu được dữ liệu vào máy (bộ nhớ trình duyệt đầy). Nếu đã đăng nhập thì dữ liệu vẫn được đẩy lên cloud. Hãy bấm Sao lưu rồi xóa bớt tin/ảnh cũ.'); }
           }
         }
       }
-      window.__lastSig = sig;
+    }
+    // Ghi chuỗi dữ liệu vào kho (dùng chung cho saveStorage và đồng bộ cloud)
+    function persistState(str) {
+      const prev = window.__lastRaw;
+      // Dữ liệu mới nhỏ đi bất thường (mất quá nửa) thì giữ lại bản cũ ở khóa dự phòng
+      if (prev && prev.length > 3000 && str.length < prev.length * 0.5) tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY + '_bak', prev)).catch(() => {});
+      window.__lastRaw = str; window.__idbStr = str;
+      let lsOk = false;
+      if (str.length < TC_LS_MAX) { try { localStorage.setItem(TC_STATE_KEY, str); lsOk = true; } catch (e) {} }
+      if (!lsOk) { try { localStorage.removeItem(TC_STATE_KEY); } catch (e) {} } // bỏ bản cũ để khỏi chiếm chỗ và khỏi bị nạp nhầm
+      tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY, str)).then(() => true, () => false).then(ok => {
+        if (!ok && !lsOk) lsFallbackSave();   // IndexedDB hỏng và localStorage cũng không ghi được -> cách cũ (bỏ bớt ảnh)
+      });
+    }
+    window.persistState = persistState;
+    window.persistBackup = function(str) { tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY + '_prev', str)).catch(() => {}); };
+
+    function saveStorage() {
+      // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
+      if (!window.__stateLoaded) { console.warn('saveStorage bị chặn: dữ liệu chưa được nạp'); return; }
+      let c, str;
+      try {
+        c = getSyncableState(); delete c.lastUpdated;
+        const sig = JSON.stringify(c);
+        // Dữ liệu không đổi thì không lưu và không tăng lastUpdated (tránh máy này đè bản mới hơn của máy khác chỉ vì mở app)
+        if (sig === window.__lastSig) return;
+        window.__lastSig = sig;
+        window.state.lastUpdated = Date.now();
+        c.lastUpdated = window.state.lastUpdated;
+        str = JSON.stringify(c);
+      } catch (e) { console.warn('saveStorage lỗi:', e); return; }
+      persistState(str);
       try { if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(); } catch (e) {}
     }
 
@@ -566,8 +615,8 @@
     }
 
     function loadStorage() {
-      const saved = localStorage.getItem('teechat_state_v10');
-      if (saved) { try { window.state = JSON.parse(saved); } catch(e) {} }
+      const saved = readSavedRaw();
+      if (saved) { try { window.state = JSON.parse(saved); window.__lastRaw = saved; } catch(e) {} }
       window.__stateLoaded = true;
 
       // API key lưu riêng, không đồng bộ. Chuyển key cũ (nếu có) sang kho riêng.
