@@ -408,9 +408,12 @@
     // Sắp xếp: gom cùng chủ đề thành cụm, trong cụm xếp theo cấp, không tốn lượt
     function craftSortBoard() {
       const s = window.state.craftSession; if (!s) return;
-      const items = s.board.filter(v => v).sort((a, b) => cTheme(a) - cTheme(b) || cLv(a) - cLv(b));
-      s.board = Array(CRAFT_CELLS).fill(0);
-      items.forEach((v, i) => { s.board[i] = v; });
+      // Đá đứng yên đúng ô cũ; chỉ xếp lại các món, lấp vào các ô không có đá
+      const items = s.board.filter(v => v && !isStone(v)).sort((a, b) => cTheme(a) - cTheme(b) || cLv(a) - cLv(b));
+      const nb = s.board.map(v => (v && isStone(v)) ? v : 0);
+      let k = 0;
+      for (let i = 0; i < nb.length && k < items.length; i++) { if (!nb[i]) nb[i] = items[k++]; }
+      s.board = nb;
       craftSel = -1; craftPersist(); renderCraftBoard(); craftToast('🧹 Đã sắp xếp');
     }
     // Tự gộp: 1 lần mỗi ván, gộp mọi cặp giống nhau đang có trên bàn (1 vòng)
