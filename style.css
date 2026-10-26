@@ -1,4 +1,4 @@
-    @font-face {
+@font-face {
       font-family: 'CeCe';
       src: url('https://fonts.cdnfonts.com/s/85421/CeCe.woff') format('woff');
       font-weight: normal; font-style: normal; font-display: swap;
@@ -223,6 +223,7 @@
     .craft-toast { position: absolute; top: 62px; left: 50%; transform: translateX(-50%); background: #2d3748; color: #fff; padding: 6px 14px; border-radius: 14px; font-size: 0.8rem; z-index: 6; display: none; max-width: 90%; text-align: center; }
     .craft-grid { display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(12, 1fr); gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
     .craft-cell { position: relative; border: 2px solid #d0ebd8; border-radius: 7px; background: #f7faf8; display: flex; align-items: center; justify-content: center; line-height: 1; overflow: hidden; }
+    .craft-cell.stone { background: #cbd5e0 !important; border-color: #718096 !important; font-size: 1.1rem; }
     .craft-cell.sel { outline: 3px solid var(--app-pink); transform: scale(1.06); z-index: 2; }
     .craft-cell.dragging { opacity: 0.3; }
     .craft-cell.pop { animation: craftPop 0.28s ease-out; }
