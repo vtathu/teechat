@@ -1,4 +1,4 @@
-    // ===================== KEY / THỜI GIAN / ĐỒNG BỘ =====================
+// ===================== KEY / THỜI GIAN / ĐỒNG BỘ =====================
     function loadKeys() {
       try {
         const k = JSON.parse(localStorage.getItem('teechat_keys_v1') || '[]');
@@ -114,7 +114,7 @@
       if (!box) return;
       box.innerHTML = `
         <div style="background:linear-gradient(135deg,#ee4d2d,#ff7337);padding:8px;border-radius:12px;margin-bottom:8px;width:100%;box-sizing:border-box;">
-          <div style="color:#fff;font-weight:bold;font-size:0.9rem;margin-bottom:6px;">🛍️ Teechat Mall</div>
+          <div style="color:#fff;font-weight:bold;font-size:0.9rem;margin-bottom:6px;">🛍️ TEEMALL</div>
           <input id="shop-q" type="text" placeholder="🔍 Tìm sản phẩm..." value="${shopQ.replace(/"/g, '&quot;')}" oninput="shopSearch(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:none;font-size:0.85rem;">
         </div>
         <div id="shop-income" style="width:100%;"></div>
@@ -650,4 +650,3 @@
         renderCharacterList();
       }
     }
-
