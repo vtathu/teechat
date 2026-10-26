@@ -1423,7 +1423,7 @@ ${modeBlock}${hintBlock}
       }, 800);
     }
     // Rời app thì đẩy bản mới nhất lên cloud ngay
-    document.addEventListener('visibilitychange', () => { if (document.hidden && typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(true); });
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
     function saveAppSettings() {
