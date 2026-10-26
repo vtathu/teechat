@@ -29,11 +29,16 @@ async function sendTo(id, rec, title, body) {
   }
 }
 
+// Ưu tiên nhân vật thân nhất: hạng 1 ~60%, hạng 2 ~25%, hạng 3 ~15%. Chỉ gửi tin AI soạn theo cốt truyện, hết tin thì không gửi.
 function makeMessage(rec) {
-  const me = rec.me || 'bạn';
-  const lines = (rec.lines && rec.lines.length) ? rec.lines : ['{me} ơi, vào chơi với mình nhé.'];
-  const name = (rec.chars && rec.chars.length) ? pick(rec.chars) : 'Teechat';
-  return { title: name, body: pick(lines).split('{me}').join(me) };
+  const ranked = Array.isArray(rec.ranked) ? rec.ranked.filter(r => r && r.name && Array.isArray(r.msgs) && r.msgs.length) : [];
+  if (!ranked.length) return null;
+  const w = [0.6, 0.25, 0.15];
+  const ws = ranked.map(r => w[Math.min(rec.ranked.indexOf(r), 2)]);
+  let x = Math.random() * ws.reduce((a, b) => a + b, 0), pickIdx = 0;
+  for (let i = 0; i < ws.length; i++) { if (x < ws[i]) { pickIdx = i; break; } x -= ws[i]; }
+  const r = ranked[pickIdx];
+  return { title: r.name, body: r.msgs[0], idx: rec.ranked.indexOf(r) };
 }
 
 async function runCron() {
@@ -52,8 +57,10 @@ async function runCron() {
     const count = r.sentDay === today ? (r.sentCount || 0) : 0;
     if (count >= r.perDay) continue;
     const m = makeMessage(r);
+    if (!m) continue;
     if (await sendTo(id, r, m.title, m.body)) {
       sent++;
+      await db.ref('push_subs/' + id + '/ranked/' + m.idx + '/msgs').set(r.ranked[m.idx].msgs.slice(1));
       await db.ref('push_subs/' + id).update({ lastSent: now, sentDay: today, sentCount: count + 1 });
     }
   }
@@ -71,9 +78,15 @@ module.exports = async (req, res) => {
     const now = Date.now();
     if (b.type === 'subscribe' && b.sub && b.sub.endpoint) {
       const id = idOf(b.sub.endpoint);
+      const old = (await db.ref('push_subs/' + id).once('value')).val() || {};
+      const inc = (Array.isArray(b.ranked) ? b.ranked : []).slice(0, 3).map(r => ({ name: String(r.name || '').slice(0, 60), level: +r.level || 1, msgs: (Array.isArray(r.msgs) ? r.msgs : []).slice(0, 5).map(t => String(t).slice(0, 160)) }));
+      // Cùng một lượt soạn tin thì giữ phần tin chưa gửi trên máy chủ, tránh gửi lặp tin đã dùng
+      const keep = old.prepTs && old.prepTs === b.prepTs && Array.isArray(old.ranked);
+      const ranked = inc.map(r => { const o = keep && old.ranked.find(x => x && x.name === r.name); return o ? { name: r.name, level: r.level, msgs: o.msgs || [] } : r; });
       await db.ref('push_subs/' + id).update({
+        ranked: ranked, prepTs: +b.prepTs || 0,
         sub: b.sub, chars: (b.chars || []).slice(0, 12), me: String(b.me || 'bạn').slice(0, 40),
-        lines: (b.lines || []).slice(0, 60), perDay: Math.min(5, Math.max(0, +b.perDay || 0)),
+        perDay: Math.min(5, Math.max(0, +b.perDay || 0)),
         minGapHours: Math.min(24, Math.max(1, +b.minGapHours || 1)), lastPing: now
       });
       return res.status(200).json({ ok: true });
@@ -86,6 +99,7 @@ module.exports = async (req, res) => {
         const rec = (await ref.once('value')).val();
         if (!rec) return res.status(200).json({ error: 'Chưa đăng ký, hãy tắt rồi bật lại thông báo.' });
         const m = makeMessage(rec);
+        if (!m) return res.status(200).json({ error: 'Chưa có tin soạn sẵn. Hãy mở game chơi khoảng 1 phút rồi thử lại.' });
         const ok = await sendTo(id, rec, m.title, m.body);
         return res.status(200).json(ok ? { ok: true } : { error: 'Gửi không được' });
       }
