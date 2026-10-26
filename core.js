@@ -5,7 +5,7 @@
       currentModel: 'gemini-2.5-flash',
       activeStoryId: null,
       stories: [],
-      persona: { name: 'Thư', dob: '', avatar: DEFAULT_LOGO, memories: '' },
+      persona: { name: 'Nguyễn Thị Bé Cưng', dob: '', avatar: DEFAULT_LOGO, memories: '' },
       chatHistories: {},
       walletBalance: 10000000,
       inventory: [],
