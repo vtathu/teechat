@@ -263,7 +263,8 @@ const REAL_ESTATE_MAPS = [
       { id: 'item-1096', cat: 'estate', name: "🌾 Mảnh Vườn Trang Trại 1ha", price: 1500000000, desc: "Rộng thênh thang, trồng rau nuôi gà.", tag: 'estate' }
     );
 
-    window.onload = function() {
+    window.onload = async function() {
+      try { if (window.idbReady) await window.idbReady; } catch (e) {}
       loadStorage();
       renderStoryList();
       checkDailyReset();
