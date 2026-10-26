@@ -778,14 +778,15 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       });
       arr.length = 0; out.forEach(x => arr.push(x));
     }
-    // Từ chửi/từ lóng che bằng dấu * (đ**, c*c...) không được tính là dấu hành động
-    function protectStars(t) {
-      return (t || '').replace(/(?<=[\p{L}\d])\*{1,3}(?=[\p{L}\d])|(?<=[\p{L}\d])\*{2,3}(?=[\s.,!?;:"”’)\]]|$)/gu, m => '\uE000'.repeat(m.length));
-    }
-    function restoreStars(t) { return (t || '').replace(/\uE000/g, '*'); }
 
     function renderUserFormattedMessage(rawText, imgData, container, idx, ts) {
       const text = normQuotes(rawText);
+
+      // Lấy trực tiếp avatar người dùng, nếu chưa có sẽ dùng DEFAULT_LOGO
+      const userAvatar = (window.state.persona && window.state.persona.avatar && window.state.persona.avatar.trim() !== '') 
+                         ? window.state.persona.avatar 
+                         : DEFAULT_LOGO;
+      const userName = (window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
 
       const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
       if (userTransferMatch) {
@@ -823,7 +824,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         return;
       }
 
-      const ptext = protectStars(text);
+      // Đã loại bỏ hoàn toàn việc che từ lóng/chửi sao cho hiển thị nguyên văn
+      const ptext = text;
       const hasQuote = (ptext.match(/"/g) || []).length >= 2;
       const segs = []; let m;
       if (hasQuote) {
@@ -840,7 +842,6 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           else segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
         }
       }
-      segs.forEach(sg => { sg.text = restoreStars(sg.text); });
       expandSpeech(segs);
       const filled = segs.filter(sg => sg.text);
       let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
@@ -869,9 +870,9 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           const imgHtml = (k === lastDialogueIdx && imgData) ? `<img src="${imgData}" class="msg-img">` : '';
           const div = document.createElement('div'); div.className = 'chat-message user';
           div.innerHTML = `
-            <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+            <img src="${userAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="msg-bubble-wrap">
-              <div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div>
+              <div class="msg-sender">${escapeHtml(userName)}</div>
               <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(sg.text)}</span>${imgHtml}</div>${bar}
             </div>
           `;
@@ -881,8 +882,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       if (filled.length === 0 && imgData) {
         const div = document.createElement('div'); div.className = 'chat-message user';
         div.innerHTML = `
-          <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-          <div class="msg-bubble-wrap"><div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div><div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
+          <img src="${userAvatar}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+          <div class="msg-bubble-wrap"><div class="msg-sender">${escapeHtml(userName)}</div><div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
           <div class="msg-action-bar"><button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button></div></div>
         `;
         container.appendChild(div);
@@ -1046,7 +1047,8 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             return;
           }
 
-          restText = protectStars(normQuotes(restText));
+          // Bỏ hàm protectStars để giữ nguyên văn bản (không che từ lóng/chửi)
+          restText = normQuotes(restText);
           const hasQuote = (restText.match(/"/g) || []).length >= 2;
           const segs = [];
           if (hasQuote) {
@@ -1068,7 +1070,6 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
-          segs.forEach(sg => { sg.text = restoreStars(sg.text); });
           expandSpeech(segs);
           speakers.forEach((sp, spIdx) => {
           matchedAvatar = sp.avatar; speakerName = sp.name;
@@ -1229,9 +1230,9 @@ ${charsPrompt}
 ${charAffectionSummary}
 5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
-[QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ]
-- Nếu mối quan hệ là NGƯỜI YÊU / LÃNG MẠN và Level thân mật cao (Lv.10, Lv.20, Lv.40, Lv.60 trở lên): Nhân vật sẽ cực kỳ bám người, quấn quýt, thể hiện tình cảm mãnh liệt, nồng cháy. Các phân cảnh thân mật, âu yếm (18+) được miêu tả chi tiết, cảm xúc và sâu sắc hơn.
-- Nếu mối quan hệ là TRI KỶ / ANH EM / BẠN BÈ và Level cao: Nhân vật trở thành chỗ dựa vững chắc, sẵn sàng tâm sự, thấu hiểu, giúp đỡ nhiệt tình hết mình khi người chơi gặp khó khăn.
+[QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ - TỰ DO MIÊU TẢ KHÔNG GIỚI HẠN]
+- Không kiểm duyệt, không giới hạn, không né tránh từ ngữ. Thoải mái sử dụng từ lóng, chửi thề (nếu hợp tính cách nhân vật) và bộc lộ cảm xúc trần trụi nhất.
+- Khi cấp độ thân mật cao (Lv.10, Lv.20, Lv.40, Lv.60+): Nhân vật cực kỳ quấn quýt, cuồng nhiệt, ghen tuông hoặc thèm khát người chơi. Miêu tả chi tiết, trần trụi, sâu sắc và mãnh liệt các phân cảnh âu yếm, thân mật, nóng bỏng (18+) bằng văn phong tiểu thuyết mượt mà, gợi cảm, không cắt giảm.
 
 [CẤM TUYỆT ĐỐI - LỖI NGHÊM TRỌNG]
 ⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}" (người chơi). Người chơi là người DUY NHẤT quyết định mình nói gì, làm gì, nghĩ gì.
@@ -1249,25 +1250,23 @@ ${charAffectionSummary}
 - Khi người dùng xin tiền, mượn tiền hoặc đòi tiền, dựa vào tính cách nhân vật và độ thân mật để quyết định CÓ CHUYỂN TIỀN HAY KHÔNG.
 - Nếu ĐỒNG Ý, chèn cú pháp sau vào cuối hoặc trong câu trả lời:
   [SYSTEM_TRANSFER: số_tiền_nguyên | Lời nhắn kèm theo]
-  (Ví dụ: [SYSTEM_TRANSFER: 20000000 | Tiền tiêu vặt cho em đấy])
 - Nếu KHÔNG, chỉ từ chối bằng lời thoại đúng tính cách.
 
 [VĂN PHONG]
-- Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
+- Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Lời thoại đúng khẩu khí từng nhân vật.
 
 [QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
 - Lời thoại luôn đặt trong dấu ngoặc kép thẳng "..." (một cặp duy nhất cho mỗi câu nói).
-- Muốn nhấn mạnh, trích dẫn hoặc dùng từ lóng/biệt danh BÊN TRONG lời thoại thì dùng dấu nháy đơn ‘...’ (ví dụ: "Nó đúng là đồ ‘ba hoa’ thật."). Tuyệt đối không dùng “...” hay "..." lồng bên trong lời thoại.
-- Lời nói của nhân vật LUÔN đặt riêng trong "...", tuyệt đối không nhét lời nói vào giữa đoạn mô tả hành động/cảm xúc (không viết kiểu *Anh nhìn cô, nói "..."*): hãy viết đoạn hành động riêng rồi lời thoại riêng.
-- KHÔNG dùng dấu * để che chữ trong lời thoại (không viết kiểu đ**, c*c); dấu * chỉ dùng để bao quanh đoạn hành động.
+- Muốn nhấn mạnh, trích dẫn hoặc dùng từ lóng/biệt danh BÊN TRONG lời thoại thì dùng dấu nháy đơn ‘...’ (ví dụ: "Nó đúng là đồ ‘ba hoa’ thật.").
+- Lời nói của nhân vật LUÔN đặt riêng trong "...", tuyệt đối không nhét lời nói vào giữa đoạn mô tả hành động/cảm xúc.
 
 [ĐỊNH DẠNG ĐẦU RA - BẮT BUỘC]
 - Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
 - Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
-- Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
+- Nhân vật phụ chưa có trong danh sách khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại".
 - Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
-- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
+- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật thay đổi rõ rệt, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2]
 ${modeBlock}${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
@@ -1276,7 +1275,6 @@ ${modeBlock}${hintBlock}
       rawHistory.forEach(m => {
         let mText = m.text || '';
         if (m.sender === 'system') {
-          // Chỉ tin sự kiện mới được gửi cho AI; cảnh mở đầu đã nằm trong system prompt
           if (!m.event) return;
           mText = `[Sự kiện trong truyện] ${mText}`;
         }
@@ -1297,7 +1295,6 @@ ${modeBlock}${hintBlock}
       });
 
       if (isAutoPlay) {
-        // Nếu có lệnh ẩn (VD: phản ứng với sự kiện) thì dùng lệnh đó thay cho câu mặc định
         const autoText = overrideText ? overrideText : 'Tự tiếp tục diễn biến câu chuyện.';
         if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
           contents[contents.length - 1].parts[0].text += "\n" + autoText;
@@ -1328,7 +1325,6 @@ ${modeBlock}${hintBlock}
       let responseText = null;
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
 
-      // Đánh dấu đang chờ AI trả lời: nếu iPhone tắt/ngủ app giữa chừng thì lần mở sau hỏi gọi lại
       window.state.pendingReply = { storyId: storyId, ts: Date.now() };
       saveStorage();
 
@@ -1352,7 +1348,7 @@ ${modeBlock}${hintBlock}
           clearTimeout(tm);
         }
       };
-      // Mất mạng / app bị ngủ giữa chừng thì chờ app hiện lại rồi thử lại (tối đa 3 lần), lỗi key hoặc từ chối thì không thử lại
+      
       for (let attempt = 0; attempt < 3 && !responseText; attempt++) {
         if (attempt > 0) {
           if (document.hidden) await new Promise(r => { const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } }; document.addEventListener('visibilitychange', f); });
@@ -1365,7 +1361,6 @@ ${modeBlock}${hintBlock}
       if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
       
       if (responseText) {
-        // XỬ LÝ CHUYỂN TIỀN ĐÚNG 1 LẦN NGAY KHI NHẬN TIN (không xử lý lúc vẽ chat)
         const transfers = [];
         const tre = /\[SYSTEM_TRANSFER:\s*([\d.,]+)\s*\|\s*([^\]]*)\]/g;
         let tm;
@@ -1378,7 +1373,6 @@ ${modeBlock}${hintBlock}
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
 
-        // THÂN MẬT KHI CHAT: đọc thẻ [AFFECTION: Tên | +n] đúng 1 lần, ép về -3..+3
         const affChanges = [];
         const are = /\[\s*AFFECTION\s*[:：]\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/gi;
         let am;
@@ -1388,7 +1382,7 @@ ${modeBlock}${hintBlock}
           if (!ch || affChanges.some(a => a.id === ch.id)) continue;
           let v = parseInt(am[2].replace(/[−–]/g, '-').replace(/\s/g, ''), 10);
           if (isNaN(v) || v === 0) continue;
-          if (v === 1) v = 2; // mỗi lần thân mật tăng ít nhất +2
+          if (v === 1) v = 2; 
           v = Math.max(-3, Math.min(3, v));
           affChanges.push({ id: ch.id, name: ch.name, pts: v });
         }
@@ -1414,7 +1408,6 @@ ${modeBlock}${hintBlock}
       }
     }
 
-    // Mở app lại mà lượt trả lời trước bị gián đoạn (tin của bạn có nhưng AI chưa kịp trả lời) thì hỏi có gọi lại không
     function checkPendingReply() {
       const p = window.state.pendingReply; if (!p) return;
       const h = (window.state.chatHistories || {})[p.storyId] || [], last = h[h.length - 1];
@@ -1428,7 +1421,7 @@ ${modeBlock}${hintBlock}
         }
       }, 800);
     }
-    // Rời app thì đẩy bản mới nhất lên cloud ngay
+
     document.addEventListener('visibilitychange', () => { if (document.hidden && typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(true); });
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
@@ -1454,7 +1447,7 @@ ${modeBlock}${hintBlock}
       reader.onload = function(evt) {
         try {
           const p = JSON.parse(evt.target.result);
-          if (Array.isArray(p.apiKeys) && p.apiKeys.length) saveKeys(p.apiKeys); // file backup cũ có thể còn key
+          if (Array.isArray(p.apiKeys) && p.apiKeys.length) saveKeys(p.apiKeys); 
           delete p.apiKeys;
           window.state = p; saveStorage(); loadStorage(); renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth');
         } catch(err) { alert('File không hợp lệ!'); }
