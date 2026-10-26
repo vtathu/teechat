@@ -199,8 +199,10 @@
       if (c.done) return;
       window.state.checkinDate = c.today; window.state.checkinStreak = c.streak;
       window.state.walletBalance = (window.state.walletBalance || 0) + c.reward;
+      // Mốc thưởng box: ngày 3 (box thường) và ngày 7 (box bạc), lặp lại mỗi chu kỳ 7 ngày
+      const m = c.streak % 7, boxTxt = (m === 3 || m === 0) ? grantFreeBox(1, { force: true, tier: m === 0 ? 'silver' : 'normal' }) : '';
       saveStorage(); renderLifeModeUI();
-      alert(`📅 Điểm danh ngày ${c.streak}: +${c.reward.toLocaleString('vi-VN')} VNĐ (ngày 7 là mức cao nhất, chuỗi bị đứt sẽ về ngày 1)`);
+      alert(`📅 Điểm danh ngày ${c.streak}: +${c.reward.toLocaleString('vi-VN')} VNĐ (ngày 7 là mức cao nhất, chuỗi bị đứt sẽ về ngày 1)${boxTxt ? '\n🎁 Tặng thêm: ' + boxTxt : ''}`);
     }
     function renderShopIncome() {
       const box = document.getElementById('shop-income');
