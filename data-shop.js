@@ -271,4 +271,4 @@ const REAL_ESTATE_MAPS = [
 
     let selectedBuyItem = null;
     let selectedBuyQty = 1;
-    let selectedEstateMap = 'loc-hcm';
+    let selectedEstateMap = 'loc-dvp';
