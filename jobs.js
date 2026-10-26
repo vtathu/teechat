@@ -1,12 +1,12 @@
     // ===================== NGHỀ NGHIỆP =====================
     // Nghề càng khó thắng thì lương càng cao
     const JOBS = {
-      cleaner: { unit: 27000, desc: 'Lau sạch vết bẩn, không giới hạn màn: càng về sau vết càng nhiều, nhỏ và cứng đầu, thời gian càng ít (khó dần đến màn 20). Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
-      cashier: { unit: 36000, desc: 'Thối tiền cho khách, không giới hạn màn: hóa đơn dài dần, tiền thối lẻ hơn, thời gian càng ít (khó dần đến màn 20). Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
-      barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi, không giới hạn màn: nhiều nguyên liệu hơn, ít thời gian hơn, từ màn 6 các nút đảo vị trí sau mỗi lần bấm. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
-      teacher: { unit: 60000, desc: 'Chấm bài, không giới hạn màn: nhiều phép tính hơn, số lớn hơn, lỗi sai tinh vi hơn, thời gian càng ít. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
-      driver:  { unit: 84000, desc: 'Né chướng ngại vật: mỗi màn chạy không giới hạn, xe càng lúc càng nhanh, đâm 5 lần thì hết màn. 3 màn là 1 ca làm. Tiền tính theo thời gian sống sót mỗi màn.' },
-      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku: chọn Dễ, Cực khó hoặc Địa ngục (rất ít số gợi ý, không báo đúng/sai, có chế độ viết nháp, bấm Nộp bài mới chấm). Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca. Chơi không giới hạn lượt mỗi ngày, thoát giữa chừng được lưu ván.' }
+      cleaner: { unit: 27000, desc: 'Lau sạch vết bẩn. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
+      cashier: { unit: 36000, desc: 'Thối tiền cho khách. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
+      barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
+      teacher: { unit: 60000, desc: 'Chấm bài. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
+      driver:  { unit: 84000, desc: 'Né chướng ngại vật, đâm 5 lần thì hết màn. 3 màn là 1 ca làm. Tiền tính theo thời gian sống sót mỗi màn.' },
+      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku bấm Nộp bài để hoàn thành. Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
     };
 
     function canChangeJob() {
