@@ -22,12 +22,37 @@
       return t;
     }
 
+    // Bộ nhớ trình duyệt chỉ ~5MB: ảnh gửi trong chat là thứ làm đầy nhanh nhất. Đầy thì bỏ ảnh cũ (giữ lại tin chữ) để lưu được tiếp
+    function dropOldImages(keep) {
+      const all = [];
+      Object.values(window.state.chatHistories || {}).forEach(h => (h || []).forEach(m => { if (m && m.img) all.push(m); }));
+      all.sort((x, y) => (y.ts || 0) - (x.ts || 0));
+      all.slice(keep).forEach(m => { m.img = null; });
+    }
     function saveStorage() {
-      try { 
-        window.state.lastUpdated = Date.now();
-        localStorage.setItem('teechat_state_v10', JSON.stringify(getSyncableState())); 
-        if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud();
-      } catch(e) {}
+      // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
+      if (!window.__stateLoaded) { console.warn('saveStorage bị chặn: dữ liệu chưa được nạp'); return; }
+      window.state.lastUpdated = Date.now();
+      const write = () => {
+        const str = JSON.stringify(getSyncableState());
+        // Bản dự phòng: nếu dữ liệu mới nhỏ đi bất thường (mất quá nửa) thì giữ lại bản cũ ở khóa riêng
+        const prev = localStorage.getItem('teechat_state_v10');
+        if (prev && prev.length > 3000 && str.length < prev.length * 0.5) { try { localStorage.setItem('teechat_state_v10_bak', prev); } catch (e2) {} }
+        localStorage.setItem('teechat_state_v10', str);
+      };
+      try { write(); }
+      catch (e) {
+        try { dropOldImages(3); write(); }
+        catch (e2) {
+          try { dropOldImages(0); write(); }
+          catch (e3) {
+            console.warn('saveStorage lỗi:', e3);
+            if (!window.__quotaWarned) { window.__quotaWarned = true; alert('⚠️ Không lưu được dữ liệu vào máy (bộ nhớ trình duyệt đầy). Hãy bấm Sao lưu rồi xóa bớt tin/ảnh cũ.'); }
+            return;
+          }
+        }
+      }
+      try { if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(); } catch (e) {}
     }
 
     // ===================== CỬA HÀNG KIỂU SÀN THƯƠNG MẠI =====================
@@ -535,6 +560,7 @@
     function loadStorage() {
       const saved = localStorage.getItem('teechat_state_v10');
       if (saved) { try { window.state = JSON.parse(saved); } catch(e) {} }
+      window.__stateLoaded = true;
 
       // API key lưu riêng, không đồng bộ. Chuyển key cũ (nếu có) sang kho riêng.
       let keys = loadKeys();
