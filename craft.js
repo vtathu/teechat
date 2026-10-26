@@ -23,8 +23,21 @@
       }
       return b;
     }
+    // Box miễn phí từ hoạt động khác (điểm danh, Sudoku...): tối đa 3 box ngẫu nhiên mỗi ngày (điểm danh mốc thưởng thì luôn được)
+    const FREE_BOX_DAILY = 5;
+    function grantFreeBox(chance, opt) {
+      opt = opt || {};
+      const st = window.state, today = new Date(nowTs() + 7 * 3600000).toISOString().slice(0, 10);
+      if (!st.freeBox || st.freeBox.d !== today) st.freeBox = { d: today, n: 0 };
+      if (!opt.force) { if (st.freeBox.n >= FREE_BOX_DAILY || Math.random() >= chance) return ''; }
+      const t = THEMES[Math.floor(Math.random() * THEMES.length)];
+      const r = Math.random(), tier = opt.tier || (r < 0.7 ? 'normal' : r < 0.95 ? 'silver' : 'gold');
+      addBox(t, tier, 1);
+      if (!opt.force) st.freeBox.n++;
+      return `${BOX_TIERS[tier].icon} Box ${BOX_TIERS[tier].label} ${CRAFTS[t].label}`;
+    }
     function buyNextMs() { const b = buyTokens(); return b.n >= CRAFT_CFG.maxBuys ? 0 : Math.max(0, b.ts + BUY_REGEN_MS - nowTs()); }
-    const CRAFT_CFG = { startPieces: 60, buyPieces: 12, maxBuys: 10, orderSlots: 3, dailyRuns: 4 };
+    const CRAFT_CFG = { startPieces: 60, buyPieces: 24, maxBuys: 10, orderSlots: 3, dailyRuns: 4 };
     const BOX_TIERS = {
       normal: { label: 'thường', icon: '📦', pieces: 12 },
       silver: { label: 'bạc', icon: '🥈', pieces: 10 },
