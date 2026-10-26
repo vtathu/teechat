@@ -1,4 +1,17 @@
-// ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
+// Lọc bằng code: nếu AI lỡ viết thay người chơi ("Tên: ...", "[Tên]: ...", "*Tên + hành động*") thì cắt từ dòng đó trở đi
+    function stripUserVoice(text, name) {
+      name = (name || '').trim();
+      if (name.length < 2 || !text) return text;
+      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const head = new RegExp('^\\s*(?:\\[\\s*' + esc + '\\s*\\]|' + esc + ')\\s*[:：]', 'iu');
+      const act = new RegExp('^\\s*\\*+\\s*' + esc + '(?![\\p{L}])', 'iu');
+      const lines = text.split('\n'), bad = lines.map(l => head.test(l) || act.test(l)), first = bad.indexOf(true);
+      if (first === -1) return text;
+      const before = lines.slice(0, first).join('\n').trim();
+      const out = before || lines.filter((l, i) => !bad[i]).join('\n').trim();
+      return out || text;
+    }
+    // ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
     function updateModeBanner() {
       const el = document.getElementById('mode-banner');
       if (!el) return;
@@ -109,11 +122,11 @@ Dựa vào ngữ cảnh đoạn chat gần đây giữa người chơi (${userNa
 ${recentHistory || "Mới bắt đầu trò chuyện"}
 ---
 
-Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.(Mang lại thưởng tiền từ 500000 đến 6000000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 60 điểm hoặc gây trừ tiền từ 200000 đến 2000000, giảm điểm thân mật từ 1 đến 50 điểm hoặc tạo drama).
+Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
 Yêu cầu tạo 2 lựa chọn cho người chơi:
-- Lựa chọn 1: 
-- Lựa chọn 2: 
-Người chơi chọn lựa chọn nào sẽ cộng hay trừ thì tùy vào tính cách nhân vật ${charName} và tình huống ${recentHistory}
+- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền từ 5000000 đến 60000000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 10 điểm).
+- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền từ 2000000 đến 20000000, giảm điểm thân mật từ 1 đến 10 điểm hoặc tạo drama).
+
 Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
 {
   "desc": "Mô tả sự kiện ngắn gọn tiếp nối mạch chat, có chứa tên ${charName} và ${userName}...",
@@ -1197,8 +1210,10 @@ ${charAffectionSummary}
 - Nếu mối quan hệ là TRI KỶ / ANH EM / BẠN BÈ và Level cao: Nhân vật trở thành chỗ dựa vững chắc, sẵn sàng tâm sự, thấu hiểu, giúp đỡ nhiệt tình hết mình khi người chơi gặp khó khăn.
 
 [CẤM TUYỆT ĐỐI - LỖI NGHÊM TRỌNG]
-⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}".
-⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
+⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}" (người chơi). Người chơi là người DUY NHẤT quyết định mình nói gì, làm gì, nghĩ gì.
+⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng, kể cả dạng [Tên]: hay *Tên + hành động*. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
+⛔ Không viết câu kể người chơi đã nói/gật đầu/đáp/mỉm cười/cảm thấy/quyết định gì, cũng không "đoán trước" câu trả lời của người chơi. Chỉ được tả PHẢN ỨNG BÊN NGOÀI của nhân vật (ánh mắt, giọng điệu, cử chỉ của CHÍNH nhân vật) trước những gì người chơi ĐÃ viết trong lượt trước.
+⛔ Mỗi lượt kết thúc bằng lời nói hoặc hành động của NHÂN VẬT (có thể là một câu hỏi, một lời mời) để trao lượt lại cho người chơi, không viết tiếp diễn biến sau đó.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
 - QUY TẮC THỜI GIAN: ĐƯỢC PHÉP chuyển/nhảy thời gian (sang buổi sau, hôm sau, vài ngày sau...) khi mạch truyện hợp lý, nhưng phải nói rõ mốc thời gian mới và không bỏ qua phản ứng hay hậu quả của những gì vừa xảy ra.
@@ -1315,7 +1330,7 @@ ${modeBlock}${hintBlock}
           const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
           if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
         }
-        const cleaned = responseText.replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim();
+        const cleaned = stripUserVoice(responseText.replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim(), window.state.persona && window.state.persona.name);
 
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
