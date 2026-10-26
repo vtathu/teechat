@@ -1,4 +1,4 @@
-    // ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
+// ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
     function updateModeBanner() {
       const el = document.getElementById('mode-banner');
       if (!el) return;
@@ -84,7 +84,7 @@
     async function maybeTriggerRandomEvent() {
       if (eventBusy) return;
       if (Math.random() > 0.3) return;
-      if (Math.random() < 0.5 || !(window.state.apiKeys || []).length) { triggerLocalEvent(); return; }
+      if (!(window.state.apiKeys || []).length) return;
 
       const storyId = window.state.activeStoryId;
       const currentStory = window.state.stories ? window.state.stories.find(s => s.id === storyId) : null;
@@ -109,11 +109,11 @@ Dựa vào ngữ cảnh đoạn chat gần đây giữa người chơi (${userNa
 ${recentHistory || "Mới bắt đầu trò chuyện"}
 ---
 
-Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
+Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.(Mang lại thưởng tiền từ 500000 đến 6000000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 60 điểm hoặc gây trừ tiền từ 200000 đến 2000000, giảm điểm thân mật từ 1 đến 50 điểm hoặc tạo drama).
 Yêu cầu tạo 2 lựa chọn cho người chơi:
-- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền từ 5000000 đến 60000000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 10 điểm).
-- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền từ 2000000 đến 20000000, giảm điểm thân mật từ 1 đến 10 điểm hoặc tạo drama).
-
+- Lựa chọn 1: 
+- Lựa chọn 2: 
+Người chơi chọn lựa chọn nào sẽ cộng hay trừ thì tùy vào tính cách nhân vật ${charName} và tình huống ${recentHistory}
 Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
 {
   "desc": "Mô tả sự kiện ngắn gọn tiếp nối mạch chat, có chứa tên ${charName} và ${userName}...",
@@ -188,29 +188,6 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       } finally {
         eventBusy = false;
       }
-    }
-
-    // Sự kiện ngẫu nhiên có sẵn (không cần AI)
-    const LOCAL_EVENTS = [
-      { d: '💼 Bạn nhặt được một chiếc ví rơi bên đường, bên trong có giấy tờ và một xấp tiền.', a: ['Mang trả cho người mất', 30000000, 'Chủ ví cảm động tặng bạn tiền cảm ơn.'], b: ['Giữ lại tiêu xài', -8000000, 'Lương tâm cắn rứt, bạn phải đền bù thiệt hại.'] },
-      { d: '🎟️ Một sạp xổ số vỉa hè gọi bạn mua thử vài tờ.', a: ['Mua 2 tờ thử vận may', 45000000, 'Trúng giải khuyến khích!'], b: ['Đi thẳng, không mua', -3000000, 'Bạn lỡ đánh rơi tiền lẻ lúc vội đi.'] },
-      { d: '🐶 Một chú chó lạc chạy theo bạn, đeo dây có ghi số điện thoại chủ.', a: ['Gọi cho chủ để trả chó', 25000000, 'Chủ chó mừng rỡ thưởng nóng cho bạn.'], b: ['Mặc kệ, bỏ đi', -2000000, 'Bạn bị người qua đường chê trách, mất hứng cả buổi.'] },
-      { d: '🌧️ Mưa to bất chợt, một quán cà phê nhỏ đang cần người phụ giúp.', a: ['Xắn tay áo phụ quán', 20000000, 'Chủ quán trả công hậu hĩnh và mời bạn ly nước.'], b: ['Đứng trú mưa chờ tạnh', -4000000, 'Bạn mua đồ ăn vặt cho đỡ chán, tốn kém hơn dự tính.'] },
-      { d: '📦 Có kiện hàng gửi nhầm địa chỉ đến nhà bạn.', a: ['Liên hệ shop báo nhầm', 18000000, 'Shop cảm ơn bằng một phần quà tiền mặt.'], b: ['Cứ mở ra xem', -10000000, 'Hóa ra là hàng phải trả phí, bạn bị tính tiền!'] },
-      { d: '🎤 Quán karaoke gần đó tổ chức thi hát có thưởng.', a: ['Lên sân khấu thể hiện', 40000000, 'Giọng hát của bạn khiến cả quán vỗ tay, bạn đoạt giải!'], b: ['Ngồi dưới cổ vũ', -5000000, 'Bạn bao cả bàn nước cho bạn bè.'] },
-      { d: '🛠️ Hàng xóm nhờ bạn giúp sửa đồ trong nhà.', a: ['Giúp nhiệt tình', 22000000, 'Hàng xóm biết ơn gửi tiền công và một giỏ trái cây.'], b: ['Từ chối vì bận', -3000000, 'Hàng xóm giận, bạn phải mời họ bữa cơm làm hòa.'] },
-      { d: '📈 Một người bạn rủ bạn góp vốn mở xe đẩy bán đồ ăn vặt.', a: ['Góp vốn thử xem', 55000000, 'Xe đẩy đắt khách, bạn chia lãi lớn!'], b: ['Từ chối khéo', -2000000, 'Bạn bỏ lỡ cơ hội, buồn nên mua đồ ăn an ủi.'] },
-      { d: '🎁 Siêu thị đang bốc thăm trúng thưởng cho khách thân thiết.', a: ['Tham gia bốc thăm', 35000000, 'Bạn bốc trúng phiếu mua hàng giá trị!'], b: ['Không tham gia', -2500000, 'Bạn mua sắm quá tay trong lúc chờ đợi.'] },
-      { d: '🚖 Tài xế taxi trả nhầm tiền thừa cho bạn.', a: ['Gọi lại trả tiền thừa', 15000000, 'Tài xế quý bạn, hãng taxi gửi quà cảm ơn.'], b: ['Im lặng nhận lấy', -6000000, 'Tài xế phát hiện và bạn bị phạt trả gấp đôi.'] }
-    ];
-    function triggerLocalEvent() {
-      const ev = LOCAL_EVENTS[Math.floor(Math.random() * LOCAL_EVENTS.length)];
-      const apply = (c) => () => {
-        window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) + c[1]);
-        saveStorage(); renderLifeModeUI();
-        alert(`${c[1] >= 0 ? '🎉 +' : '💸 '}${c[1].toLocaleString('vi-VN')} VNĐ\n${c[2]}`);
-      };
-      triggerEventModal({ desc: ev.d, choices: [{ text: ev.a[0], action: apply(ev.a) }, { text: ev.b[0], action: apply(ev.b) }] });
     }
 
     function executeEventChoice(charId, charName, userName, eventDesc, choiceObj, rewardItem) {
