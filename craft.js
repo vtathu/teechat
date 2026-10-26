@@ -37,7 +37,11 @@
       return `${BOX_TIERS[tier].icon} Box ${BOX_TIERS[tier].label} ${CRAFTS[t].label}`;
     }
     function buyNextMs() { const b = buyTokens(); return b.n >= CRAFT_CFG.maxBuys ? 0 : Math.max(0, b.ts + BUY_REGEN_MS - nowTs()); }
-    const CRAFT_CFG = { startPieces: 60, buyPieces: 24, maxBuys: 10, orderSlots: 3, dailyRuns: 4 };
+    const CRAFT_CFG = { startPieces: 60, buyPieces: 24, maxBuys: 10, orderSlots: 3, dailyRuns: 4,
+      growEvery: 5, growCount: 2, stoneChance: 0.3, stoneMax: 6, stoneClean: 60000 };
+    // Đá rác: ô đặc biệt không ghép được, chỉ dọn bằng tiện ích (viên đầu mỗi ván miễn phí)
+    const STONE = 9900, isStone = (c) => c === STONE;
+    const stoneCount = (s) => s.board.filter(isStone).length;
     const BOX_TIERS = {
       normal: { label: 'thường', icon: '📦', pieces: 12 },
       silver: { label: 'bạc', icon: '🥈', pieces: 10 },
@@ -95,7 +99,7 @@
       if (info) {
         info.innerHTML = '<b>Thời giá hôm nay:</b> ' + THEMES.map(k => `${CRAFTS[k].label.split(' ')[0]} ×${craftMarketMult(k).toFixed(2)}`).join(' | ') +
           `<br>Giá bán gốc (chỉ từ Lv10): ` + [10, 11, 12, 13, 14, 15].map(l => `Lv${l} ${(CRAFT_PRICE_HI[l]).toLocaleString('vi-VN')}`).join(' | ') +
-          `<br>Có tối đa ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền), hồi 1 lượt sau mỗi 90 phút. Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
+          `<br>Có tối đa ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền), hồi 1 lượt sau mỗi 90 phút. Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Cứ 5 lần ghép bàn mọc thêm 2 miếng và đôi khi có đá 🪨 (dọn trong 🧰 Tiện ích). Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
       }
       const btn = document.getElementById('craft-start-btn');
       if (btn) btn.innerText = window.state.craftSession ? '▶ Tiếp tục ván đang làm' : '🛠 Bắt Đầu Ván Mới';
@@ -220,7 +224,7 @@
       if (!s.best) s.best = {};
       THEMES.forEach(t => { if (typeof s.best[t] !== 'number') s.best[t] = 0; });
       s.board.forEach(c => {
-        if (!c) return;
+        if (!c || isStone(c)) return;
         const t = THEMES[cTheme(c)];
         if (cLv(c) > s.best[t]) s.best[t] = cLv(c);
       });
@@ -349,6 +353,7 @@
       const el = document.getElementById('craft-board');
       el.innerHTML = s.board.map((c, i) => {
         if (!c) return `<div class="craft-cell" data-i="${i}"></div>`;
+        if (isStone(c)) return `<div class="craft-cell stone${craftSel === i ? ' sel' : ''}" data-i="${i}">🪨</div>`;
         const th = THEMES[cTheme(c)], lv = cLv(c), info = CRAFTS[th].chain[lv - 1];
         const hue = THEME_HUE[th];
         const hi = lv >= CRAFT_SELL_MIN;
@@ -375,7 +380,7 @@
       const left = buyTokens().n;
       const bb = document.getElementById('craft-btn-buy'); if (bb) bb.innerText = `🛒 Mua (${left})`;
       const xb = document.getElementById('craft-btn-box'); if (xb) xb.innerText = `🎁 Box (${totalBoxes()})`;
-      const ab = document.getElementById('craft-btn-auto'); if (ab) { ab.innerText = s.autoUsed ? '⚡ Gộp (0)' : '⚡ Gộp (1)'; ab.disabled = !!s.autoUsed; }
+      const tb = document.getElementById('craft-btn-tools'); if (tb) { const sc = stoneCount(s); tb.innerText = sc ? `🧰 Tiện ích 🪨${sc}` : '🧰 Tiện ích'; }
       const ob = document.getElementById('craft-btn-orders'); if (ob) ob.innerText = `📋 Đơn (${s.orders.length})`;
     }
 
@@ -385,6 +390,7 @@
       const b = s.board;
       if (from === to || !b[from]) return false;
       if (!b[to]) { b[to] = b[from]; b[from] = 0; return 'move'; }
+      if (isStone(b[from]) || isStone(b[to])) return false;
       if (b[from] === b[to] && cLv(b[to]) < CRAFT_MAX) {
         b[to] = b[to] + 1;
         b[from] = 0;
@@ -411,7 +417,7 @@
     function craftAutoMerge() {
       const s = window.state.craftSession; if (!s || s.autoUsed) return;
       const groups = {};
-      s.board.forEach((v, i) => { if (v && cLv(v) < CRAFT_MAX) (groups[v] = groups[v] || []).push(i); });
+      s.board.forEach((v, i) => { if (v && !isStone(v) && cLv(v) < CRAFT_MAX) (groups[v] = groups[v] || []).push(i); });
       const pairs = [];
       Object.values(groups).forEach(g => { for (let k = 0; k + 1 < g.length; k += 2) pairs.push([g[k], g[k + 1]]); });
       if (!pairs.length) return craftToast('Chưa có cặp nào để gộp');
@@ -422,7 +428,36 @@
       craftAfterAct('merge');
     }
 
+    // Miếng tự mọc: cứ mỗi growEvery lần ghép, bàn mọc thêm growCount miếng ngẫu nhiên, đôi khi kèm 1 viên đá
+    function craftGrow(s) {
+      const E = CRAFT_CFG.growEvery;
+      if (typeof s.growAt !== 'number') s.growAt = (Math.floor((s.merges || 0) / E) + 1) * E;
+      let ev = 0, added = 0, stoned = 0;
+      while ((s.merges || 0) >= s.growAt && ev < 3) {
+        s.growAt += E; ev++;
+        for (let k = 0; k < CRAFT_CFG.growCount; k++) if (freeCells(s) > 0) added += placePieces(s, Math.floor(Math.random() * THEMES.length), 1);
+        if (Math.random() < CRAFT_CFG.stoneChance && stoneCount(s) < CRAFT_CFG.stoneMax) {
+          const free = []; s.board.forEach((v, i) => { if (!v) free.push(i); });
+          if (free.length) { s.board[free[Math.floor(Math.random() * free.length)]] = STONE; stoned++; }
+        }
+      }
+      if ((s.merges || 0) >= s.growAt) s.growAt = (Math.floor((s.merges || 0) / E) + 1) * E;
+      if (added || stoned) craftToast(`🌱 Mọc thêm ${added} miếng${stoned ? ' và 1 viên đá 🪨' : ''}`);
+    }
+    function craftCleanStone(all) {
+      const s = window.state.craftSession; if (!s) return;
+      const idx = []; s.board.forEach((v, i) => { if (isStone(v)) idx.push(i); });
+      if (!idx.length) return craftToast('Bàn không có viên đá nào');
+      const targets = all ? idx : [(craftSel >= 0 && isStone(s.board[craftSel])) ? craftSel : idx[Math.floor(Math.random() * idx.length)]];
+      const cost = Math.max(0, (targets.length - (s.cleanUsed ? 0 : 1)) * CRAFT_CFG.stoneClean);
+      if ((window.state.walletBalance || 0) < cost) return craftToast(`Không đủ tiền! Cần ${cost.toLocaleString('vi-VN')}đ`);
+      window.state.walletBalance -= cost; s.spent = (s.spent || 0) + cost; s.cleanUsed = true;
+      targets.forEach(i => { s.board[i] = 0; });
+      craftSel = -1; craftPersist(true); renderCraftBoard(); renderCraftSheet('tools'); refreshWalletDisplay();
+      craftToast(`🧹 Đã dọn ${targets.length} viên đá${cost ? ' (-' + cost.toLocaleString('vi-VN') + 'đ)' : ' (miễn phí)'}`);
+    }
     function craftAfterAct(r) {
+      if (r === 'merge') craftGrow(window.state.craftSession);
       if (r) { craftSel = -1; craftPersist(); }
       renderCraftBoard();
       if (r === 'merge') checkCraftStuck();
@@ -496,7 +531,10 @@
       if (!s) return;
       if (s.board.some(v => !v)) return;
       const seen = {};
+      const sc = stoneCount(s);
+      if (sc && (!s.cleanUsed || (window.state.walletBalance || 0) >= CRAFT_CFG.stoneClean)) return; // còn dọn được đá thì chưa kẹt
       for (const v of s.board) {
+        if (isStone(v)) continue;
         if (cLv(v) < CRAFT_MAX) {
           if (seen[v]) return;
           seen[v] = 1;
@@ -523,7 +561,7 @@
       }
       craftSheetKind = kind;
       sh.dataset.kind = kind;
-      const titles = { buy: '🛒 Mua nguyên liệu', box: '🎁 Mở box nguyên liệu', orders: '📋 Đơn hàng (tùy chọn)' };
+      const titles = { buy: '🛒 Mua nguyên liệu', box: '🎁 Mở box nguyên liệu', orders: '📋 Đơn hàng (tùy chọn)', tools: '🧰 Tiện ích' };
       let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="color:var(--app-dark-green);">${titles[kind]}</b><button class="btn btn-outline" onclick="renderCraftSheet(null)">✖</button></div>`;
       const free = freeCells(s);
 
@@ -532,6 +570,13 @@
         html += `<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Còn <b>${left}/${CRAFT_CFG.maxBuys}</b> lượt mua (hồi 1 lượt mỗi 90 phút${buyNextMs() ? ', lượt kế tiếp sau ' + Math.ceil(buyNextMs() / 60000) + ' phút' : ''}). Mỗi lượt nhận ${CRAFT_CFG.buyPieces} miếng thuộc các chủ đề NGẪU NHIÊN (cấp có thể cao hơn nếu bàn đã có món cao của chủ đề đó). Bàn còn ${free} ô trống.</div>`;
         const n = Math.min(free, CRAFT_CFG.buyPieces), cost = buyCost(s, n), dis = left <= 0 || free <= 0;
         html += `<div class="shop-item-row" style="margin-bottom:6px;"><div><b>🎲 Mua ngẫu nhiên</b><div style="font-size:0.75rem;color:#718096;">${n} miếng, chủ đề ngẫu nhiên</div></div><button class="btn btn-pink" ${dis ? 'disabled style="opacity:.5"' : ''} onclick="buyCraftMaterials()">-${cost.toLocaleString('vi-VN')}đ · +${n}</button></div>`;
+      } else if (kind === 'tools') {
+        const sc = stoneCount(s), row = (t, d, btn) => `<div class="shop-item-row" style="margin-bottom:6px;"><div><b>${t}</b><div style="font-size:0.75rem;color:#718096;">${d}</div></div>${btn}</div>`;
+        const c1 = s.cleanUsed ? CRAFT_CFG.stoneClean : 0, call = Math.max(0, (sc - (s.cleanUsed ? 0 : 1)) * CRAFT_CFG.stoneClean);
+        html += row('🧹 Xếp bàn', 'Gom cùng chủ đề thành cụm, miễn phí', `<button class="btn btn-outline" onclick="craftSortBoard();renderCraftSheet(null)">Xếp</button>`);
+        html += row('⚡ Gộp tự động', 'Gộp mọi cặp giống nhau (1 lần mỗi ván)', `<button class="btn btn-outline" ${s.autoUsed ? 'disabled style="opacity:.5"' : ''} onclick="craftAutoMerge();renderCraftSheet(null)">${s.autoUsed ? 'Đã dùng' : 'Gộp'}</button>`);
+        html += row(`🪨 Dọn 1 viên (bàn có ${sc})`, 'Chạm viên đá trên bàn để chọn, không chọn thì dọn ngẫu nhiên. Viên đầu mỗi ván miễn phí', `<button class="btn btn-pink" ${sc ? '' : 'disabled style="opacity:.5"'} onclick="craftCleanStone(false)">${c1 ? '-' + c1.toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</button>`);
+        if (sc > 1) html += row('🪨 Dọn hết đá', `Dọn cả ${sc} viên một lần`, `<button class="btn btn-pink" onclick="craftCleanStone(true)">${call ? '-' + call.toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</button>`);
       } else if (kind === 'box') {
         let any = false;
         THEMES.forEach(t => {
@@ -667,5 +712,5 @@
       else if (best > 1) addCraftToBag(type, Math.min(best, CRAFT_MAX), true);
       window.state.craftSession = null;
       saveStorage();
-      setTimeout(() => alert('🧶 Ván thủ công cũ đã tự kết thúc, đồ đã được đưa vào túi thủ công. Bàn mới 9×12 gộp 5 chủ đề đã sẵn sàng!'), 600);
+      setTimeout(() => alert('🧶 Ván thủ công cũ (bàn 12×12) đã tự kết thúc, đồ đã được đưa vào túi thủ công. Bàn mới 9×12 gộp 5 chủ đề đã sẵn sàng!'), 600);
     }
