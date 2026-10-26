@@ -429,9 +429,23 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function(e) {
-        const imgBase64 = e.target.result;
+        const original = e.target.result;
         const msgText = `[Gửi một hình ảnh trực quan từ điện thoại]`;
-        sendMessage(msgText, false, false, imgBase64);
+        // Thu nhỏ ảnh (tối đa 900px, JPEG 70%) để không làm đầy bộ nhớ lưu chat
+        const im = new Image();
+        im.onload = function() {
+          let out = original;
+          try {
+            const ratio = Math.min(1, 900 / Math.max(im.width, im.height));
+            const w = Math.max(1, Math.round(im.width * ratio)), h = Math.max(1, Math.round(im.height * ratio));
+            const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+            const cx = cv.getContext('2d'); cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, w, h); cx.drawImage(im, 0, 0, w, h);
+            out = cv.toDataURL('image/jpeg', 0.7);
+          } catch (err) {}
+          sendMessage(msgText, false, false, out);
+        };
+        im.onerror = function() { sendMessage(msgText, false, false, original); };
+        im.src = original;
       };
       reader.readAsDataURL(file); event.target.value = '';
     }
@@ -1313,20 +1327,39 @@ ${modeBlock}${hintBlock}
 
       let responseText = null;
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//,'');
-      
-      for (const rawKey of window.state.apiKeys) {
-        const key = rawKey.trim().replace(/^["']|["']$/g, '');
-        try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(payload)
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            const parts = data.candidates?.[0]?.content?.parts;
-            responseText = parts ? parts.map(p => p.text || '').join('') : '';
-            if (responseText) break;
-          }
-        } catch (e) {}
+
+      // Đánh dấu đang chờ AI trả lời: nếu iPhone tắt/ngủ app giữa chừng thì lần mở sau hỏi gọi lại
+      window.state.pendingReply = { storyId: storyId, ts: Date.now() };
+      saveStorage();
+
+      let netFail = false;
+      const tryKeys = async () => {
+        netFail = false;
+        for (const rawKey of window.state.apiKeys) {
+          const key = rawKey.trim().replace(/^["']|["']$/g, '');
+          const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 75000);
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(payload), signal: ctl.signal
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+              const parts = data.candidates?.[0]?.content?.parts;
+              responseText = parts ? parts.map(p => p.text || '').join('') : '';
+              if (responseText) { clearTimeout(tm); return; }
+            }
+          } catch (e) { netFail = true; }
+          clearTimeout(tm);
+        }
+      };
+      // Mất mạng / app bị ngủ giữa chừng thì chờ app hiện lại rồi thử lại (tối đa 3 lần), lỗi key hoặc từ chối thì không thử lại
+      for (let attempt = 0; attempt < 3 && !responseText; attempt++) {
+        if (attempt > 0) {
+          if (document.hidden) await new Promise(r => { const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } }; document.addEventListener('visibilitychange', f); });
+          else await new Promise(r => setTimeout(r, 1500));
+        }
+        await tryKeys();
+        if (!netFail) break;
       }
 
       if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
@@ -1365,13 +1398,32 @@ ${modeBlock}${hintBlock}
         if (transfers.length) aiMsg.transfers = transfers;
         if (affChanges.length) aiMsg.affection = affChanges;
         window.state.chatHistories[storyId].push(aiMsg);
+        window.state.pendingReply = null;
         saveStorage(); 
         if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
         renderChatHistory();
       } else {
+        window.state.pendingReply = null; saveStorage();
         alert('Lỗi kết nối API!');
       }
     }
+
+    // Mở app lại mà lượt trả lời trước bị gián đoạn (tin của bạn có nhưng AI chưa kịp trả lời) thì hỏi có gọi lại không
+    function checkPendingReply() {
+      const p = window.state.pendingReply; if (!p) return;
+      const h = (window.state.chatHistories || {})[p.storyId] || [], last = h[h.length - 1];
+      window.state.pendingReply = null; saveStorage();
+      if (!last || last.sender !== 'user') return;
+      setTimeout(() => {
+        if (confirm('Lượt trả lời trước bị gián đoạn khi bạn thoát app. Gọi AI trả lời lại ngay?')) {
+          window.state.activeStoryId = p.storyId;
+          if (typeof openStoryDetail === 'function') openStoryDetail(p.storyId);
+          sendMessage(null, true);
+        }
+      }, 800);
+    }
+    // Rời app thì đẩy bản mới nhất lên cloud ngay
+    document.addEventListener('visibilitychange', () => { if (document.hidden && typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(); });
 
     function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
     function saveAppSettings() {
