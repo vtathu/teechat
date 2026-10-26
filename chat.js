@@ -1,17 +1,37 @@
-// Lọc bằng code: nếu AI lỡ viết thay người chơi ("Tên: ...", "[Tên]: ...", "*Tên + hành động*") thì cắt từ dòng đó trở đi
-    function stripUserVoice(text, name) {
-      name = (name || '').trim();
-      if (name.length < 2 || !text) return text;
-      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const head = new RegExp('^\\s*(?:\\[\\s*' + esc + '\\s*\\]|' + esc + ')\\s*[:：]', 'iu');
-      const act = new RegExp('^\\s*\\*+\\s*' + esc + '(?![\\p{L}])', 'iu');
-      const lines = text.split('\n'), bad = lines.map(l => head.test(l) || act.test(l)), first = bad.indexOf(true);
-      if (first === -1) return text;
-      const before = lines.slice(0, first).join('\n').trim();
-      const out = before || lines.filter((l, i) => !bad[i]).join('\n').trim();
-      return out || text;
-    }
-    // ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
+// Xóa mọi dấu vết thẻ điểm thân mật (kể cả AI viết sai định dạng) để không hiện "+2" trong khung chat
+function cleanAiTags(t) {
+  return (t || '')
+    .replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '')
+    .replace(/\[?\s*AFFECTION\s*[:：][^\n]*/gi, '')
+    .replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '')
+    .replace(/[❤💕💗💖💘]\uFE0F?\s*[+\-−–]\s*\d+(?:\s*(?:điểm|pts?))?/g, '')
+    .replace(/[\[\(]?\s*(?:độ\s*)?thân mật\s*[:：]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?\s*[\]\)]?/gi, '')
+    .replace(/[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm\s*)?thân mật\s*[\]\)]?/gi, '')
+    .replace(/^[ \t]*[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?\s*[\]\)]?[ \t]*$/gim, '')
+    .trim();
+}
+// Lọc bằng code: nếu AI lỡ viết thay người chơi thì cắt từ dòng đó trở đi, và xóa các câu "Tên nói: ..." nằm lẫn trong dòng
+function stripUserVoice(text, name) {
+  name = (name || '').trim();
+  if (name.length < 2 || !text) return text;
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = name.split(/\s+/).filter(Boolean);
+  const given = parts.length > 1 ? parts[parts.length - 1] : '';
+  const two = parts.length > 2 ? parts.slice(-2).join(' ') : '';
+  const names = esc(name) + (two ? '|' + esc(two) : '') + (given && given.length >= 2 ? '|' + esc(given) : '');
+  const VERB = '(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|gật|lắc|mỉm|cười|khóc|nghĩ|cảm thấy|quyết định|ngước|cúi|quay|bước|đứng|ngồi|nhìn|ôm|nắm|siết|đưa|run|đỏ mặt|im lặng|khẽ|bật|tựa|vòng|gục|nhắm|mở|thở|chớp|cắn|mím|lẩm bẩm|nức nở|thút thít|vội|chạy|kéo|đẩy|hôn|gọi|reo|ngập ngừng)';
+  const head = new RegExp('^\\s*(?:\\[\\s*' + esc(name) + '\\s*\\]|' + esc(name) + ')\\s*[:：]', 'iu');
+  const act = new RegExp('^\\s*\\*+\\s*' + esc(name) + '(?![\\p{L}])', 'iu');
+  const nar = new RegExp('^\\s*[\\*_\\[]*\\s*(?:' + names + ')(?![\\p{L}])\\s*[\\*_\\]]*\\s*' + VERB, 'iu');
+  const inline = new RegExp('(?:' + names + ')\\s+(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|lẩm bẩm)[^"“”\\n]{0,25}[:,]?\\s*["“][^"”\\n]*["”]', 'giu');
+  text = text.replace(inline, '').replace(/[ \t]{2,}/g, ' ');
+  const lines = text.split('\n'), bad = lines.map(l => head.test(l) || act.test(l) || nar.test(l)), first = bad.indexOf(true);
+  if (first === -1) return text;
+  const before = lines.slice(0, first).join('\n').trim();
+  const out = before || lines.filter((l, i) => !bad[i]).join('\n').trim();
+  return out || text;
+}
+// ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
     function updateModeBanner() {
       const el = document.getElementById('mode-banner');
       if (!el) return;
@@ -646,11 +666,12 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="char-info-body">
-              <h4>${escapeHtml(char.name)} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
+              <h4>${escapeHtml(char.name)}${char.livesWith ? ' 🏠' : ''} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
               <p>${escapeHtml(char.personality)}</p>
             </div>
           </div>
           <div style="display:flex; gap:4px; flex-shrink:0;">
+            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;${char.livesWith ? ' border-color:#d53f8c; color:#d53f8c;' : ''}" onclick="toggleCohabit('${char.id}')">${char.livesWith ? '🚪 Dọn đi' : '🏠 Dọn vô ở'}</button>
             <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
             <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
           </div>
@@ -696,6 +717,22 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         story.characters.push({ id: 'char-' + Date.now(), name, avatar: avatar || DEFAULT_LOGO, personality, firstMsg });
       }
       saveStorage(); renderCharacterList(); closeModal('modal-char');
+    }
+
+    // Dọn nhân vật vào ở chung / dọn đi: lưu vào nhân vật (đồng bộ cloud) + ghi 1 sự kiện vào lịch sử để AI nhớ
+    function toggleCohabit(charId) {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const ch = story && story.characters ? story.characters.find(c => c.id === charId) : null;
+      if (!ch) return;
+      const me = (window.state.persona && window.state.persona.name) || 'người chơi';
+      const moveIn = !ch.livesWith;
+      if (!confirm(moveIn ? `Cho ${ch.name} dọn vào ở chung nhà với ${me}?` : `Cho ${ch.name} dọn ra khỏi nhà?`)) return;
+      ch.livesWith = moveIn;
+      ch.movedOut = !moveIn;
+      if (!window.state.chatHistories[story.id]) window.state.chatHistories[story.id] = [];
+      window.state.chatHistories[story.id].push({ sender: 'system', event: true, text: moveIn ? `[${ch.name} đã dọn vào ở chung nhà với ${me}. Từ nay hai người sống chung một mái nhà.]` : `[${ch.name} đã dọn ra khỏi nhà của ${me} và sống riêng.]`, ts: Date.now() });
+      saveStorage(); renderCharacterList();
+      try { renderChatHistory(); } catch (e) {}
     }
 
     function deleteCharacter(charId) {
@@ -972,7 +1009,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
       const barsBefore = container.querySelectorAll('.msg-action-bar').length;
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
-      fullText = (fullText || '').replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim();
+      fullText = stripUserVoice(cleanAiTags(fullText), window.state.persona && window.state.persona.name);
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -1219,6 +1256,13 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         if (modeChar) modeBlock = `\n[CHẾ ĐỘ TRÒ CHUYỆN ĐANG BẬT]\n${MODES[activeModeNow.mode].prompt(modeChar.name)}\n`;
       }
       
+      let cohabBlock = '';
+      if (story && story.characters) {
+        const meN = (window.state.persona && window.state.persona.name) || 'người chơi';
+        const inHome = story.characters.filter(c => c.livesWith), outHome = story.characters.filter(c => c.movedOut && !c.livesWith);
+        if (inHome.length) cohabBlock += `[Ở CHUNG NHÀ - GHI NHỚ LÂU DÀI] ${inHome.map(c => c.name).join(', ')} đang SỐNG CHUNG NHÀ với "${meN}". Nhân vật nhớ rõ điều này trong mọi lượt: cùng một mái nhà, biết nhà cửa, đồ đạc, thói quen sinh hoạt chung (ăn uống, ngủ nghỉ, việc nhà, giờ giấc ra vào), không cư xử như người ở nơi khác hay mới đến lần đầu; cảnh trong nhà là bối cảnh mặc định khi phù hợp.\n`;
+        if (outHome.length) cohabBlock += `${outHome.map(c => c.name).join(', ')} từng ở chung nhưng ĐÃ DỌN ĐI, hiện sống riêng (vẫn nhớ thời gian từng ở chung).\n`;
+      }
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -1226,7 +1270,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
-${charAffectionSummary}
+${charAffectionSummary}${cohabBlock}
 5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
 [QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ]
@@ -1237,6 +1281,7 @@ ${charAffectionSummary}
 ⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}" (người chơi). Người chơi là người DUY NHẤT quyết định mình nói gì, làm gì, nghĩ gì.
 ⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng, kể cả dạng [Tên]: hay *Tên + hành động*. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
 ⛔ Không viết câu kể người chơi đã nói/gật đầu/đáp/mỉm cười/cảm thấy/quyết định gì, cũng không "đoán trước" câu trả lời của người chơi. Chỉ được tả PHẢN ỨNG BÊN NGOÀI của nhân vật (ánh mắt, giọng điệu, cử chỉ của CHÍNH nhân vật) trước những gì người chơi ĐÃ viết trong lượt trước.
+⛔ TUYỆT ĐỐI không viết dòng nào có chủ ngữ là người chơi (ví dụ "${(window.state.persona && window.state.persona.name) || 'Thư'} nói...", "${(window.state.persona && window.state.persona.name) || 'Thư'} gật đầu...") và không đặt lời thoại, hành động, suy nghĩ của người chơi vào trong ngoặc kép hay dấu * của bất kỳ ai. Nếu cần nhắc đến người chơi, chỉ mô tả cái NHÂN VẬT nhìn thấy/nghe thấy từ những gì người chơi ĐÃ viết.
 ⛔ Mỗi lượt kết thúc bằng lời nói hoặc hành động của NHÂN VẬT (có thể là một câu hỏi, một lời mời) để trao lượt lại cho người chơi, không viết tiếp diễn biến sau đó.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
@@ -1267,7 +1312,7 @@ ${charAffectionSummary}
 - Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
 - Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
 - Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
-- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
+- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Tuyệt đối KHÔNG viết số điểm thân mật (+2, -1...) hay chữ "thân mật" kèm số ở bất kỳ chỗ nào khác trong câu trả lời, chỉ dùng đúng định dạng thẻ này. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
 ${modeBlock}${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
@@ -1373,7 +1418,7 @@ ${modeBlock}${hintBlock}
           const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
           if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
         }
-        const cleaned = stripUserVoice(responseText.replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '').replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '').trim(), window.state.persona && window.state.persona.name);
+        const cleaned = stripUserVoice(cleanAiTags(responseText), window.state.persona && window.state.persona.name);
 
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
@@ -1400,8 +1445,9 @@ ${modeBlock}${hintBlock}
         window.state.chatHistories[storyId].push(aiMsg);
         window.state.pendingReply = null;
         saveStorage(); 
-        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
-        renderChatHistory();
+        // Vẽ tin nhắn TRƯỚC, phần giao diện phụ để sau và có bắt lỗi: lỗi ở tab khác không được làm kẹt khung chat
+        try { renderChatHistory(); } catch (e) { console.error('renderChatHistory', e); }
+        try { if (typeof renderLifeModeUI === 'function') renderLifeModeUI(); } catch (e) { console.error('renderLifeModeUI', e); }
       } else {
         window.state.pendingReply = null; saveStorage();
         alert('Lỗi kết nối API!');
