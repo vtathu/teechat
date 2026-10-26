@@ -23,6 +23,10 @@
     }
 
     // Bộ nhớ trình duyệt chỉ ~5MB: ảnh gửi trong chat là thứ làm đầy nhanh nhất. Đầy thì bỏ ảnh cũ (giữ lại tin chữ) để lưu được tiếp
+    function stateSig() {
+      const c = getSyncableState(); delete c.lastUpdated;
+      return JSON.stringify(c);
+    }
     function dropOldImages(keep) {
       const all = [];
       Object.values(window.state.chatHistories || {}).forEach(h => (h || []).forEach(m => { if (m && m.img) all.push(m); }));
@@ -32,6 +36,9 @@
     function saveStorage() {
       // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
       if (!window.__stateLoaded) { console.warn('saveStorage bị chặn: dữ liệu chưa được nạp'); return; }
+      // Dữ liệu không đổi thì không lưu và không tăng lastUpdated (tránh máy này đè bản mới hơn của máy khác chỉ vì mở app)
+      const sig = stateSig();
+      if (sig === window.__lastSig) return;
       window.state.lastUpdated = Date.now();
       const write = () => {
         const str = JSON.stringify(getSyncableState());
@@ -52,6 +59,7 @@
           }
         }
       }
+      window.__lastSig = sig;
       try { if (typeof window.autoSyncToCloud === 'function') window.autoSyncToCloud(); } catch (e) {}
     }
 
@@ -611,6 +619,7 @@
         document.getElementById('per-memories').value = window.state.persona.memories || '';
       }
 
+      try { window.__lastSig = stateSig(); } catch (e) {}
       applyActiveStoryTheme();
     }
 
