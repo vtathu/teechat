@@ -161,7 +161,7 @@
       <div id="life-sub-craft" class="life-sub hidden">
         <div class="life-card">
           <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🧶 Thủ Công Mỹ Nghệ</h3>
-          <div style="font-size: 0.8rem; color: #718096;">Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (chạm 2 ô hoặc kéo thả), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box.</div>
+          <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (chạm 2 ô hoặc kéo thả), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box.</div>
           <div id="craft-chain-preview" style="background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px;"></div>
           <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
           <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Ván Mới</button>
@@ -179,7 +179,7 @@
           <div id="mission-daily" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
         <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Thành tựu</h3>
+          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Nhiệm Vụ Mốc (làm một lần)</h3>
           <div id="mission-milestone" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
         <div class="life-card">
@@ -278,8 +278,8 @@
       <div id="sdk-menu" style="display:flex;flex-direction:column;gap:8px;margin:8px 0;">
         <div id="sdk-resume"></div>
         <p style="font-size:0.85rem;color:#555;margin:0;">Mỗi màn thắng nhận <b>100.000.000 VNĐ</b>. Chơi không giới hạn lượt, thoát giữa chừng sẽ tự lưu ván. Không báo đúng/sai, nộp sai là hết ca.</p>
-        <button class="btn btn-outline" onclick="startSudoku('easy')">🟢 Dễ </button>
-        <button class="btn btn-pink" onclick="startSudoku('hard')">🔴 Cực khó </button>
+        <button class="btn btn-outline" onclick="startSudoku('easy')">🟢 Dễ (nhiều số gợi ý)</button>
+        <button class="btn btn-pink" onclick="startSudoku('hard')">🔴 Cực khó (siêu ít số)</button>
         <button class="btn" style="background:#2d3748;color:#fff;" onclick="startSudoku('hell')">💀 Địa ngục</button>
       </div>
       <div id="sdk-play" style="display:none;">
@@ -291,7 +291,7 @@
           <button class="btn btn-outline" style="flex:1;" onclick="sdkInput(0)">⌫ Xóa ô</button>
         </div>
         <button class="btn btn-pink" id="sdk-submit" style="width:100%;max-width:420px;" onclick="checkSudoku9Result()">📨 Nộp bài</button>
-        <button class="btn btn-pink" id="sdk-review-btn" style="display:none;width:100%;max-width:420px;" onclick="sdkFinishReview()">✅ Đã hiểu</button>
+        <button class="btn btn-pink" id="sdk-review-btn" style="display:none;width:100%;max-width:420px;" onclick="sdkFinishReview()">✅ Đã hiểu, đóng</button>
       </div>
     </div>
   </div>
@@ -324,8 +324,7 @@
       <button class="btn btn-outline" id="craft-btn-buy" onclick="toggleCraftSheet('buy')">🛒 Mua</button>
       <button class="btn btn-outline" id="craft-btn-box" onclick="toggleCraftSheet('box')">🎁 Box</button>
       <button class="btn btn-outline" id="craft-btn-orders" onclick="toggleCraftSheet('orders')">📋 Đơn</button>
-      <button class="btn btn-outline" id="craft-btn-sort" onclick="craftSortBoard()">🧹 Xếp</button>
-      <button class="btn btn-outline" id="craft-btn-auto" onclick="craftAutoMerge()">⚡ Gộp</button>
+      <button class="btn btn-outline" id="craft-btn-tools" onclick="toggleCraftSheet('tools')">🧰 Tiện ích</button>
     </div>
     <div class="craft-sheet" id="craft-sheet"></div>
   </div>
@@ -445,7 +444,7 @@
         <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;"></div>
       </div>
 
-      <button class="btn" style="margin-top: 10px; width:100%; font-size:0.85rem; padding:8px;" onclick="saveStorySettings()">💾 Lưu</button>
+      <button class="btn" style="margin-top: 10px; width:100%; font-size:0.85rem; padding:8px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
     </div>
   </div>
 
@@ -553,12 +552,12 @@
       </div>
       <div class="form-group">
         <label>Tên Của Bạn:</label>
-        <input type="text" id="per-name" value="Nguyễn Thị A">
+        <input type="text" id="per-name" value="Thư">
       </div>
       <div class="form-group">
         <label>Avatar Của Bạn:</label>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="per-avatar" placeholder="link ảnh..." style="flex: 1;">
+          <input type="text" id="per-avatar" placeholder="URL ảnh..." style="flex: 1;">
           <button class="btn btn-outline" type="button" onclick="document.getElementById('per-file-input').click()">📁 Chọn ảnh</button>
         </div>
         <input type="file" id="per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'per-avatar')">
