@@ -96,11 +96,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       return merged;
     }
 
-    function readLocal() {
+    async function readLocal() {
       try {
         if (window.__stateLoaded && typeof window.getSyncableState === 'function') return window.getSyncableState();
-        const s = localStorage.getItem(LS_KEY);
-        return s ? JSON.parse(s) : null;
+        if (window.idbReady) await window.idbReady;
+        const raw = typeof window.readSavedRaw === 'function' ? window.readSavedRaw() : localStorage.getItem(LS_KEY);
+        return raw ? JSON.parse(raw) : null;
       } catch (e) { return null; }
     }
 
@@ -128,7 +129,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const pathRef = ref(db, userPath(user.uid));
         const snap = await get(pathRef);
         const cloud = snap.exists() ? snap.val() : null;
-        const local = readLocal();
+        const local = await readLocal();
         let result = null, upload = false;
 
         if (!cloud) {
@@ -147,8 +148,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
           result = stripKeys(result);
           if (upload && cloud) result.lastUpdated = Date.now();
           // Giữ 1 bản dự phòng của dữ liệu trên máy trước khi thay
-          try { if (local && !isBlank(local)) localStorage.setItem(LS_KEY + '_prev', JSON.stringify(local)); } catch (e) {}
-          localStorage.setItem(LS_KEY, JSON.stringify(result));
+          try { if (local && !isBlank(local) && window.persistBackup) window.persistBackup(JSON.stringify(local)); } catch (e) {}
+          window.persistState(JSON.stringify(result));
           window.state = result;
           if (upload) await set(pathRef, cloudCopy(result));
         }
