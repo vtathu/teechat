@@ -52,7 +52,12 @@
         md = { date: today, progress: {}, claimed: {} };
         window.state.missionData = md;
       }
+      // Firebase xóa object rỗng khi đồng bộ cloud -> bổ sung lại, nếu không sẽ lỗi và tab Nhiệm Vụ trống
+      if (!md.progress || typeof md.progress !== 'object') md.progress = {};
+      if (!md.claimed || typeof md.claimed !== 'object') md.claimed = {};
       if (!window.state.stats) window.state.stats = {};
+      if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {};
+      if (!window.state.unlockedModes) window.state.unlockedModes = {};
       return md;
     }
     // Ghi nhận tiến độ nhiệm vụ (không tự lưu, nơi gọi sẽ lưu)
