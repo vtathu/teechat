@@ -1,4 +1,4 @@
-    // ===================== NGHỀ NGHIỆP =====================
+// ===================== NGHỀ NGHIỆP =====================
     // Nghề càng khó thắng thì lương càng cao
     const JOBS = {
       cleaner: { unit: 27000, desc: 'Lau sạch vết bẩn. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
@@ -6,7 +6,7 @@
       barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       teacher: { unit: 60000, desc: 'Chấm bài. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       driver:  { unit: 84000, desc: 'Né chướng ngại vật, đâm 5 lần thì hết màn. 3 màn là 1 ca làm. Tiền tính theo thời gian sống sót mỗi màn.' },
-      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku bấm Nộp bài để hoàn thành. Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
+      sudoku:  { unit: 100000000, desc: 'Giải mã sudoku bấm Nộp bài để hoàn thành màn. Mỗi màn thắng nhận 100.000.000 VNĐ, thắng thì sang màn mới, nộp sai thì hết ca.' }
     };
 
     function canChangeJob() {
@@ -773,8 +773,9 @@
         sdk.earned += SDK_REWARD;
         window.state.walletBalance = (window.state.walletBalance || 0) + SDK_REWARD;
         mtrack('workLevels', 1); mtrack('workBest', sdk.stage, 'max');
+        const boxTxt = grantFreeBox(0.15);
         saveStorage(); renderLifeModeUI();
-        alert(`🎉 CHÍNH XÁC! Màn ${sdk.stage} +${SDK_REWARD.toLocaleString('vi-VN')} VNĐ. Sang màn tiếp theo!`);
+        alert(`🎉 CHÍNH XÁC! Màn ${sdk.stage} +${SDK_REWARD.toLocaleString('vi-VN')} VNĐ.${boxTxt ? '\n🎁 Nhặt được ' + boxTxt + '!' : ''} Sang màn tiếp theo!`);
         sdkNextStage();
       } else {
         window.state.sudokuSave = null; saveStorage();
@@ -787,4 +788,3 @@
         document.getElementById('sdk-status').innerHTML = `<b style="color:#c53030;">❌ Sai ${nWrong} ô</b> (ô đỏ là chỗ sai, số đỏ nhỏ là đáp án đúng). Tổng đã nhận: ${sdk.earned.toLocaleString('vi-VN')}đ. Hiểu rồi thì bấm Đóng.`;
       }
     }
-
