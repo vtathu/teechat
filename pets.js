@@ -373,7 +373,7 @@
     const cats = [['animal', '🐾', 'Thú cưng']].concat(PCATS);
     const side = cats.map(c => {
       const on = shopCat === c[0];
-      return `<button onclick="PET.shopCat('${c[0]}')" class="mall-cat ${on ? 'on' : ''}"><span>${c[1]}</span><small>${c[2]}</small></button>`;
+      return `<button onclick="PET.shopCat('${c[0]}')" style="flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:12px;cursor:pointer;font-size:0.68rem;background:${on ? '#fff3ef' : '#fff'};border:2px solid ${on ? '#ee4d2d' : '#eee'};color:${on ? '#ee4d2d' : '#555'};"><span style="font-size:1.4rem;">${c[1]}</span>${c[2]}</button>`;
     }).join('');
     const mine = {}; ensure().pets.forEach(x => { if (x) mine[x.species] = 1; });
     let cards;
@@ -392,9 +392,9 @@
         </div></div>`;
     }).join('');
     if (!cards) cards = '<div style="grid-column:1/-1;text-align:center;color:#888;font-size:0.85rem;padding:24px;">Chưa có sản phẩm.</div>';
-    const cur = cats.find(c => c[0] === shopCat) || cats[0];
-    return `<div class="mall-split"><div class="mall-side">${side}</div>
-      <div class="mall-main"><div class="mall-title">${cur[1]} ${cur[2]}</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${cards}</div></div></div>`;
+    return `<div style="background:linear-gradient(135deg,#ee4d2d,#ff7337);padding:8px;border-radius:12px;margin-bottom:8px;width:100%;box-sizing:border-box;"><div style="color:#fff;font-weight:bold;font-size:0.9rem;">🛍️ TEEMALL · THÚ CƯNG</div></div>
+      <div style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">${side}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${cards}</div>`;
   }
   function viewBag() {
     const bag = ensure().petBag;
