@@ -132,14 +132,12 @@
       <div class="scene-col left">
         <button class="scene-ic" onclick="openFs('work')"><span>💼</span><small>Đi làm</small></button>
         <button class="scene-ic" onclick="openFs('house')"><span>🏠</span><small>Nhà</small></button>
+      <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
       </div>
       <div class="scene-col right">
         <button class="scene-ic" onclick="openFs('mission')"><span>📋</span><small>Nhiệm vụ</small></button>
         <button class="scene-ic" onclick="openFs('achv')"><span>🏆</span><small>Thành tựu</small></button>
-      </div>
-      <div class="scene-bottom">
-        <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
-        <button class="scene-ic" onclick="openFs('craft')"><span>🧶</span><small>Thủ công</small></button>
+      <button class="scene-ic" onclick="openFs('craft')"><span>🧶</span><small>Thủ công</small></button>
       </div>
     </div>
   </div>
@@ -241,7 +239,7 @@
     </div>
     <div class="fs-body">
       <div class="life-card">
-        <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (chạm 2 ô hoặc kéo thả), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box. Đồ làm ra nằm trong 🎒 Túi, tab Thủ công.</div>
+        <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (kéo thả để ghép), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box. Đồ làm ra nằm trong 🎒 Túi, tab Thủ công.</div>
         <div id="craft-chain-preview" style="background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px;"></div>
         <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
         <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Ván Mới</button>
@@ -260,10 +258,6 @@
     <div class="mall-seg" id="mall-seg">
       <button id="mall-seg-gen" onclick="UI.mall('gen')">🛍️ Shop chung</button>
       <button id="mall-seg-pet" onclick="UI.mall('pet')">🐾 Shop thú cưng</button>
-    </div>
-    <div class="mall-seg sub" id="mall-seg2" style="display:none;">
-      <button id="mall-sub-animal" onclick="UI.petSub('animal')">🐾 Thú cưng</button>
-      <button id="mall-sub-gear" onclick="UI.petSub('gear')">🧺 Đồ cho thú</button>
     </div>
     <div class="fs-body" style="background:#fafafa;">
       <div id="shop-items-container" style="width:100%;"></div>
