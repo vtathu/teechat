@@ -369,6 +369,8 @@
       const vt = varText(selectedBuyItem);
       if (vt) mapInfo += ` | ${vt}`;
       const rentNow = selectedBuyItem.cat === 'estate' && !!(document.getElementById('buy-rent-now') || {}).checked;
+      const variants = {};
+      variantKeys(selectedBuyItem).forEach(k => { variants[k] = VG[k].opts[selectedVars[k] || 0][0]; });
 
       window.state.inventory.push({
         id: selectedBuyItem.id,
@@ -376,6 +378,9 @@
         singleName: selectedBuyItem.name + (vt ? ` (${vt})` : ''),
         qty: selectedBuyQty,
         tag: selectedBuyItem.tag,
+        cat: selectedBuyItem.cat,
+        paid: unit,
+        variants: variants,
         desc: selectedBuyItem.desc + mapInfo,
         rentBase: selectedBuyItem.cat === 'estate' ? totalCost : undefined,
         rented: rentNow || undefined,
@@ -644,6 +649,8 @@
       if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {};
       if (!window.state.unlockedModes) window.state.unlockedModes = {};
       if (!window.state.activeMode) window.state.activeMode = {};
+      if (!Array.isArray(window.state.pets)) window.state.pets = (window.state.pets && typeof window.state.pets === 'object') ? Object.values(window.state.pets) : [];
+      if (!window.state.petBag || typeof window.state.petBag !== 'object') window.state.petBag = {};
       migrateOldCraft();
 
       if (window.state.stories.length === 0) {
@@ -706,13 +713,14 @@
     }
 
     function switchLifeSub(name) {
-      ['work', 'shop', 'craft', 'mission'].forEach(n => {
+      ['work', 'shop', 'craft', 'mission', 'pet'].forEach(n => {
         document.getElementById('life-sub-' + n).classList.toggle('hidden', n !== name);
         document.getElementById('life-sub-btn-' + n).classList.toggle('active', n === name);
       });
       window.lifeSub = name;
       if (name === 'craft') { updateCraftPreview(); renderCraftBag(); }
       if (name === 'mission') renderMissionTab();
+      if (name === 'pet' && typeof window.renderPetTab === 'function') window.renderPetTab();
     }
 
     function switchConfigTab(tabName) {
