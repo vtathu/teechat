@@ -157,7 +157,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.__cloudReady = true;
         window.loadStorage();
         window.renderStoryList();
-        if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId);
+        // Chỉ làm mới khung chat nếu người dùng ĐANG ở trong chat; không kéo họ về chat khi đang ở trang chủ/shop/...
+        try {
+          const det = document.getElementById('page-story-detail');
+          if (det && det.classList.contains('active') && typeof window.renderChatHistory === 'function') window.renderChatHistory();
+        } catch (e) {}
       })();
       const clear = () => { reconciling = null; };
       reconciling.then(clear, clear);
