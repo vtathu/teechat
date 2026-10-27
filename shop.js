@@ -116,9 +116,9 @@
     const SHOP_CATS = [
       ['all', '🛍️', 'Tất cả'], ['flower', '🌹', 'Hoa'], ['tech', '💻', 'Công nghệ'], ['clothes', '👗', 'Thời trang'], ['shoes', '👟', 'Giày & Túi'],
       ['jewelry', '💍', 'Trang sức'], ['food', '🍔', 'Ăn uống'], ['decor', '🛋️', 'Nội thất'], ['vehicle', '🏍️', 'Xe cộ'], ['estate', '🏠', 'Nhà đất'],
-      ['pet', '🐱', 'Thú cưng'], ['book', '📚', 'Sách & Bút'], ['beauty', '💄', 'Làm đẹp'], ['toy', '🧸', 'Đồ chơi'], ['travel', '✈️', 'Du lịch'], ['music', '🎸', 'Nhạc cụ']
+      ['book', '📚', 'Sách & Bút'], ['beauty', '💄', 'Làm đẹp'], ['toy', '🧸', 'Đồ chơi'], ['travel', '✈️', 'Du lịch'], ['music', '🎸', 'Nhạc cụ']
     ];
-    let shopCat = 'all', shopQ = '';
+    let shopCat = 'all', shopQ = '', shopMode = 'gen';
     const estateLoc = (id) => REAL_ESTATE_MAPS.find(m => m.id === id) || REAL_ESTATE_MAPS[0];
     const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => [String(a + i), 1]);
     const VG = {
@@ -188,23 +188,26 @@
     const fold = (t) => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     const itemHash = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 99991; return h; };
     function shopSetCat(c) { shopCat = c; renderShopUI(); }
+    function shopSetMode(m) { shopMode = m; shopCat = m === 'pet' ? 'pet' : 'all'; shopQ = ''; renderShopUI(); }
     function shopSearch(v) { shopQ = v; renderShopList(); }
     function shopSetLoc(v) { selectedEstateMap = v; renderShopList(); }
 
     function renderShopUI() {
+      if (window.__mallGear && typeof window.renderGearShop === 'function') return window.renderGearShop();
       const box = document.getElementById('shop-items-container');
       if (!box) return;
       box.innerHTML = `
         <div style="background:linear-gradient(135deg,#ee4d2d,#ff7337);padding:8px;border-radius:12px;margin-bottom:8px;width:100%;box-sizing:border-box;">
-          <div style="color:#fff;font-weight:bold;font-size:0.9rem;margin-bottom:6px;">🛍️ TEEMALL</div>
+          <div style="color:#fff;font-weight:bold;font-size:0.9rem;margin-bottom:6px;">🛍️ TEEMALL${shopMode === 'pet' ? ' · THÚ CƯNG' : ''}</div>
           <input id="shop-q" type="text" placeholder="🔍 Tìm sản phẩm..." value="${shopQ.replace(/"/g, '&quot;')}" oninput="shopSearch(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:none;font-size:0.85rem;">
         </div>
         <div id="shop-income" style="width:100%;"></div>
-        <div style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">
+        <div id="shop-chips" style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">
           ${SHOP_CATS.map(c => `<button onclick="shopSetCat('${c[0]}')" style="flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 6px;border-radius:12px;cursor:pointer;font-size:0.68rem;background:${shopCat === c[0] ? '#fff3ef' : '#fff'};border:2px solid ${shopCat === c[0] ? '#ee4d2d' : '#eee'};color:${shopCat === c[0] ? '#ee4d2d' : '#555'};"><span style="font-size:1.4rem;">${c[1]}</span>${c[2]}</button>`).join('')}
         </div>
         <div id="shop-loc-box" style="width:100%;"></div>
         <div id="shop-list" style="width:100%;"></div>`;
+      if (shopMode === 'pet') { const ch = document.getElementById('shop-chips'); if (ch) ch.remove(); }
       renderShopIncome();
       renderShopList();
     }
@@ -221,7 +224,7 @@
           <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.4;">${estateLoc(selectedEstateMap).desc}</div>
         </div>` : '';
       const q = fold(shopQ.trim());
-      const items = SHOP_CATALOG.filter(i => (shopCat === 'all' || i.cat === shopCat) && (!q || fold(i.name).includes(q) || fold(i.desc).includes(q)));
+      const items = SHOP_CATALOG.filter(i => (shopMode === 'pet' ? i.cat === 'pet' : (shopCat === 'all' ? i.cat !== 'pet' : i.cat === shopCat)) && (!q || fold(i.name).includes(q) || fold(i.desc).includes(q)));
       if (!items.length) { list.innerHTML = '<div style="text-align:center;color:#888;font-size:0.85rem;padding:20px;">Không tìm thấy sản phẩm nào.</div>'; return; }
       list.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${items.map(it => {
         const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
@@ -249,7 +252,7 @@
     function rentPending() { return rentedList().reduce((sum, it) => sum + rentOf(it), 0); }
     function collectRent() {
       const list = rentedList(), p = rentPending();
-      if (!list.length) return alert('Bạn chưa cho thuê căn nhà nào. Mở Túi đồ và bấm "Cho thuê" ở căn nhà muốn cho thuê nhé.');
+      if (!list.length) return alert('Bạn chưa cho thuê căn nhà nào. Vào Cuộc Sống → Nhà, bấm "Cho thuê" ở căn nhà muốn cho thuê nhé.');
       if (p <= 0) return alert('Chưa có tiền thuê để thu, quay lại sau nhé!');
       window.state.walletBalance = (window.state.walletBalance || 0) + p;
       list.forEach(it => { it.rentLast = nowTs(); });
@@ -294,7 +297,7 @@
       box.innerHTML = `<div style="display:flex;gap:6px;margin-bottom:8px;">
         <button class="btn btn-outline" style="flex:1;min-width:0;font-size:0.75rem;padding:8px 4px;" ${c.done ? 'disabled' : ''} onclick="doCheckin()">${c.done ? '✅ Đã điểm danh' : '📅 Điểm danh +' + moneyShort(c.reward)}</button>
         ${rented ? `<button class="btn btn-outline" style="flex:1;min-width:0;font-size:0.75rem;padding:8px 4px;" onclick="collectRent()">🏦 Thu tiền thuê: ${moneyShort(rent)}</button>` : ''}
-      </div>${owned && !rented ? '<div style="font-size:0.72rem;color:#718096;margin:-4px 0 8px;">🏠 Bạn có nhà. Mở Túi đồ, bấm "Cho thuê" để nhận tiền thuê mỗi ngày.</div>' : ''}`;
+      </div>${owned && !rented ? '<div style="font-size:0.72rem;color:#718096;margin:-4px 0 8px;">🏠 Bạn có nhà. Vào Cuộc Sống → Nhà, bấm "Cho thuê" để nhận tiền thuê mỗi ngày.</div>' : ''}`;
     }
 
     function openBuyDetailModal(itemId) {
