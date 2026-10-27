@@ -154,7 +154,7 @@
         case 'food': return ['portion'];
         case 'decor': return /Nến/.test(n) ? ['scent'] : ['wood'];
         case 'vehicle': return ['color', 'carVer'];
-        case 'pet': return /Bể Cá|Hamster/.test(n) ? ['wood'] : ['gender', 'fur'];
+        case 'pet': return /Bể Cá/.test(n) ? ['wood'] : ['gender', 'fur'];
         case 'book': return /Bút|Màu Vẽ/.test(n) ? ['color'] : ['cover'];
         case 'beauty': return /Son/.test(n) ? ['lip'] : (/Nail/.test(n) ? ['color'] : ['scent']);
         case 'toy': return ['color'];
@@ -644,6 +644,7 @@
         window.state.lastWorkDate = today;
         window.state.dailyWorkCount = 0;
         window.state.dailyCraftCount = 0;
+        try { if (window.PET && typeof window.PET.resetDailies === 'function') window.PET.resetDailies(); } catch (e) {}
         saveStorage();
       }
     }
