@@ -273,11 +273,7 @@
   function renderMall() {
     $('mall-seg-gen').classList.toggle('on', mallMode === 'gen');
     $('mall-seg-pet').classList.toggle('on', mallMode === 'pet');
-    $('mall-seg2').style.display = mallMode === 'pet' ? 'flex' : 'none';
-    $('mall-sub-animal').classList.toggle('on', petSub === 'animal');
-    $('mall-sub-gear').classList.toggle('on', petSub === 'gear');
     if (mallMode === 'gen') { window.__mallGear = false; shopSetMode('gen'); }
-    else if (petSub === 'animal') { window.__mallGear = false; shopSetMode('pet'); }
     else { window.__mallGear = true; renderShopUI(); }
   }
   window.renderGearShop = function () {
