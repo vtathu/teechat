@@ -296,3 +296,12 @@
 #fs-pet .pet-tank { height: min(220px, 48vw); }
 #fs-pet .pet-card { max-width: 100%; box-sizing: border-box; }
 #fs-pet .pet-btns .btn { flex: 1 1 42%; }
+
+/* Teemall thú cưng: sidebar danh mục trái */
+.mall-split{display:flex;align-items:flex-start;gap:8px;width:100%;}
+.mall-side{flex:0 0 74px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;}
+.mall-cat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:none;border-left:3px solid transparent;border-radius:8px;background:#fff;color:#555;cursor:pointer;font-size:0.66rem;line-height:1.2;text-align:center;}
+.mall-cat span{font-size:1.5rem;}
+.mall-cat.on{background:#fff3ef;color:#ee4d2d;border-left-color:#ee4d2d;font-weight:bold;}
+.mall-main{flex:1;min-width:0;}
+.mall-title{font-weight:bold;color:#ee4d2d;font-size:0.9rem;margin:2px 0 8px;}
