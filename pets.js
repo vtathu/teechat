@@ -44,7 +44,7 @@
   const P4 = ['cat', 'dog', 'golden', 'rabbit'];
   const PA = ['cat', 'dog', 'golden', 'rabbit', 'parrot', 'hamster'];
   const mk = (id, cat, emoji, name, price, forL, o) => Object.assign({ id: 'pt-' + id, cat, emoji, name, price, for: forL }, o || {});
-  const PCATS = [['acc', '🎀', 'Phụ kiện'], ['outfit', '👕', 'Quần áo'], ['bowl', '🥣', 'Chén ăn'], ['food', '🍖', 'Thức ăn'], ['toy', '🧸', 'Đồ chơi'], ['home', '🏠', 'Chuồng & bể'], ['tankdecor', '🌿', 'Đồ bể'], ['fish', '🐟', 'Cá']];
+  const PCATS = [['acc', '🎀', 'Phụ kiện'], ['outfit', '👕', 'Quần áo'], ['bowl', '🥣', 'Chén ăn'], ['food', '🍖', 'Thức ăn'], ['toy', '🧸', 'Đồ chơi'], ['home', '🏠', 'Chuồng & bể'], ['tankdecor', '🌿', 'Đồ bể']];
   const SLOT_LABEL = { acc: 'Phụ kiện', outfit: 'Quần áo', bowl: 'Chén ăn', toy: 'Đồ chơi', home: 'Nhà / Chuồng', gravel: 'Sỏi', plant: 'Cây thủy sinh', cave: 'Hang đá', light: 'Đèn', filter: 'Máy lọc' };
   const SLOTS_STD = ['acc', 'outfit', 'bowl', 'toy', 'home'];
   const SLOTS_TANK = ['home', 'gravel', 'plant', 'cave', 'light', 'filter'];
@@ -465,15 +465,33 @@
   function adopt(uid) {
     const obj = findInv(uid);
     if (!obj || !PET_BY_ITEM[obj.id]) return;
+    const sp = PET_BY_ITEM[obj.id], tank = SPECIES[sp].tank;
+    const defName = tank ? 'Bể cá nhà mình' : DEFAULT_NAMES[rand(0, DEFAULT_NAMES.length - 1)];
+    openModal2(tank ? '🫧 Đặt tên cho bể cá' : '🐾 Đặt tên cho bé ' + SPECIES[sp].name.toLowerCase(), `
+      <div style="font-size:0.85rem;color:#718096;">Bé sẽ về nhà bạn ngay sau khi đặt tên.</div>
+      <input id="pet-name-input" type="text" maxlength="24" value="${esc(defName)}" onkeydown="if(event.key==='Enter')PET.confirmAdopt('${uid}')" style="padding:10px;border-radius:10px;border:2px solid var(--app-green);font-size:0.9rem;background:var(--surface-2);color:var(--text);">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="PET.closeModal()">Hủy</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="PET.confirmAdopt('${uid}')">🐾 Nhận nuôi</button>
+      </div>`);
+    setTimeout(function () { const inp = document.getElementById('pet-name-input'); if (inp) { inp.focus(); inp.select(); } }, 60);
+  }
+  function confirmAdopt(uid) {
+    const inp = document.getElementById('pet-name-input');
+    const name = inp ? inp.value.trim().slice(0, 24) : '';
+    closeModal2();
+    adoptNow(uid, name);
+  }
+  function adoptNow(uid, name) {
+    const obj = findInv(uid);
+    if (!obj || !PET_BY_ITEM[obj.id]) return;
     ensure();
     const sp = PET_BY_ITEM[obj.id], v = parseVariants(obj), t = now();
     const tank = SPECIES[sp].tank;
     const defName = tank ? 'Bể cá nhà mình' : DEFAULT_NAMES[rand(0, DEFAULT_NAMES.length - 1)];
-    const name = prompt(tank ? 'Đặt tên cho bể cá:' : 'Đặt tên cho bé ' + SPECIES[sp].name.toLowerCase() + ':', defName);
-    if (name === null) return;
     const p = {
       id: 'pet-' + t.toString(36) + Math.random().toString(36).slice(2, 6),
-      species: sp, name: (name.trim() || defName).slice(0, 24),
+      species: sp, name: (name || defName).slice(0, 24),
       gender: v.gender || (Math.random() < 0.5 ? 'male' : 'female'),
       color: tank ? 'Bể' : (v.color || 'Trắng'),
       born: t, tickTs: t, stats: { food: 80, mood: 80, clean: 80, energy: 80 },
@@ -571,9 +589,22 @@
   }
   function rename(id) {
     const p = findPet(id); if (!p) return;
-    const n = prompt('Đổi tên:', p.name);
-    if (n === null || !n.trim()) return;
-    p.name = n.trim().slice(0, 24); commit();
+    openModal2('✏️ Đổi tên', `
+      <input id="pet-rename-input" type="text" maxlength="24" value="${esc(p.name)}" onkeydown="if(event.key==='Enter')PET.renameNow('${id}')" style="padding:10px;border-radius:10px;border:2px solid var(--app-green);font-size:0.9rem;background:var(--surface-2);color:var(--text);">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" style="flex:1;" onclick="PET.closeModal()">Hủy</button>
+        <button class="btn btn-pink" style="flex:1;" onclick="PET.renameNow('${id}')">Lưu tên</button>
+      </div>`);
+    setTimeout(function () { const inp = document.getElementById('pet-rename-input'); if (inp) { inp.focus(); inp.select(); } }, 60);
+  }
+  function renameNow(id) {
+    const p = findPet(id); if (!p) return closeModal2();
+    const inp = document.getElementById('pet-rename-input');
+    const v = inp ? inp.value.trim().slice(0, 24) : '';
+    closeModal2();
+    if (!v) return;
+    p.name = v; commit();
+    toast('✏️ Đã đổi tên thành ' + v);
   }
   function tap(id, el, ev) {
     const p = findPet(id); if (!p) return;
@@ -656,13 +687,28 @@
   function openAddFish(id) {
     const p = findPet(id); if (!p || !isTank(p)) return;
     const cap = tankCap(p), n = (p.fish || []).length;
-    const fishIds = Object.keys(ensure().petBag).filter(i => bagQty(i) > 0 && ITEM_BY_ID[i] && ITEM_BY_ID[i].cat === 'fish');
-    if (!fishIds.length) return openModal2('Chưa có cá', `<div style="font-size:0.85rem;color:#4a5568">Bạn chưa có cá nào trong kho.</div><button class="btn btn-pink" onclick="PET.closeModal();PET.shopCat('fish');PET.view('shop')">🏪 Đến cửa hàng</button>`);
     if (n >= cap) return toast(`Bể đã đầy (${n}/${cap}). Mua bể lớn hơn hoặc bán bớt cá.`);
-    openModal2(`Thả cá vào ${p.name} (${n}/${cap})`, fishIds.map(i => {
+    const fishIds = Object.keys(ensure().petBag).filter(i => bagQty(i) > 0 && ITEM_BY_ID[i] && ITEM_BY_ID[i].cat === 'fish');
+    const bagRows = fishIds.map(i => {
       const it = ITEM_BY_ID[i];
       return `<div class="pet-item"><div class="ic">${it.emoji}</div><div class="tx"><b>${esc(it.name)}</b><div>có ${bagQty(i)}</div></div><button class="btn btn-pink" onclick="PET.addFish('${id}','${i}')">Thả</button></div>`;
-    }).join(''));
+    }).join('');
+    const saleRows = ITEMS.filter(i => i.cat === 'fish' && i.fish).map(it =>
+      `<div class="pet-item"><div class="ic">${it.emoji}</div><div class="tx"><b>${esc(it.name)}</b><div>${money(it.price)}</div></div><button class="btn" onclick="PET.buyFish('${id}','${it.id}')">Mua & thả</button></div>`
+    ).join('');
+    openModal2(`Thả cá vào ${p.name} (${n}/${cap})`,
+      (bagRows ? `<div style="font-weight:bold;font-size:.8rem;color:var(--app-dark-green)">Cá trong kho</div>${bagRows}` : '') +
+      `<div style="font-weight:bold;font-size:.8rem;color:var(--app-dark-green);margin-top:6px">Mua cá thả ngay</div>${saleRows}`);
+  }
+  function buyFish(id, itemId) {
+    const p = findPet(id), it = ITEM_BY_ID[itemId];
+    if (!p || !it || !it.fish) return;
+    if ((p.fish || []).length >= tankCap(p)) return toast('Bể đã đầy.');
+    if (!spend(it.price)) return;
+    p.fish = p.fish || [];
+    p.fish.push({ id: 'f-' + now().toString(36) + Math.random().toString(36).slice(2, 6), g: it.fish.g, c: it.fish.c, born: now() });
+    closeModal2(); commit();
+    toast('🐟 Đã thả cá vào bể');
   }
   function addFish(id, itemId) {
     const p = findPet(id), it = ITEM_BY_ID[itemId];
@@ -784,8 +830,8 @@
     imgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = ''; },
     fishImgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = 'block'; },
     closeModal: closeModal2,
-    adopt, sellInv, openFeed, feed, bathe, vet, play, rename, tap, sellPet, sellFish,
-    buy, openEquip, equip, unequip, openAddFish, addFish, openWalk, walk, tellChat
+    adopt, confirmAdopt, sellInv, openFeed, feed, bathe, vet, play, rename, renameNow, tap, sellPet, sellFish,
+    buy, openEquip, equip, unequip, openAddFish, addFish, buyFish, openWalk, walk, tellChat
   };
   window.renderPetTab = render;
   window.petInvButtons = invButtons;
