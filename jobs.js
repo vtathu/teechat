@@ -11,10 +11,9 @@
 
     function canChangeJob() {
       if (!window.state.jobPicked) return { ok: true, left: 0 };
-      const hrs = (nowTs() - (window.state.jobChangeTimestamp || 0)) / 3600000;
-      return { ok: hrs >= 0, left: Math.max(0, Math.ceil((0 - hrs) * 60)) };
+      return { ok: true, left: 0 };
     }
-"
+
     function renderLifeModeUI() {
       checkDailyReset();
       document.getElementById('life-wallet-display').innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
