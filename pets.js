@@ -150,7 +150,7 @@
     S().walletBalance -= n;
     return true;
   }
-  function commit() { save(); refreshWallet(); render(); }
+  function commit() { save(); refreshWallet(); render(); try { if (window.__mallGear && typeof renderShopUI === 'function') renderShopUI(); if (typeof window.refreshUiBag === 'function') window.refreshUiBag(); } catch (e) {} }
 
   // ---------- THÚ: TRẠNG THÁI ----------
   function dayKey() { return new Date(now()).toDateString(); }
@@ -339,15 +339,20 @@
   }
 
   // ---------- GIAO DIỆN: MÀN HÌNH CHÍNH CỦA TAB ----------
-  let view = 'mine', shopCat = 'acc';
+  let view = 'mine', shopCat = 'acc', selPet = null;
   function viewMine() {
-    const pets = ensure().pets;
+    const pets = ensure().pets.filter(Boolean);
     if (!pets.length) {
       return `<div class="pet-card" style="text-align:center;color:#718096;font-size:0.85rem;line-height:1.6;">
-        Bạn chưa nuôi bé nào.<br>Mua thú trong 🛒 Shopping (mục Thú cưng), rồi vào <b>📦 Tài sản</b> bấm <b>🐾 Nuôi</b> để nhận nuôi nhé. Cũng có thể 🎁 Tặng hoặc 💰 Bán đi.
+        Bạn chưa nuôi bé nào.<br>Mua thú ở <b>🛍️ Teemall → Shop thú cưng</b>, rồi vào <b>🎒 Túi → Thú cưng</b> bấm <b>🐾 Nuôi</b> để nhận nuôi nhé.
+        <div class="pet-btns" style="justify-content:center;margin-top:8px;"><button class="btn btn-pink" onclick="PET.view('shop')">🏪 Đến shop thú cưng</button><button class="btn btn-outline" onclick="PET.view('bag')">🎒 Mở túi</button></div>
       </div>`;
     }
-    return pets.map(p => petCardHtml(p)).join('');
+    if (!pets.some(x => x.id === selPet)) selPet = pets[0].id;
+    const cur = pets.find(x => x.id === selPet);
+    const sw = pets.length > 1 ? `<div class="pet-chips">${pets.map(x => `<span class="pet-chip ${x.id === selPet ? 'on' : ''}" onclick="PET.selPet('${x.id}')">${isTank(x) ? '🫧' : SPECIES[x.species].emoji} ${esc(x.name)}</span>`).join('')}</div>` : '';
+    const dock = `<div class="pet-card"><div style="font-weight:bold;color:var(--app-dark-green);font-size:0.85rem;">Túi & cửa hàng</div><div class="pet-btns"><button class="btn btn-outline" onclick="PET.view('bag')">🎒 Túi thú cưng</button><button class="btn btn-outline" onclick="PET.view('shop')">🏪 Cửa hàng thú</button></div></div>`;
+    return sw + petCardHtml(cur) + dock;
   }
   function viewShop() {
     const chips = PCATS.map(c => `<span class="pet-chip ${shopCat === c[0] ? 'on' : ''}" onclick="PET.shopCat('${c[0]}')">${c[1]} ${c[2]}</span>`).join('');
@@ -364,6 +369,29 @@
     }).join('');
     return `<div class="pet-card"><div style="font-weight:bold;color:var(--app-dark-green)">🏪 Cửa hàng thú cưng</div><div class="pet-chips">${chips}</div><div style="display:flex;flex-direction:column;gap:6px">${rows}</div></div>`;
   }
+  function gearShopHtml() {
+    const chips = PCATS.map(c => {
+      const on = shopCat === c[0];
+      return `<button onclick="PET.shopCat('${c[0]}')" style="flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:12px;cursor:pointer;font-size:0.68rem;background:${on ? '#fff3ef' : '#fff'};border:2px solid ${on ? '#ee4d2d' : '#eee'};color:${on ? '#ee4d2d' : '#555'};"><span style="font-size:1.4rem;">${c[1]}</span>${c[2]}</button>`;
+    }).join('');
+    const mine = {}; ensure().pets.forEach(x => { if (x) mine[x.species] = 1; });
+    const cards = ITEMS.filter(i => i.cat === shopCat).map(it => {
+      const owned = bagQty(it.id);
+      const fit = Object.keys(mine).some(s => okFor(it, s));
+      const packTxt = it.pack > 1 ? ` · gói ${it.pack} lần` : '';
+      return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
+        <div class="pet-bigic" style="height:88px;background:linear-gradient(135deg,#fff3ef,#ffe4d9);">${itemIcon(it)}</div>
+        <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
+          <div style="font-size:0.78rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;">${esc(it.name)}</div>
+          <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${money(it.price)}</div>
+          <div style="font-size:0.66rem;color:#888;line-height:1.3;">Hợp: ${forEmoji(it)}${packTxt}${fit ? '' : ' <span style="color:#bbb">(chưa có thú hợp)</span>'}${owned ? ` · Có <b>${owned}</b>` : ''}</div>
+          <button class="btn" style="background:#ee4d2d;color:#fff;border:none;padding:6px;font-size:0.78rem;margin-top:2px;" onclick="PET.buy('${it.id}')">🛒 Mua ngay</button>
+        </div></div>`;
+    }).join('');
+    return `<div style="background:linear-gradient(135deg,#ee4d2d,#ff7337);padding:8px;border-radius:12px;margin-bottom:8px;width:100%;box-sizing:border-box;"><div style="color:#fff;font-weight:bold;font-size:0.9rem;">🛍️ TEEMALL · ĐỒ CHO THÚ</div></div>
+      <div style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">${chips}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${cards}</div>`;
+  }
   function viewBag() {
     const bag = ensure().petBag;
     const ids = Object.keys(bag).filter(id => bag[id] > 0 && ITEM_BY_ID[id]);
@@ -379,8 +407,7 @@
     injectStyle();
     ensure();
     tickAll();
-    const nav = [['mine', '🐾 Thú của tôi'], ['shop', '🏪 Cửa hàng'], ['bag', '🎒 Kho đồ']].map(v => `<button class="${view === v[0] ? 'on' : ''}" onclick="PET.view('${v[0]}')">${v[1]}</button>`).join('');
-    root.innerHTML = `<div class="pet-nav">${nav}</div>` + (view === 'shop' ? viewShop() : view === 'bag' ? viewBag() : viewMine());
+    root.innerHTML = viewMine();
   }
 
   // ---------- TOAST + MODAL ----------
@@ -742,8 +769,14 @@
 
   // ---------- KHỞI ĐỘNG ----------
   window.PET = {
-    view: (v) => { view = v; render(); },
-    shopCat: (c) => { shopCat = c; if (view === 'shop') render(); },
+    view: (v) => {
+      if (v === 'shop') { if (window.openMallGear) window.openMallGear(); return; }
+      if (v === 'bag') { if (window.openBagTab) window.openBagTab('pet'); return; }
+      view = 'mine'; render();
+    },
+    selPet: (id) => { selPet = id; render(); },
+    gearShopHtml, bagHtml: viewBag,
+    shopCat: (c) => { shopCat = c; if (typeof renderShopUI === 'function') renderShopUI(); },
     imgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = ''; },
     fishImgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = 'block'; },
     closeModal: closeModal2,
