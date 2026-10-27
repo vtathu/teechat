@@ -123,6 +123,7 @@
         <button class="modal-tab-btn" id="life-sub-btn-shop" onclick="switchLifeSub('shop')">🛒 Shopping</button>
         <button class="modal-tab-btn" id="life-sub-btn-craft" onclick="switchLifeSub('craft')">🧶 Thủ Công</button>
         <button class="modal-tab-btn" id="life-sub-btn-mission" onclick="switchLifeSub('mission')">📋 Nhiệm Vụ</button>
+        <button class="modal-tab-btn" id="life-sub-btn-pet" onclick="switchLifeSub('pet')">🐾 Thú Cưng</button>
       </div>
 
       <!-- TAB NHỎ: ĐI LÀM -->
@@ -170,6 +171,11 @@
           <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎒 Túi Thủ Công</h3>
           <div id="craft-bag-container" style="display: flex; flex-direction: column; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
         </div>
+      </div>
+
+      <!-- TAB NHỎ: THÚ CƯNG -->
+      <div id="life-sub-pet" class="life-sub hidden">
+        <div id="pet-root" style="display: flex; flex-direction: column; gap: 12px;"></div>
       </div>
 
       <!-- TAB NHỎ: NHIỆM VỤ -->
@@ -603,11 +609,12 @@
 
   <script type="module" src="firebase.js?v=3"></script>
   <script src="core.js?v=1"></script>
-  <script src="data-shop.js?v=3"></script>
-  <script src="shop.js?v=3"></script>
-  <script src="jobs.js?v=1"></script>
+  <script src="data-shop.js?v=4"></script>
+  <script src="shop.js?v=4"></script>
+  <script src="jobs.js?v=2"></script>
   <script src="craft.js?v=2"></script>
   <script src="quests.js?v=2"></script>
+  <script src="pets.js?v=1"></script>
   <script src="chat.js?v=4"></script>
   <script src="push.js?v=1"></script>
 </body>
