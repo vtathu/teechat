@@ -389,7 +389,7 @@
       const s = window.state.craftSession;
       const b = s.board;
       if (from === to || !b[from]) return false;
-      if (!b[to]) { b[to] = b[from]; b[from] = 0; return 'move'; }
+      if (!b[to]) return false;
       if (isStone(b[from]) || isStone(b[to])) return false;
       if (b[from] === b[to] && cLv(b[to]) < CRAFT_MAX) {
         b[to] = b[to] + 1;
