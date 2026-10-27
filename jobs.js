@@ -82,6 +82,7 @@
               ? ` <button class="btn btn-outline" style="padding:2px 8px;font-size:0.72rem;" onclick="toggleRent('${obj.uniqueId}')">✅ Đang cho thuê (+${moneyShort(day)}/ngày) · Ngừng</button>`
               : ` <button class="btn btn-outline" style="padding:2px 8px;font-size:0.72rem;" onclick="toggleRent('${obj.uniqueId}')">🏷️ Cho thuê (+${moneyShort(day)}/ngày)</button>`;
           }
+          if (typeof window.petInvButtons === 'function') badge.innerHTML += window.petInvButtons(obj);
         }
         container.appendChild(badge);
       });
