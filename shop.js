@@ -202,11 +202,14 @@
           <input id="shop-q" type="text" placeholder="🔍 Tìm sản phẩm..." value="${shopQ.replace(/"/g, '&quot;')}" oninput="shopSearch(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:none;font-size:0.85rem;">
         </div>
         <div id="shop-income" style="width:100%;"></div>
-        <div id="shop-chips" style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">
-          ${SHOP_CATS.map(c => `<button onclick="shopSetCat('${c[0]}')" style="flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 6px;border-radius:12px;cursor:pointer;font-size:0.68rem;background:${shopCat === c[0] ? '#fff3ef' : '#fff'};border:2px solid ${shopCat === c[0] ? '#ee4d2d' : '#eee'};color:${shopCat === c[0] ? '#ee4d2d' : '#555'};"><span style="font-size:1.4rem;">${c[1]}</span>${c[2]}</button>`).join('')}
-        </div>
+        <div class="mall-split">
+          <div class="mall-side" id="shop-chips">
+            ${SHOP_CATS.map(c => `<button onclick="shopSetCat('${c[0]}')" class="mall-cat ${shopCat === c[0] ? 'on' : ''}"><span>${c[1]}</span><small>${c[2]}</small></button>`).join('')}
+          </div>
+          <div class="mall-main">
         <div id="shop-loc-box" style="width:100%;"></div>
-        <div id="shop-list" style="width:100%;"></div>`;
+        <div id="shop-list" style="width:100%;"></div>
+          </div></div>`;
       if (shopMode === 'pet') { const ch = document.getElementById('shop-chips'); if (ch) ch.remove(); }
       renderShopIncome();
       renderShopList();
