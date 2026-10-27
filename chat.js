@@ -1,13 +1,20 @@
 // Xóa mọi dấu vết thẻ điểm thân mật (kể cả AI viết sai định dạng) để không hiện "+2" trong khung chat
 function cleanAiTags(t) {
   return (t || '')
+    .replace(/[\[\(（][^\[\]()（）\n]{0,40}?[+\-−–]\s*\d+\s*(?:điểm\s*)?(?:thân mật|tình cảm|hảo cảm|affection|love)[^\[\]()（）\n]{0,10}[\]\)）]/gi, '')
     .replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '')
     .replace(/\[?\s*AFFECTION\s*[:：][^\n]*/gi, '')
-    .replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]/g, '')
+    .replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]?/g, '')
     .replace(/[❤💕💗💖💘]\uFE0F?\s*[+\-−–]\s*\d+(?:\s*(?:điểm|pts?))?/g, '')
     .replace(/[\[\(]?\s*(?:độ\s*)?thân mật\s*[:：]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?\s*[\]\)]?/gi, '')
     .replace(/[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm\s*)?thân mật\s*[\]\)]?/gi, '')
     .replace(/^[ \t]*[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?\s*[\]\)]?[ \t]*$/gim, '')
+    .replace(/\{\{[\s\S]*?\}\}/g, '')
+    .replace(/\(\s*Lv\.?\s*\d+[^)\n]{0,40}\)/gi, '')
+    .replace(/[+\-−–]\s*\d+\s*(?:điểm\s*)?[❤💕💗💖💘]\uFE0F?/g, '')
+    .replace(/[\[\(（]\s*[+\-−–]\s*\d+\s*(?:điểm|pts?|❤\uFE0F?)?\s*[\]\)）]/gi, '')
+    .replace(/(?:thân mật|hảo cảm|tình cảm|affection|love)\s*[:：]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?/gi, '')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
 // Lọc bằng code: nếu AI lỡ viết thay người chơi thì cắt từ dòng đó trở đi, và xóa các câu "Tên nói: ..." nằm lẫn trong dòng
@@ -753,7 +760,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         if (msg.sender === 'system') {
           const div = document.createElement('div'); 
           div.className = 'narrative-block system-action'; 
-          div.innerText = msg.text.replace(/[\[\]\*\"]/g, '').trim(); 
+          div.innerText = cleanAiTags(msg.text).replace(/[\[\]\*\"]/g, '').trim(); 
           container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, msg.img, container, idx, msg.ts);
@@ -845,7 +852,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       // Tin dạng [nội dung] (tặng quà, voice...) hiển thị như hành động, không kèm ngoặc vuông
       const trimmed = text.trim();
       if (!imgData && /^\[[\s\S]*\]$/.test(trimmed)) {
-        const inner = trimmed.slice(1, -1).replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim();
+        const inner = trimmed.slice(1, -1).replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim(); /*aff*/
         const actDiv = document.createElement('div');
         actDiv.className = 'narrative-block user-action';
         actDiv.innerText = inner;
