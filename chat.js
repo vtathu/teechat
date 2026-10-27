@@ -177,6 +177,7 @@ function stripUserVoice(text, name) {
 
         // Sự kiện đã diễn ra trước đó của truyện này (để không lặp và nối tiếp hậu quả)
         const pastEvents = (story.eventLog || []).slice(-6).map(e => `- ${cut(e.desc, 220)} → ${cut(e.result || e.choice, 160)}`).join('\n');
+        const petMemEvents = ((window.state.petMemories || {})[charId] || []).slice(-4).map(m => `- ${cut(m.text, 200)}`).join('\n');
 
         const aff = (window.state.affectionLevels && window.state.affectionLevels[charId]) || { level: 1, points: 0 };
         let living = '';
@@ -201,6 +202,7 @@ ${living}
 
 [NGƯỜI CHƠI]
 ${userName}${persona.memories ? ': ' + cut(persona.memories, 400) : ''}
+${petMemEvents ? `\n[KÝ ỨC THÚ CƯNG CỦA ${charName} - SỰ THẬT ĐÃ XẢY RA]\n${petMemEvents}\n` : ''}
 
 [CÁC NHÂN VẬT KHÁC TRONG TRUYỆN]
 ${others}
@@ -1341,6 +1343,22 @@ Trả về ĐÚNG JSON thuần, không markdown:
         if (inHome.length) cohabBlock += `[Ở CHUNG NHÀ - GHI NHỚ LÂU DÀI] ${inHome.map(c => c.name).join(', ')} đang SỐNG CHUNG NHÀ với "${meN}". Nhân vật nhớ rõ điều này trong mọi lượt: cùng một mái nhà, biết nhà cửa, đồ đạc, thói quen sinh hoạt chung (ăn uống, ngủ nghỉ, việc nhà, giờ giấc ra vào), không cư xử như người ở nơi khác hay mới đến lần đầu; cảnh trong nhà là bối cảnh mặc định khi phù hợp.\n`;
         if (outHome.length) cohabBlock += `${outHome.map(c => c.name).join(', ')} từng ở chung nhưng ĐÃ DỌN ĐI, hiện sống riêng (vẫn nhớ thời gian từng ở chung).\n`;
       }
+      let petMemBlock = '';
+      if (story && story.characters) {
+        const pm = window.state.petMemories || {};
+        const lines = [];
+        story.characters.forEach(c => {
+          const arr = (pm[c.id] || []).slice(-6);
+          if (!arr.length) return;
+          const txt = arr.map(m => {
+            let d = '';
+            try { d = new Date(m.ts).toLocaleDateString('vi-VN') + ': '; } catch (e) {}
+            return d + m.text;
+          }).join(' | ');
+          lines.push(`- ${c.name} nhớ: ${txt}`);
+        });
+        if (lines.length) petMemBlock = `[KÝ ỨC VỀ THÚ CƯNG VÀ CHUYẾN ĐI DẠO - SỰ THẬT ĐÃ XẢY RA] Những chuyện dưới đây thật sự đã xảy ra khi người chơi dắt thú đi dạo (không tự động hiện trong khung chat). Nhân vật biết rõ, có thể nhắc lại tự nhiên khi phù hợp, nhất là khi thú bị thương hoặc gặp chuyện, nhưng không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
+      }
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -1348,7 +1366,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
-${charAffectionSummary}${cohabBlock}
+${charAffectionSummary}${cohabBlock}${petMemBlock}
 5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
 [QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ]
