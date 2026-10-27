@@ -240,6 +240,20 @@
       }).join('')}</div>`;
     }
 
+    window.petAnimalGridHtml = function () {
+      const items = SHOP_CATALOG.filter(i => i.cat === 'pet');
+      return items.map(it => {
+        const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
+        return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
+          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);">${m[1]}</div>
+          <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
+            <div style="font-size:0.78rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;">${m[2]}</div>
+            <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${moneyShort(unitPrice(it, true))}</div>
+            <button class="btn" style="background:#ee4d2d;color:#fff;border:none;padding:6px;font-size:0.78rem;margin-top:2px;" onclick="openBuyDetailModal('${it.id}')">🛒 Mua ngay</button>
+          </div></div>`;
+      }).join('');
+    };
+
     // ----- Thu nhập: điểm danh + tiền thuê bất động sản -----
     const RENT_RATE = 0.005;
     const isEstateObj = (it) => { const c = SHOP_CATALOG.find(x => x.id === it.id); return !!c && c.cat === 'estate'; };
