@@ -339,7 +339,7 @@
   }
 
   // ---------- GIAO DIỆN: MÀN HÌNH CHÍNH CỦA TAB ----------
-  let view = 'mine', shopCat = 'acc', selPet = null;
+  let view = 'mine', shopCat = 'animal', selPet = null;
   function viewMine() {
     const pets = ensure().pets.filter(Boolean);
     if (!pets.length) {
@@ -370,12 +370,15 @@
     return `<div class="pet-card"><div style="font-weight:bold;color:var(--app-dark-green)">🏪 Cửa hàng thú cưng</div><div class="pet-chips">${chips}</div><div style="display:flex;flex-direction:column;gap:6px">${rows}</div></div>`;
   }
   function gearShopHtml() {
-    const chips = PCATS.map(c => {
+    const cats = [['animal', '🐾', 'Thú cưng']].concat(PCATS);
+    const side = cats.map(c => {
       const on = shopCat === c[0];
-      return `<button onclick="PET.shopCat('${c[0]}')" style="flex:0 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;border-radius:12px;cursor:pointer;font-size:0.68rem;background:${on ? '#fff3ef' : '#fff'};border:2px solid ${on ? '#ee4d2d' : '#eee'};color:${on ? '#ee4d2d' : '#555'};"><span style="font-size:1.4rem;">${c[1]}</span>${c[2]}</button>`;
+      return `<button onclick="PET.shopCat('${c[0]}')" class="mall-cat ${on ? 'on' : ''}"><span>${c[1]}</span><small>${c[2]}</small></button>`;
     }).join('');
     const mine = {}; ensure().pets.forEach(x => { if (x) mine[x.species] = 1; });
-    const cards = ITEMS.filter(i => i.cat === shopCat).map(it => {
+    let cards;
+    if (shopCat === 'animal') cards = (typeof window.petAnimalGridHtml === 'function') ? window.petAnimalGridHtml() : '';
+    else cards = ITEMS.filter(i => i.cat === shopCat).map(it => {
       const owned = bagQty(it.id);
       const fit = Object.keys(mine).some(s => okFor(it, s));
       const packTxt = it.pack > 1 ? ` · gói ${it.pack} lần` : '';
@@ -388,9 +391,10 @@
           <button class="btn" style="background:#ee4d2d;color:#fff;border:none;padding:6px;font-size:0.78rem;margin-top:2px;" onclick="PET.buy('${it.id}')">🛒 Mua ngay</button>
         </div></div>`;
     }).join('');
-    return `<div style="background:linear-gradient(135deg,#ee4d2d,#ff7337);padding:8px;border-radius:12px;margin-bottom:8px;width:100%;box-sizing:border-box;"><div style="color:#fff;font-weight:bold;font-size:0.9rem;">🛍️ TEEMALL · ĐỒ CHO THÚ</div></div>
-      <div style="display:flex;overflow-x:auto;gap:6px;padding:2px 2px 8px;width:100%;">${chips}</div>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${cards}</div>`;
+    if (!cards) cards = '<div style="grid-column:1/-1;text-align:center;color:#888;font-size:0.85rem;padding:24px;">Chưa có sản phẩm.</div>';
+    const cur = cats.find(c => c[0] === shopCat) || cats[0];
+    return `<div class="mall-split"><div class="mall-side">${side}</div>
+      <div class="mall-main"><div class="mall-title">${cur[1]} ${cur[2]}</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${cards}</div></div></div>`;
   }
   function viewBag() {
     const bag = ensure().petBag;
