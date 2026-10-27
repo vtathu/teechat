@@ -9,8 +9,27 @@
     document.documentElement.setAttribute('data-mode', r);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', r === 'dark' ? '#1f1c2e' : '#f6f1ff');
+    paintToggle();
   }
+  // Nút đổi nhanh Sáng/Tối đặt ngoài giao diện chính
+  function paintToggle() {
+    var btn = document.getElementById('ui-mode-toggle');
+    if (!btn) return;
+    var dark = resolve(get()) === 'dark';
+    var ico = btn.querySelector('.ri'), lbl = btn.querySelector('small');
+    if (ico) {
+      ico.textContent = dark ? '☀️' : '🌙';
+      if (lbl) lbl.textContent = dark ? 'Sáng' : 'Tối';
+    } else {
+      btn.textContent = dark ? '☀️' : '🌙';
+    }
+    btn.title = dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
+  }
+  window.toggleUiMode = function () {
+    window.setUiMode(resolve(get()) === 'dark' ? 'light' : 'dark');
+  };
   function paint() {
+    paintToggle();
     var box = document.getElementById('ui-mode-box'); if (!box) return;
     var cur = get();
     box.querySelectorAll('button[data-mode]').forEach(function (b) {
@@ -42,7 +61,7 @@
   }
   apply();
   if (mq && mq.addEventListener) mq.addEventListener('change', function () { if (get() === 'auto') apply(); });
-  function boot() { inject(); }
+  function boot() { inject(); paintToggle(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   document.addEventListener('click', function (e) {
     if (e.target && e.target.closest && e.target.closest('[onclick*="modal-settings"]')) setTimeout(function () { inject(); paint(); }, 30);
