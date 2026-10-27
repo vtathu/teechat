@@ -120,57 +120,111 @@ function stripUserVoice(text, name) {
       return cand[Math.floor(Math.random() * cand.length)];
     }
 
-    // ⚡ HÀM SỰ KIỆN NGẪU NHIÊN: TỈ LỆ THẤP (15%), CHỈ XUẤT HIỆN Ở TAB CUỘC SỐNG
+    // ⚡ SỰ KIỆN NGẪU NHIÊN: tự nhớ truyện + nhân vật, tạo sự kiện đúng lịch sử chat và thân phận nhân vật
+    const STORY_EVENT_MIN_MSGS = 4;
+
+    // Chọn nhân vật đang "có mặt" trong mạch chat gần nhất (ai vừa nói nhiều/gần đây thì dễ được chọn hơn)
+    function eventPickCharacter(chars, history) {
+      const recent = history.slice(-14);
+      const weight = new Map(chars.map(c => [c.id, 1]));
+      recent.forEach((m, i) => {
+        if (!m || m.sender !== 'ai') return;
+        const rec = 1 + (i / Math.max(1, recent.length - 1)) * 4;
+        const txt = String(m.text || '').toLowerCase();
+        chars.forEach(c => {
+          if (c.name && txt.includes('[' + c.name.toLowerCase() + ']')) weight.set(c.id, weight.get(c.id) + rec);
+        });
+      });
+      let total = 0; chars.forEach(c => { total += weight.get(c.id); });
+      let r = Math.random() * total;
+      for (const c of chars) { r -= weight.get(c.id); if (r <= 0) return c; }
+      return chars[chars.length - 1];
+    }
+
     async function maybeTriggerRandomEvent() {
       if (eventBusy) return;
       if (Math.random() > 0.3) return;
       if (!(window.state.apiKeys || []).length) return;
 
       const storyId = window.state.activeStoryId;
-      const currentStory = window.state.stories ? window.state.stories.find(s => s.id === storyId) : null;
-      const chars = (currentStory && currentStory.characters) ? currentStory.characters : [];
-      if (chars.length === 0) return;
-      const activeChar = chars[Math.floor(Math.random() * chars.length)];
+      const story = window.state.stories ? window.state.stories.find(s => s.id === storyId) : null;
+      const chars = (story && story.characters) ? story.characters.filter(c => c && c.name) : [];
+      if (!story || chars.length === 0) return;
+
+      // Lịch sử thật (có ts), bỏ cảnh mở đầu; chưa đủ chat thì chưa đủ cơ sở để tạo sự kiện đúng mạch
+      const fullHistory = ((window.state.chatHistories && window.state.chatHistories[storyId]) || []).filter(m => m && (m.ts || m.event));
+      const realMsgs = fullHistory.filter(m => m.sender === 'user' || m.sender === 'ai');
+      if (realMsgs.length < STORY_EVENT_MIN_MSGS) return;
 
       eventBusy = true;
       try {
+        const activeChar = eventPickCharacter(chars, fullHistory);
         const charId = activeChar.id;
         const charName = activeChar.name;
-        const userName = (window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
+        const persona = window.state.persona || {};
+        const userName = persona.name ? persona.name : 'Bạn';
+        const cut = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
 
-        const chatHistory = (window.state.chatHistories && window.state.chatHistories[storyId]) || [];
-        const recentHistory = chatHistory.slice(-10).map(m => `${m.sender === 'ai' ? charName : userName}: ${m.text}`).join('\n');
+        // Diễn biến gần nhất (30 tin cuối) - tin AI vốn đã có dạng [Tên nhân vật]: ...
+        const recentHistory = fullHistory.slice(-30).map(m => {
+          const t = cut(cleanAiTags(m.text), 420);
+          if (!t) return '';
+          if (m.sender === 'user') return `${userName}: ${t}`;
+          if (m.sender === 'ai') return t;
+          if (m.sender === 'system' && m.event) return `[Sự kiện] ${t}`;
+          return '';
+        }).filter(Boolean).join('\n');
 
+        // Sự kiện đã diễn ra trước đó của truyện này (để không lặp và nối tiếp hậu quả)
+        const pastEvents = (story.eventLog || []).slice(-6).map(e => `- ${cut(e.desc, 220)} → ${cut(e.result || e.choice, 160)}`).join('\n');
+
+        const aff = (window.state.affectionLevels && window.state.affectionLevels[charId]) || { level: 1, points: 0 };
+        let living = '';
+        if (activeChar.livesWith) living = `${charName} đang SỐNG CHUNG NHÀ với ${userName}.`;
+        else if (activeChar.movedOut) living = `${charName} từng ở chung nhưng đã dọn đi, hiện sống riêng.`;
+
+        const others = chars.filter(c => c.id !== charId).slice(0, 6).map(c => `- ${c.name}: ${cut(c.personality, 150)}`).join('\n') || '(không có)';
         const randomRewardItem = pickRewardByRarity();
 
-        const prompt = `Bạn là Trợ lý Hệ thống Game Cốt Truyện. 
-Dựa vào ngữ cảnh đoạn chat gần đây giữa người chơi (${userName}) và nhân vật (${charName}):
----
-${recentHistory || "Mới bắt đầu trò chuyện"}
----
+        const prompt = `Bạn là Trợ lý Hệ thống của game nhập vai. Hãy tạo MỘT sự kiện nhỏ nảy sinh TỰ NHIÊN từ chính câu chuyện đang diễn ra, xoay quanh nhân vật "${charName}" và người chơi "${userName}".
 
-Hãy tạo ra một sự kiện/biến cố ngẫu nhiên bất ngờ tiếp nối ngay mạch cảm xúc hoặc tình huống hiện tại này.
-Yêu cầu tạo 2 lựa chọn cho người chơi:
-- Lựa chọn 1: Hợp tác, ngọt ngào hoặc xử lý khéo léo (Mang lại thưởng tiền từ 5000000 đến 60000000, có thể tặng vật phẩm, hoặc tăng điểm thân mật từ 1 đến 10 điểm).
-- Lựa chọn 2: Phũ phàng, trêu chọc hoặc ích kỷ (Gây trừ tiền từ 2000000 đến 20000000, giảm điểm thân mật từ 1 đến 10 điểm hoặc tạo drama).
+[HỒ SƠ TRUYỆN - ĐÃ THIẾT LẬP, PHẢI NHỚ]
+Bối cảnh: ${cut(story.setting, 900) || '(không có)'}
+Cảnh mở đầu: ${cut(story.openingScene, 600) || '(không có)'}
 
-Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, không chứa \`\`\`json):
+[NHÂN VẬT CHÍNH CỦA SỰ KIỆN]
+Tên: ${charName}
+Thân phận / tính cách / cách nói chuyện: ${cut(activeChar.personality, 900) || '(chưa mô tả)'}
+Lời mở đầu đặc trưng: ${cut(activeChar.firstMsg, 300) || '(không có)'}
+Độ thân mật với người chơi: Lv.${aff.level} (Lv càng thấp thì nhân vật càng giữ ý, giữ khoảng cách; Lv cao thì gần gũi, quan tâm hơn).
+${living}
+
+[NGƯỜI CHƠI]
+${userName}${persona.memories ? ': ' + cut(persona.memories, 400) : ''}
+
+[CÁC NHÂN VẬT KHÁC TRONG TRUYỆN]
+${others}
+
+[SỰ KIỆN ĐÃ XẢY RA TRƯỚC ĐÂY - KHÔNG LẶP LẠI Ý TƯỞNG, CÓ THỂ NỐI TIẾP HẬU QUẢ]
+${pastEvents || '(chưa có)'}
+
+[DIỄN BIẾN CHAT GẦN NHẤT - ĐÂY LÀ NHỮNG GÌ ĐÃ THẬT SỰ XẢY RA]
+${recentHistory}
+
+[QUY TẮC BẮT BUỘC]
+1. Sự kiện phải tiếp nối ĐÚNG địa điểm, thời điểm, tâm trạng và chủ đề của đoạn chat cuối cùng; nảy ra từ chi tiết đã có trong hồ sơ hoặc lịch sử chat, không đột ngột sang bối cảnh khác.
+2. Hành động, nghề nghiệp, khả năng, địa vị, xưng hô của ${charName} phải khớp thân phận và tính cách đã mô tả; không làm điều trái thân phận (người túng thiếu không thể tặng món quá đắt, người lạnh lùng không đột nhiên sến súa...).
+3. Chỉ dùng nhân vật đã có trong truyện, hoặc người qua đường thoáng qua (người bán hàng, hàng xóm, shipper...). Không bịa quan hệ/quá khứ chưa từng xuất hiện.
+4. Tuyệt đối KHÔNG tạo biến cố lớn không thể đảo ngược (mang thai, có con, kết hôn, qua đời, mất trí nhớ, chia tay hẳn, tai nạn nặng, tiết lộ bí mật lớn của cốt truyện).
+5. Phần "desc" chỉ tả tình huống và hành động/lời nói của nhân vật rồi dừng lại để người chơi chọn; KHÔNG viết thay lời nói, hành động hay suy nghĩ của ${userName}.
+6. Lựa chọn 1: hợp tác/ngọt ngào/xử lý khéo (thưởng tiền ${(5000000).toLocaleString('vi-VN')} đến ${(60000000).toLocaleString('vi-VN')}, có thể tặng vật phẩm, tăng thân mật 1-10). Lựa chọn 2: phũ phàng/né tránh/trêu chọc/ích kỷ nhưng vẫn hợp lý với tình huống (trừ tiền ${(2000000).toLocaleString('vi-VN')} đến ${(20000000).toLocaleString('vi-VN')}, giảm thân mật 1-10). Nội dung lựa chọn viết ở ngôi người chơi, ngắn gọn dưới 120 ký tự.
+7. "desc" tối đa 350 ký tự và phải có tên ${charName} và ${userName}; "log" tối đa 200 ký tự, mô tả kết quả hợp lý của lựa chọn đó.
+
+Trả về ĐÚNG JSON thuần, không markdown:
 {
-  "desc": "Mô tả sự kiện ngắn gọn tiếp nối mạch chat, có chứa tên ${charName} và ${userName}...",
-  "choice1": {
-    "text": "Nội dung lựa chọn 1",
-    "moneyChange": 200000,
-    "affectionChange": 5,
-    "getItem": true,
-    "log": "Kết quả xử lý..."
-  },
-  "choice2": {
-    "text": "Nội dung lựa chọn 2",
-    "moneyChange": -100000,
-    "affectionChange": -5,
-    "getItem": false,
-    "log": "Kết quả xử lý..."
-  }
+  "desc": "...",
+  "choice1": { "text": "...", "moneyChange": 20000000, "affectionChange": 5, "getItem": true, "log": "..." },
+  "choice2": { "text": "...", "moneyChange": 5000000, "affectionChange": 5, "getItem": false, "log": "..." }
 }`;
 
         let eventData = null;
@@ -182,7 +236,7 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-              body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+              body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.9, responseMimeType: 'application/json' } })
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
@@ -254,6 +308,11 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
         itemReceivedText = ` | 🎁 Nhận vật phẩm: ${rewardItem.name}`;
       }
 
+      // Ghi nhớ sự kiện vào truyện để lần sau không lặp và nối tiếp hậu quả
+      try {
+        const st = window.state.stories.find(x => x.id === window.state.activeStoryId);
+        if (st) { st.eventLog = (st.eventLog || []).concat({ ts: Date.now(), charId, charName, desc: eventDesc, choice: choiceObj.text, result: choiceObj.log || '' }).slice(-8); }
+      } catch (e) {}
       saveStorage();
       if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
 
@@ -580,20 +639,32 @@ Trả về ĐÚNG định dạng JSON thuần túy (không chứa markdown, khô
       switchStoryTab('chat');
     }
 
+    // ===== Giao diện từng truyện: CHỈ áp lên trang chat bên trong, không đổi giao diện bên ngoài =====
+    const STORY_THEME_VARS = ['--user-bubble-bg', '--user-text-color', '--ai-bubble-bg', '--ai-text-color', '--bg-color', '--chat-bg-image'];
+    // Bộ màu mặc định cũ = "theo giao diện chung" (tự đổi theo pastel / chế độ sáng-tối của app)
+    function isDefaultStoryTheme(t) {
+      const lo = (v) => String(v || '').trim().toLowerCase();
+      return lo(t.userBg) === '#c1ebd9' && lo(t.userText) === '#1b4332' && lo(t.aiBg) === '#ffffff' &&
+        lo(t.aiText) === '#333333' && lo(t.chatBgColor) === '#e7f5ee' && !String(t.chatBgImg || '').trim();
+    }
+
     function applyActiveStoryTheme() {
-      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      if (!story || !story.theme) return;
+      // Bản cũ từng gắn biến lên <html> làm đổi cả app: dọn sạch để không còn dính ra ngoài
       const root = document.documentElement;
-      root.style.setProperty('--user-bubble-bg', story.theme.userBg || '#c1ebd9');
-      root.style.setProperty('--user-text-color', story.theme.userText || '#1b4332');
-      root.style.setProperty('--ai-bubble-bg', story.theme.aiBg || '#ffffff');
-      root.style.setProperty('--ai-text-color', story.theme.aiText || '#333333');
-      root.style.setProperty('--bg-color', story.theme.chatBgColor || '#e7f5ee');
-      if (story.theme.chatBgImg) {
-        root.style.setProperty('--chat-bg-image', `url('${story.theme.chatBgImg}')`);
-      } else {
-        root.style.setProperty('--chat-bg-image', 'none');
-      }
+      STORY_THEME_VARS.forEach(p => root.style.removeProperty(p));
+
+      const page = document.getElementById('page-story-detail');
+      if (!page) return;
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const t = story && story.theme;
+      if (!t || isDefaultStoryTheme(t)) { STORY_THEME_VARS.forEach(p => page.style.removeProperty(p)); return; }
+
+      page.style.setProperty('--user-bubble-bg', t.userBg || '#c1ebd9');
+      page.style.setProperty('--user-text-color', t.userText || '#1b4332');
+      page.style.setProperty('--ai-bubble-bg', t.aiBg || '#ffffff');
+      page.style.setProperty('--ai-text-color', t.aiText || '#333333');
+      page.style.setProperty('--bg-color', t.chatBgColor || '#e7f5ee');
+      page.style.setProperty('--chat-bg-image', t.chatBgImg ? `url('${t.chatBgImg}')` : 'none');
     }
 
     function applyThemeTemplate(type) {
