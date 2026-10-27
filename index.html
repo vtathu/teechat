@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -44,7 +44,14 @@
       <button class="btn btn-pink" onclick="openModal('modal-story')">+ Tạo Truyện Mới</button>
     </div>
 
-    <div class="scenarios-container" id="story-list"></div>
+    <div class="home-body">
+      <div class="home-rail">
+        <button class="rail-btn" onclick="openFs('mall')"><span class="ri">🛍️</span><small>Teemall</small></button>
+        <button class="rail-btn" onclick="openFs('life')"><span class="ri">🏡</span><small>Cuộc Sống</small></button>
+        <button class="rail-btn" onclick="openFs('bag')"><span class="ri">🎒</span><small>Túi</small></button>
+      </div>
+      <div class="scenarios-container" id="story-list"></div>
+    </div>
   </div>
 
   <!-- PAGE 2: MÀN HÌNH CHÁT & CUỘC SỐNG -->
@@ -55,11 +62,6 @@
         <h3 id="active-story-title" style="font-size: 1rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">Tên Truyện</h3>
       </div>
       <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt</button>
-    </div>
-
-    <div class="mode-tab-bar">
-      <button class="mode-tab-btn active" id="tab-btn-chat" onclick="switchStoryTab('chat')">🗨 Trò Chuyện</button>
-      <button class="mode-tab-btn" id="tab-btn-life" onclick="switchStoryTab('life')">🏫 Cuộc Sống</button>
     </div>
 
     <div id="subview-chat" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
@@ -107,94 +109,194 @@
         <button class="btn btn-pink" onclick="sendMessage()">➤ Gửi</button>
       </div>
     </div>
+  </div>
 
-    <div id="subview-life" class="life-container hidden">
+  <!-- ===== CÁC TRANG TOÀN MÀN HÌNH (cột icon bên trái trang chủ) ===== -->
+
+  <!-- CUỘC SỐNG -->
+  <div id="fs-life" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🏡 Cuộc Sống</b>
+      <span style="width:42px;"></span>
+    </div>
+    <div class="life-scene" id="life-scene">
+      <div class="scene-art" id="scene-art"></div>
+      <div class="scene-wallet">
+        <div>
+          <div style="font-size:0.7rem;opacity:.85;">💲 Ví</div>
+          <div id="life-wallet-display" style="font-size:1.15rem;font-weight:bold;">0 VNĐ</div>
+        </div>
+        <button class="btn" style="padding:5px 10px;font-size:0.72rem;" onclick="UI.transfer()">💸 Chuyển khoản</button>
+      </div>
+      <div class="scene-col left">
+        <button class="scene-ic" onclick="openFs('work')"><span>💼</span><small>Đi làm</small></button>
+        <button class="scene-ic" onclick="openFs('house')"><span>🏠</span><small>Nhà</small></button>
+      </div>
+      <div class="scene-col right">
+        <button class="scene-ic" onclick="openFs('mission')"><span>📋</span><small>Nhiệm vụ</small></button>
+        <button class="scene-ic" onclick="openFs('achv')"><span>🏆</span><small>Thành tựu</small></button>
+      </div>
+      <div class="scene-bottom">
+        <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
+        <button class="scene-ic" onclick="openFs('craft')"><span>🧶</span><small>Thủ công</small></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ĐI LÀM -->
+  <div id="fs-work" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">💼 Đi Làm</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body">
       <div class="life-card" style="background: linear-gradient(135deg, #e6fffa 0%, #c6f6d5 100%); border-color: #319795;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="color: #234e52; font-size: 1.1rem;">💲 Ví</h3>
-          <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="handlePlusAction('transfer')">Chuyển Khoản</button>
-        </div>
-        <div id="life-wallet-display" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">10.000.000 VNĐ</div>
-        <div style="font-size: 0.78rem; color: #2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 5/5 | Thời gian đổi nghề: Có thể đổi ngay</div>
+        <div style="font-size:0.78rem; color:#2c7a7b;" id="job-limit-info">Lượt làm việc hôm nay: 0/8</div>
       </div>
-
-      <div class="modal-tab-bar" id="life-sub-tabs">
-        <button class="modal-tab-btn active" id="life-sub-btn-work" onclick="switchLifeSub('work')">💼 Đi Làm</button>
-        <button class="modal-tab-btn" id="life-sub-btn-shop" onclick="switchLifeSub('shop')">🛒 Shopping</button>
-        <button class="modal-tab-btn" id="life-sub-btn-craft" onclick="switchLifeSub('craft')">🧶 Thủ Công</button>
-        <button class="modal-tab-btn" id="life-sub-btn-mission" onclick="switchLifeSub('mission')">📋 Nhiệm Vụ</button>
-        <button class="modal-tab-btn" id="life-sub-btn-pet" onclick="switchLifeSub('pet')">🐾 Thú Cưng</button>
-      </div>
-
-      <!-- TAB NHỎ: ĐI LÀM -->
-      <div id="life-sub-work" class="life-sub">
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">💼 Nghề Nghiệp & Đi Làm</h3>
-          <div class="form-group">
-            <label>Chọn Ngành Nghề Hiện Tại:</label>
-            <select id="job-select" onchange="changeJobSelection()">
-              <option value="barista">🥂 Nhân Viên Pha Chế</option>
-              <option value="cleaner">🧹 Vệ Sinh / Phục Vụ</option>
-              <option value="cashier">💵 Thu Ngân</option>
-              <option value="driver">🛵 Tài Xế / Shipper</option>
-              <option value="teacher">🎓 Giáo Viên</option>
-              <option value="sudoku">🌐 Công nghệ</option>
-            </select>
-          </div>
-          <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
-            Pha chế cocktail.
-          </div>
-          <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">💼 Nghề Nghiệp & Đi Làm</h3>
+        <div class="form-group">
+          <label>Chọn Ngành Nghề Hiện Tại:</label>
+          <select id="job-select" onchange="changeJobSelection()">
+            <option value="barista">🥂 Nhân Viên Pha Chế</option>
+            <option value="cleaner">🧹 Vệ Sinh / Phục Vụ</option>
+            <option value="cashier">💵 Thu Ngân</option>
+            <option value="driver">🛵 Tài Xế / Shipper</option>
+            <option value="teacher">🎓 Giáo Viên</option>
+            <option value="sudoku">🌐 Công nghệ</option>
+          </select>
         </div>
-      </div>
-
-      <!-- TAB NHỎ: SHOPPING -->
-      <div id="life-sub-shop" class="life-sub hidden">
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🛒 Cửa Hàng & Túi Đồ Quà Tặng</h3>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;" id="shop-items-container"></div>
-          <h4 style="font-size: 0.95rem; color: var(--app-dark-green); margin-top: 8px;">📦 Tài sản</h4>
-          <div id="inventory-list-container" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
+        <div style="background: #f7faf8; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;" id="job-desc-box">
+          Pha chế cocktail.
         </div>
+        <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
       </div>
+    </div>
+  </div>
 
-      <!-- TAB NHỎ: THỦ CÔNG MỸ NGHỆ -->
-      <div id="life-sub-craft" class="life-sub hidden">
+  <!-- NHÀ -->
+  <div id="fs-house" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🏠 Nhà Của Tôi</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body" id="house-body"></div>
+  </div>
+
+  <!-- NHIỆM VỤ -->
+  <div id="fs-mission" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">📋 Nhiệm Vụ</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body">
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">📋 Nhiệm Vụ Hôm Nay</h3>
+        <div id="mission-daily" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🔓 Chế Độ Trò Chuyện Đã Mở</h3>
+        <div id="mission-modes" style="display: flex; flex-direction: column; gap: 4px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THÀNH TỰU -->
+  <div id="fs-achv" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🏆 Thành Tựu</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body">
+      <div class="life-card">
+        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Thành Tựu (làm một lần)</h3>
+        <div id="mission-milestone" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THÚ CƯNG -->
+  <div id="fs-pet" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🐾 Thú Cưng</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body">
+      <div id="pet-root" style="display: flex; flex-direction: column; gap: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- THỦ CÔNG -->
+  <div id="fs-craft" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🧶 Thủ Công Mỹ Nghệ</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="fs-body">
+      <div class="life-card">
+        <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (chạm 2 ô hoặc kéo thả), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box. Đồ làm ra nằm trong 🎒 Túi, tab Thủ công.</div>
+        <div id="craft-chain-preview" style="background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px;"></div>
+        <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
+        <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Ván Mới</button>
+        <button class="btn btn-outline" style="width: 100%;" onclick="openBagTab('craft')">🎒 Mở túi thủ công</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEEMALL -->
+  <div id="fs-mall" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title" style="color:#ee4d2d;">🛍️ Teemall</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="mall-seg" id="mall-seg">
+      <button id="mall-seg-gen" onclick="UI.mall('gen')">🛍️ Shop chung</button>
+      <button id="mall-seg-pet" onclick="UI.mall('pet')">🐾 Shop thú cưng</button>
+    </div>
+    <div class="mall-seg sub" id="mall-seg2" style="display:none;">
+      <button id="mall-sub-animal" onclick="UI.petSub('animal')">🐾 Thú cưng</button>
+      <button id="mall-sub-gear" onclick="UI.petSub('gear')">🧺 Đồ cho thú</button>
+    </div>
+    <div class="fs-body" style="background:#fafafa;">
+      <div id="shop-items-container" style="width:100%;"></div>
+    </div>
+  </div>
+
+  <!-- TÚI -->
+  <div id="fs-bag" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🎒 Túi</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="modal-tab-bar" style="margin:8px 12px 0;">
+      <button class="modal-tab-btn active" id="bag-btn-gen" onclick="UI.bagTab('gen')">🎁 Đồ chung</button>
+      <button class="modal-tab-btn" id="bag-btn-pet" onclick="UI.bagTab('pet')">🐾 Thú cưng</button>
+      <button class="modal-tab-btn" id="bag-btn-craft" onclick="UI.bagTab('craft')">🧶 Thủ công</button>
+    </div>
+    <div class="fs-body">
+      <div id="bag-tab-gen" class="bag-tab">
+        <div id="inventory-list-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div id="bag-tab-pet" class="bag-tab hidden">
+        <div id="bag-pet-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div id="bag-tab-craft" class="bag-tab hidden">
         <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.1rem;">🧶 Thủ Công Mỹ Nghệ</h3>
-          <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (chạm 2 ô hoặc kéo thả), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box.</div>
-          <div id="craft-chain-preview" style="background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px;"></div>
-          <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
-          <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Ván Mới</button>
-        </div>
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎒 Túi Thủ Công</h3>
+          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🧶 Đồ Thủ Công</h3>
           <div id="craft-bag-container" style="display: flex; flex-direction: column; gap: 6px; min-height: 40px; background: #f7faf8; padding: 8px; border-radius: 8px; border: 1px dashed #cbd5e0;"></div>
-        </div>
-      </div>
-
-      <!-- TAB NHỎ: THÚ CƯNG -->
-      <div id="life-sub-pet" class="life-sub hidden">
-        <div id="pet-root" style="display: flex; flex-direction: column; gap: 12px;"></div>
-      </div>
-
-      <!-- TAB NHỎ: NHIỆM VỤ -->
-      <div id="life-sub-mission" class="life-sub hidden">
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">📋 Nhiệm Vụ Hôm Nay</h3>
-          <div id="mission-daily" style="display: flex; flex-direction: column; gap: 8px;"></div>
-        </div>
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Nhiệm Vụ Mốc (làm một lần)</h3>
-          <div id="mission-milestone" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
         <div class="life-card">
           <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎁 Kho Box Nguyên Liệu</h3>
           <div id="mission-boxes"></div>
-        </div>
-        <div class="life-card">
-          <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🔓 Chế Độ Trò Chuyện Đã Mở</h3>
-          <div id="mission-modes" style="display: flex; flex-direction: column; gap: 4px;"></div>
         </div>
       </div>
     </div>
@@ -610,12 +712,13 @@
   <script type="module" src="firebase.js?v=3"></script>
   <script src="core.js?v=1"></script>
   <script src="data-shop.js?v=4"></script>
-  <script src="shop.js?v=4"></script>
+  <script src="shop.js?v=5"></script>
   <script src="jobs.js?v=2"></script>
   <script src="craft.js?v=2"></script>
   <script src="quests.js?v=2"></script>
-  <script src="pets.js?v=1"></script>
+  <script src="pets.js?v=2"></script>
   <script src="chat.js?v=4"></script>
+  <script src="ui.js?v=1"></script>
   <script src="push.js?v=1"></script>
 </body>
 </html>
