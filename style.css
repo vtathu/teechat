@@ -230,3 +230,69 @@
     .craft-ghost { position: fixed; pointer-events: none; z-index: 300; transform: translate(-50%, -50%) scale(1.2); opacity: 0.92; box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
     @keyframes craftPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
     .craft-lv { position: absolute; right: 2px; bottom: 0; font-size: 0.32em; font-weight: bold; color: #555; line-height: 1; }
+
+
+/* ===================== GIAO DIỆN MỚI: CỘT ICON + TRANG TOÀN MÀN HÌNH ===================== */
+.hidden { display: none !important; }
+.home-body { display: flex; flex: 1; min-height: 0; }
+.home-body .scenarios-container { min-width: 0; }
+.home-rail { flex: 0 0 66px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 4px; overflow-y: auto; background: color-mix(in srgb, var(--bg-color) 80%, transparent); border-right: 2px solid color-mix(in srgb, var(--app-green) 60%, transparent); }
+.rail-btn { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: #fff; border: 2px solid var(--app-green); border-radius: 16px; padding: 6px 2px; cursor: pointer; color: var(--app-dark-green); font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,.06); -webkit-tap-highlight-color: transparent; }
+.rail-btn:active { transform: scale(.94); }
+.rail-btn .ri { font-size: 1.5rem; line-height: 1.1; }
+.rail-btn small { font-size: .6rem; line-height: 1.15; text-align: center; }
+
+.fs-page { display: none; position: fixed; inset: 0; z-index: 60; flex-direction: column; background: var(--bg-color); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+.fs-page.active { display: flex; }
+.fs-page > * { width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; }
+.fs-top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 2px solid var(--app-green); }
+.fs-title { font-size: 1rem; color: var(--app-dark-green); flex: 1; text-align: center; font-family: var(--font-heading); font-weight: normal; }
+.fs-wallet { font-size: .68rem; font-weight: bold; color: #2b6cb0; min-width: 42px; text-align: right; }
+.fs-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
+.fs-body > *, .fs-body .life-card > *, .fs-body .pet-card > * { min-width: 0; }
+.fs-body .life-card, .fs-body .pet-card { max-width: 100%; }
+.fs-body select, .fs-body input[type=text], .fs-body input[type=number] { max-width: 100%; }
+.bag-tab { display: flex; flex-direction: column; gap: 12px; }
+.bag-row { background: #fff; border: 1px solid #90d4b8; border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: .82rem; }
+.bag-row .nm { word-break: break-word; }
+.bag-row .bt { display: flex; flex-wrap: wrap; gap: 6px; }
+.bag-row .bt .btn { padding: 3px 10px; font-size: .72rem; }
+
+/* cảnh Cuộc Sống */
+.life-scene { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.scene-art { position: absolute; inset: 0; }
+.scene-art.night { background: linear-gradient(#0b1026, #243b6b 70%, #3b2f63); }
+.scene-art .star { position: absolute; background: #fff; border-radius: 50%; animation: sceneTwinkle 3s ease-in-out infinite; }
+.scene-art .moon { position: absolute; top: 18%; right: 14%; font-size: 3.2rem; filter: drop-shadow(0 0 14px #fff8); }
+.scene-art .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; }
+.scene-art .house { position: absolute; left: 50%; bottom: 17%; transform: translateX(-50%); font-size: min(34vw, 190px); line-height: 1; filter: drop-shadow(0 8px 6px rgba(0,0,0,.25)); }
+.scene-art .deco { position: absolute; font-size: 2rem; opacity: .9; }
+.scene-art .cap { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; color: #fff; font-size: .8rem; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,.6); padding: 0 80px; }
+.scene-art .cap .who { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.scene-art .cap .who img { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+.scene-wallet { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: rgba(0,0,0,.35); color: #fff; padding: 8px 12px; border-radius: 16px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.scene-col { position: absolute; top: 82px; display: flex; flex-direction: column; gap: 14px; }
+.scene-col.left { left: 10px; }
+.scene-col.right { right: 10px; }
+.scene-bottom { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 22px; }
+.scene-ic { width: 58px; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.scene-ic span { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,.92); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 3px 8px rgba(0,0,0,.25); }
+.scene-ic small { font-size: .64rem; font-weight: bold; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.scene-ic:active span { transform: scale(.92); }
+@keyframes sceneTwinkle { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+
+/* Teemall */
+.mall-seg { display: flex; gap: 6px; padding: 8px 12px 0; }
+.mall-seg button { flex: 1; padding: 8px 4px; border-radius: 12px; border: 2px solid #ee4d2d; background: #fff; color: #ee4d2d; font-weight: bold; font-size: .8rem; cursor: pointer; }
+.mall-seg button.on { background: #ee4d2d; color: #fff; }
+.mall-seg.sub button { border-color: #ffb199; color: #d4380d; font-size: .74rem; padding: 6px 4px; }
+.mall-seg.sub button.on { background: #ff7337; border-color: #ff7337; color: #fff; }
+.pet-bigic { font-size: 3rem; display: flex; align-items: center; justify-content: center; }
+.pet-bigic img { width: 60px; height: 60px; object-fit: contain; }
+
+/* Trang thú cưng: ảnh thú to ở nửa trên, nút chức năng ở nửa dưới */
+#fs-pet .pet-stage { width: min(240px, 62vw); height: min(240px, 62vw); }
+#fs-pet .pet-emoji { font-size: min(130px, 34vw); }
+#fs-pet .pet-tank { height: min(220px, 48vw); }
+#fs-pet .pet-card { max-width: 100%; box-sizing: border-box; }
+#fs-pet .pet-btns .btn { flex: 1 1 42%; }
