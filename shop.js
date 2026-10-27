@@ -164,6 +164,15 @@
       }
       return [];
     }
+    // Ảnh thú bày trong shop: pets/<loài>_<giới>_<màu>_idle.png (mỗi bé một màu cố định)
+    const PET_SHOP_SPECIES = { 'item-1046': 'cat', 'item-1047': 'dog', 'item-1048': 'rabbit', 'item-1049': 'parrot', 'item-1050': 'hamster', 'item-1051': 'fish', 'item-1052': 'golden' };
+    const PET_SHOP_LOOK = { 'item-1046': 'male_vang', 'item-1047': 'male_vang', 'item-1048': 'female_trang', 'item-1049': 'male_vang', 'item-1050': 'male_nau', 'item-1051': 'male_vang', 'item-1052': 'male_vang' };
+    function petShopIcon(itemId, emoji) {
+      const sp = PET_SHOP_SPECIES[itemId];
+      if (!sp) return emoji;
+      const src = `pets/${sp}_${PET_SHOP_LOOK[itemId] || 'male_trang'}_idle.png`;
+      return `<img src="${src}" alt="" style="height:84px;max-width:100%;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none;font-size:3rem;line-height:1;">${emoji}</span>`;
+    }
     let selectedVars = {};
     function varMult(it) { return variantKeys(it).reduce((m, k) => m * VG[k].opts[selectedVars[k] || 0][1], 1); }
     function varText(it) { return variantKeys(it).map(k => `${VG[k].label.replace(/^\S+\s/, '')}: ${VG[k].opts[selectedVars[k] || 0][0]}`).join(', '); }
@@ -233,7 +242,7 @@
         const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
         const h = itemHash(it.id), sold = 20 + (h % 4800), rating = (4.5 + (h % 6) / 10).toFixed(1);
         return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
-          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);position:relative;">${m[1]}${it.tag === 'luxury' ? '<span style="position:absolute;top:0;left:0;background:#ee4d2d;color:#fff;font-size:0.6rem;padding:2px 6px;border-radius:0 0 8px 0;">Yêu thích</span>' : ''}</div>
+          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);position:relative;">${it.cat === 'pet' ? petShopIcon(it.id, m[1]) : m[1]}${it.tag === 'luxury' ? '<span style="position:absolute;top:0;left:0;background:#ee4d2d;color:#fff;font-size:0.6rem;padding:2px 6px;border-radius:0 0 8px 0;">Yêu thích</span>' : ''}</div>
           <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
             <div style="font-size:0.78rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;">${m[2]}</div>
             <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${it.cat === 'estate' ? '' : ''}${moneyShort(unitPrice(it, true))}</div>
@@ -248,7 +257,7 @@
       return items.map(it => {
         const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
         return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
-          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);">${m[1]}</div>
+          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);">${petShopIcon(it.id, m[1])}</div>
           <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
             <div style="font-size:0.78rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;">${m[2]}</div>
             <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${moneyShort(unitPrice(it, true))}</div>
