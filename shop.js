@@ -204,8 +204,9 @@
         try { raw = await tcIdbGet(key); } catch (e) {}
         if (raw) html += backupCard(key, label, raw, false);
       }
-      box.innerHTML = html || '<div style="padding:10px; color:#777; font-size:0.85rem;">Chưa có bản lưu cũ nào.</div>';
+      box.innerHTML = html || '<div style="padding:10px; color:#777; font-size:0.85rem; line-height:1.5;">Chưa có bản lưu nào trên máy này.<br>Bản lưu được tạo khi đồng bộ cloud, khi nhập file, khi app phát hiện dữ liệu bị thu nhỏ — và một bản tự động mỗi ngày khi mở app.</div>';
     };
+
     window.restoreBackupNow = async function(key) {
       let raw = null;
       try { raw = await tcIdbGet(key); } catch (e) {}
@@ -659,6 +660,9 @@
       return Math.floor(15 * Math.pow(level, 1.4));
     }
 
+    // Điểm thân mật cộng vào được nhân đôi (điểm trừ giữ nguyên)
+    const AFFECTION_GAIN_X = 2;
+
     function addAffectionPoints(charId, points) {
       if (!window.state.affectionLevels) window.state.affectionLevels = {};
       if (!window.state.affectionLevels[charId]) {
@@ -666,7 +670,7 @@
       }
       
       let affData = window.state.affectionLevels[charId];
-      affData.points += points;
+      affData.points += points > 0 ? points * AFFECTION_GAIN_X : points;
 
       // Công thức tính điểm level thân mật dãn rộng dạng số mũ nhẹ nhàng
       while (true) {

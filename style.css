@@ -71,8 +71,13 @@
     .char-header { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden; }
     .char-avatar-mini { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--app-green); flex-shrink: 0; }
     .char-info-body { flex: 1; min-width: 0; overflow: hidden; }
-    .char-info-body h4 { font-size: 0.88rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; margin-bottom: 2px; }
+    .char-info-body h4 { font-size: 0.88rem; font-weight: bold; margin-bottom: 2px; line-height: 1.3; word-break: break-word; }
     .char-info-body p { font-size: 0.75rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; line-height: 1.3; }
+    /* Màn hình hẹp: nút xuống dòng riêng để tên + ❤️ Lv không bị cắt */
+    @media (max-width: 480px) {
+      .char-card { flex-wrap: wrap; }
+      .char-card > div:last-child { flex: 1 0 100%; justify-content: flex-end; }
+    }
 
     .mode-tab-bar { 
       display: flex; 

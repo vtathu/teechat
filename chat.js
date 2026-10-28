@@ -751,7 +751,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
           <div class="char-header">
             <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="char-info-body">
-              <h4>${escapeHtml(char.name)}${char.livesWith ? ' 🏠' : ''} <span style="font-size:0.7rem; color:#319795;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
+              <h4>${escapeHtml(char.name)}${char.livesWith ? ' 🏠' : ''} <span style="display:block; font-size:0.7rem; color:#319795; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
               <p>${escapeHtml(char.personality)}</p>
             </div>
           </div>

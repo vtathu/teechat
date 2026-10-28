@@ -669,12 +669,57 @@
       openModal('modal-sudoku');
     }
 
+    // Giải đề (trả về lưới đầy đủ) — dùng khi ván lưu cũ không có sẵn đáp án
+    function sdkSolveOne(p) {
+      const g = p.map(row => row.map(v => v || 0));
+      const rows = Array(9).fill(0), cols = Array(9).fill(0), boxes = Array(9).fill(0);
+      for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (g[r][c]) {
+        const bit = 1 << g[r][c]; rows[r] |= bit; cols[c] |= bit; boxes[Math.floor(r / 3) * 3 + Math.floor(c / 3)] |= bit;
+      }
+      function solve() {
+        let best = -1, bestMask = 0, bestN = 10;
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (!g[r][c]) {
+          const used = rows[r] | cols[c] | boxes[Math.floor(r / 3) * 3 + Math.floor(c / 3)];
+          let n = 0; for (let v = 1; v <= 9; v++) if (!(used & (1 << v))) n++;
+          if (n < bestN) { bestN = n; best = r * 9 + c; bestMask = used; }
+        }
+        if (best < 0) return true;
+        if (bestN === 0) return false;
+        const r = Math.floor(best / 9), c = best % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+        for (let v = 1; v <= 9; v++) {
+          const bit = 1 << v; if (bestMask & bit) continue;
+          g[r][c] = v; rows[r] |= bit; cols[c] |= bit; boxes[b] |= bit;
+          if (solve()) return true;
+          g[r][c] = 0; rows[r] &= ~bit; cols[c] &= ~bit; boxes[b] &= ~bit;
+        }
+        return false;
+      }
+      return solve() ? g : null;
+    }
+
     function resumeSudoku() {
       const sv = window.state.sudokuSave;
-      if (!sv || !sv.puzzle) return;
-      currentSudokuPuzzle = sv.puzzle;
-      currentSudokuSolution = sv.solution || [];
-      sdk = { level: sv.level, stage: sv.stage, earned: sv.earned || 0, noteMode: false, sel: null, vals: sv.vals, notes: sv.notes };
+      if (!sv || !Array.isArray(sv.puzzle) || sv.puzzle.length !== 9) return;
+      const grid9 = (m) => Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => {
+        const v = m && Array.isArray(m[r]) ? m[r][c] : 0;
+        return Number(v) || 0;
+      }));
+      // Ván lưu cũ có thể để ô trống là 0 và thiếu notes/đáp án -> chuẩn hoá lại, không thì bàn cờ bị khoá/trống
+      const puzzle = sv.puzzle.map(row => Array.isArray(row) ? row.map(v => (v === 0 || v === undefined || v === null) ? null : Number(v)) : null);
+      if (puzzle.some(row => !row || row.length !== 9)) {
+        window.state.sudokuSave = null; saveStorage();
+        alert('Ván đã lưu bị hỏng, mình mở ván mới nhé.');
+        openSudoku9Minigame();
+        return;
+      }
+      currentSudokuPuzzle = puzzle;
+      const solOk = Array.isArray(sv.solution) && sv.solution.length === 9 && sv.solution.every(r => Array.isArray(r) && r.length === 9);
+      currentSudokuSolution = solOk ? sv.solution : (sdkSolveOne(puzzle) || []);
+      sdk = {
+        level: sv.level || 'easy', stage: sv.stage || 1, earned: sv.earned || 0,
+        noteMode: false, sel: null, review: false,
+        vals: grid9(sv.vals), notes: grid9(sv.notes)
+      };
       document.getElementById('sdk-menu').style.display = 'none';
       document.getElementById('sdk-play').style.display = 'block';
       sdkShowControls();
