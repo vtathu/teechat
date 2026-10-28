@@ -51,7 +51,7 @@
     }
     function tcIdbGet(k) { return tcDb().then(db => new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); })); }
     function tcIdbSet(k, v) { return tcDb().then(db => new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); })); }
-    // Nạp sẵn bản lưu trong IndexedDB; window.onload sẽ chờ xong bước này rồi mới loadStorage()
+    // Nạp sẵn bản lưu trong IndexedDB; bootApp() sẽ chờ xong bước này rồi mới loadStorage()
     window.idbReady = tcIdbGet(TC_STATE_KEY).then(v => { window.__idbStr = (typeof v === 'string') ? v : null; }).catch(() => { window.__idbStr = null; });
 
     function lastUpdatedOf(raw) { try { return JSON.parse(raw).lastUpdated || 0; } catch (e) { return -1; } }

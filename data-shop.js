@@ -273,13 +273,21 @@ const REAL_ESTATE_MAPS = [
       { id: 'item-1096', cat: 'estate', name: "🌾 Mảnh Vườn Trang Trại 1ha", price: 1500000000, desc: "Rộng thênh thang, trồng rau nuôi gà.", tag: 'estate' }
     );
 
-    window.onload = async function() {
+    // Mở app: không chờ ảnh/font bên ngoài (window.onload có thể treo nếu mạng chậm),
+    // chỉ cần DOM và các script chính sẵn sàng.
+    async function bootApp() {
+      if (window.__booted) return;
+      window.__booted = true;
       try { if (window.idbReady) await window.idbReady; } catch (e) {}
-      loadStorage();
-      renderStoryList();
-      checkDailyReset();
+      try { loadStorage(); } catch (e) { console.warn('loadStorage lỗi:', e); }
+      try { renderStoryList(); } catch (e) { console.warn('renderStoryList lỗi:', e); }
+      try { checkDailyReset(); } catch (e) {}
       try { if (typeof window.hideBootSplash === 'function') window.hideBootSplash(); } catch (e) {}
-    };
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootApp);
+    else bootApp();
+    // Chốt an toàn: nếu tài nguyên ngoài treo (font, firebase) thì vẫn phải vào được app
+    setTimeout(bootApp, 4000);
 
     let selectedBuyItem = null;
     let selectedBuyQty = 1;

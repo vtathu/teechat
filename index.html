@@ -17,13 +17,52 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Teechat">
 
+  <!-- Áp chế độ sáng/tối ngay trong trang để màn hình chờ hiện đúng màu, không phải chờ theme.js -->
+  <script>
+    (function () {
+      try {
+        var v = localStorage.getItem('teechat_mode');
+        var dark = v === 'dark' || (v === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-mode', dark ? 'dark' : 'light');
+      } catch (e) {}
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="style.css?v=12">
+  <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
+  <link rel="stylesheet" href="style.css?v=13" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=13"></noscript>
+
+  <style>
+    /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
+    html { background: #eafaf1; }
+    html[data-mode="dark"] { background: #242035; }
+    body { margin: 0; background: #f6f1ff; }
+    html[data-mode="dark"] body { background: #1f1c2e; }
+    #boot-splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 32%, #ffffff 0%, #eafaf1 48%, #dcefff 100%); transition: opacity .35s ease, visibility .35s ease; }
+    #boot-splash.hide { opacity: 0; visibility: hidden; }
+    .bs-rip { position: relative; width: 240px; height: 240px; display: grid; place-items: center; }
+    .bs-rip::before { content: ''; position: absolute; width: 170px; height: 150px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 68%); }
+    .bs-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .bs-paw { width: 42px; height: 42px; fill: #4f8577; opacity: .9; animation: bsPaw 1.8s ease-in-out infinite; }
+    .bs-name { font-family: 'Pacifico', 'Segoe Script', 'Bradley Hand', cursive; font-size: 1.65rem; line-height: 1.15; color: #4f8577; text-shadow: 0 2px 10px rgba(255, 255, 255, .9); opacity: 0; transition: opacity .25s ease; }
+    .bs-name.on { opacity: 1; }
+    .bs-rip i { position: absolute; inset: 0; margin: auto; width: 84px; height: 84px; border-radius: 50%; border: 3px solid rgba(79, 133, 119, .55); opacity: 0; animation: bsRipple 2.6s ease-out infinite; }
+    .bs-rip i:nth-of-type(2) { animation-delay: .65s; }
+    .bs-rip i:nth-of-type(3) { animation-delay: 1.3s; }
+    .bs-rip i:nth-of-type(4) { animation-delay: 1.95s; }
+    html[data-mode="dark"] #boot-splash { background: radial-gradient(circle at 50% 32%, #2f2a48 0%, #242035 55%, #1b1829 100%); }
+    html[data-mode="dark"] .bs-rip::before { background: radial-gradient(ellipse, rgba(47, 42, 72, .95), rgba(47, 42, 72, 0) 68%); }
+    html[data-mode="dark"] .bs-paw { fill: #a9dccb; }
+    html[data-mode="dark"] .bs-name { color: #a9dccb; text-shadow: 0 2px 10px rgba(27, 24, 41, .9); }
+    html[data-mode="dark"] .bs-rip i { border-color: rgba(169, 220, 203, .72); }
+    @keyframes bsRipple { 0% { transform: scale(.35); opacity: 0 } 10% { opacity: .85 } 75% { opacity: .35 } 100% { transform: scale(2.5); opacity: 0 } }
+    @keyframes bsPaw { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+    @media (prefers-reduced-motion: reduce) { .bs-paw { animation: none; } .bs-rip i { animation: none; opacity: .35; } .bs-rip i:nth-of-type(2) { transform: scale(1.7); } .bs-rip i:nth-of-type(3) { transform: scale(2); } .bs-rip i:nth-of-type(4) { transform: scale(2.4); } }
+  </style>
 </head>
-  <script src="theme.js?v=2"></script>
 <body>
 
   <!-- Màn hình chờ: che trang chủ cho tới khi nạp xong dữ liệu trong máy -->
@@ -42,20 +81,43 @@
   </div>
   <script>
     window.__bootT0 = Date.now();
+    // Chỉ hiện chữ khi font thương hiệu đã sẵn sàng, tránh nháy chữ kiểu khác
+    (function () {
+      var nm = document.querySelector('.bs-name');
+      var tries = 0;
+      (function poll() {
+        var ready = window.__fontCssReady && document.fonts && document.fonts.check && document.fonts.check('1.65rem Pacifico');
+        if (ready || ++tries > 24) {
+          window.__fontReady = true;
+          if (nm) nm.classList.add('on');
+          return;
+        }
+        setTimeout(poll, 50);
+      })();
+    })();
     window.hideBootSplash = function () {
       var el = document.getElementById('boot-splash');
       if (!el || el.dataset.done) return;
       el.dataset.done = '1';
-      // Giữ tối thiểu 450ms để không bị nháy khi máy mở nhanh
-      var wait = Math.max(0, 450 - (Date.now() - window.__bootT0));
-      setTimeout(function () {
-        el.classList.add('hide');
-        setTimeout(function () { if (el.parentNode) el.remove(); }, 400);
-      }, wait);
+      var release = function () {
+        // Giữ tối thiểu 450ms để không bị nháy khi máy mở nhanh
+        var wait = Math.max(0, 450 - (Date.now() - window.__bootT0));
+        setTimeout(function () {
+          el.classList.add('hide');
+          setTimeout(function () { if (el.parentNode) el.remove(); }, 400);
+        }, wait);
+      };
+      // Chờ style chính và font tên thương hiệu sẵn sàng rồi mới gỡ màn chờ,
+      // tránh lộ trang chưa có style hoặc chữ bị đổi font giữa chừng (tối đa 1.5s)
+      var deadline = Date.now() + 1500;
+      (function wait() {
+        if ((window.__cssReady && window.__fontReady) || Date.now() >= deadline) return release();
+        setTimeout(wait, 60);
+      })();
     };
     // Chốt an toàn: nếu nạp dữ liệu trục trặc thì vẫn phải vào được app
     window.addEventListener('load', function () {
-      setTimeout(function () { window.hideBootSplash(); }, 6000);
+      setTimeout(function () { window.hideBootSplash(); }, 2500);
     });
     setTimeout(function () { window.hideBootSplash(); }, 15000);
   </script>
@@ -739,9 +801,10 @@
     </div>
   </div>
 
+  <script src="theme.js?v=2"></script>
   <script type="module" src="firebase.js?v=3"></script>
   <script src="core.js?v=1"></script>
-  <script src="data-shop.js?v=6"></script>
+  <script src="data-shop.js?v=7"></script>
   <script src="shop.js?v=10"></script>
   <script src="jobs.js?v=2"></script>
   <script src="craft.js?v=2"></script>
