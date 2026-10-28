@@ -60,6 +60,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     function isBlank(s) {
       if (!s) return true;
       return !hasRealMessages(s) && arr(s.stories).length <= 1 && arr(s.inventory).length === 0 &&
+        arr(s.affectionLevels).length === 0 &&
         (s.walletBalance === undefined || s.walletBalance === 10000000);
     }
 
@@ -76,15 +77,41 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       const all = [...map.values()];
       return all.filter(m => !m.ts).concat(all.filter(m => m.ts).sort((x, y) => x.ts - y.ts));
     }
+    // Mức thân mật chỉ tăng theo thời gian chơi: gộp thì lấy bên cao hơn, không để máy cũ xóa mất công sức
+    function mergeAffection(a, b) {
+      const out = {};
+      const ids = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+      ids.forEach(id => {
+        const x = (a || {})[id], y = (b || {})[id];
+        if (!x || typeof x !== 'object') { if (y) out[id] = y; return; }
+        if (!y || typeof y !== 'object') { out[id] = x; return; }
+        const tx = x.updatedAt || 0, ty = y.updatedAt || 0;
+        if (tx !== ty) { out[id] = tx > ty ? x : y; return; }
+        const lx = x.level || 1, ly = y.level || 1;
+        if (lx !== ly) { out[id] = lx > ly ? x : y; return; }
+        out[id] = (x.points || 0) >= (y.points || 0) ? x : y;
+      });
+      return out;
+    }
+    // Truyện trùng id thì lấy bản được sửa sau cùng (updatedAt), không có thì giữ bản của máy đang làm gốc
+    function mergeStories(baseStories, otherStories) {
+      const out = arr(baseStories).map(s => s ? JSON.parse(JSON.stringify(s)) : s);
+      const idx = new Map(out.map((s, i) => [s && s.id, i]));
+      arr(otherStories).forEach(o => {
+        if (!o) return;
+        const i = idx.get(o.id);
+        if (i === undefined) { out.push(JSON.parse(JSON.stringify(o))); idx.set(o.id, out.length - 1); return; }
+        if ((o.updatedAt || 0) > (out[i].updatedAt || 0)) out[i] = JSON.parse(JSON.stringify(o));
+      });
+      return out;
+    }
     function mergeStates(local, cloud) {
       const baseIsLocal = (local.lastUpdated || 0) >= (cloud.lastUpdated || 0);
       const base = baseIsLocal ? local : cloud, other = baseIsLocal ? cloud : local;
       const merged = JSON.parse(JSON.stringify(base));
-      // Truyện chỉ có ở phía kia (tạo ở máy khác) thì giữ lại
-      const stories = arr(merged.stories);
-      const have = new Set(stories.map(s => s && s.id));
-      arr(other.stories).forEach(s => { if (s && !have.has(s.id)) { stories.push(JSON.parse(JSON.stringify(s))); have.add(s.id); } });
-      merged.stories = stories;
+      merged.stories = mergeStories(base.stories, other.stories);
+      merged.affectionLevels = mergeAffection(base.affectionLevels, other.affectionLevels);
+      const have = new Set(merged.stories.map(s => s && s.id));
       // Tin nhắn: hợp nhất theo từng truyện
       const hist = {};
       const ids = new Set([...Object.keys(base.chatHistories || {}), ...Object.keys(other.chatHistories || {})]);
@@ -146,12 +173,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
             window.saveKeys(cloud.apiKeys);
           }
           result = stripKeys(result);
-          if (upload && cloud) result.lastUpdated = Date.now();
+          // Chỉ ghi cloud khi nội dung thật sự đổi. Máy đang giữ bản cũ (nội dung y hệt cloud) thì không
+          // được đẩy mốc lastUpdated lên nữa, kẻo máy khác tưởng bản cũ đó là mới nhất rồi ghi đè ngược.
+          let cloudChanged = !cloud;
+          if (cloud) cloudChanged = JSON.stringify(cloudCopy(cloud)) !== JSON.stringify(cloudCopy(result));
+          if (upload && cloudChanged) result.lastUpdated = Date.now();
           // Giữ 1 bản dự phòng của dữ liệu trên máy trước khi thay
           try { if (local && !isBlank(local) && window.persistBackup) window.persistBackup(JSON.stringify(local)); } catch (e) {}
           window.persistState(JSON.stringify(result));
           window.state = result;
-          if (upload) await set(pathRef, cloudCopy(result));
+          if (upload && cloudChanged) await set(pathRef, cloudCopy(result));
         }
 
         window.__cloudReady = true;
@@ -244,6 +275,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (snap.exists()) {
           const cloud = stripKeys(snap.val());
           const bizCloud = cloud.bizSave; // saveStorage bên dưới đọc tiệm đang có trên máy, nên giữ riêng bản cloud
+          try { if (window.__stateLoaded && window.persistBackup) window.persistBackup(JSON.stringify(window.getSyncableState())); } catch (e) {}
           window.state = cloud; window.saveStorage(); window.loadStorage();
           if (bizCloud) {
             window.state.bizSave = bizCloud;

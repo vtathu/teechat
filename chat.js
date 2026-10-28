@@ -724,6 +724,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme.aiText = document.getElementById('cfg-ai-text').value;
         story.theme.chatBgColor = document.getElementById('cfg-chat-bg-color').value.trim() || '#e7f5ee';
         story.theme.chatBgImg = document.getElementById('cfg-chat-bg-img').value.trim();
+        story.updatedAt = Date.now(); // để lúc gộp máy ↔ cloud biết bản truyện nào mới hơn
 
         saveStorage();
         applyActiveStoryTheme();
@@ -800,6 +801,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
         if (!story.characters) story.characters = [];
         story.characters.push({ id: 'char-' + Date.now(), name, avatar: avatar || DEFAULT_LOGO, personality, firstMsg });
       }
+      story.updatedAt = Date.now();
       saveStorage(); renderCharacterList(); closeModal('modal-char');
     }
 
@@ -1597,6 +1599,7 @@ ${modeBlock}${hintBlock}
           if (Array.isArray(p.apiKeys) && p.apiKeys.length) saveKeys(p.apiKeys); // file backup cũ có thể còn key
           delete p.apiKeys;
           const bizBackup = p.bizSave; // giữ riêng: saveStorage bên dưới đọc tiệm đang có trên máy và ghi đè
+          try { if (window.__stateLoaded && window.persistBackup) window.persistBackup(JSON.stringify(getSyncableState())); } catch (e) {}
           window.state = p; saveStorage(); loadStorage();
           if (bizBackup) {
             window.state.bizSave = bizBackup;

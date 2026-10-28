@@ -107,10 +107,23 @@
       }
     }
     // Ghi chuỗi dữ liệu vào kho (dùng chung cho saveStorage và đồng bộ cloud)
+    function asArr(x) { return Array.isArray(x) ? x : (x && typeof x === 'object' ? Object.values(x) : []); }
+    // Dữ liệu teo lại bất thường: mất quá nửa dung lượng, mất truyện, hoặc mất mức thân mật đã có
+    function lostData(prevStr, str) {
+      if (!prevStr) return false;
+      if (prevStr.length > 3000 && str.length < prevStr.length * 0.5) return true;
+      if (str.length >= prevStr.length) return false;   // bình thường là dài thêm (tin mới), khỏi đọc lại
+      try {
+        const a = JSON.parse(prevStr), b = JSON.parse(str);
+        if (Object.keys(a.affectionLevels || {}).length > Object.keys(b.affectionLevels || {}).length) return true;
+        if (asArr(a.stories).length > asArr(b.stories).length) return true;
+      } catch (e) {}
+      return false;
+    }
     function persistState(str) {
       const prev = window.__lastRaw;
       // Dữ liệu mới nhỏ đi bất thường (mất quá nửa) thì giữ lại bản cũ ở khóa dự phòng
-      if (prev && prev.length > 3000 && str.length < prev.length * 0.5) tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY + '_bak', prev)).catch(() => {});
+      if (lostData(prev, str)) tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY + '_bak', prev)).catch(() => {});
       window.__lastRaw = str; window.__idbStr = str;
       let lsOk = false;
       if (str.length < TC_LS_MAX) { try { localStorage.setItem(TC_STATE_KEY, str); lsOk = true; } catch (e) {} }
@@ -120,7 +133,102 @@
       });
     }
     window.persistState = persistState;
-    window.persistBackup = function(str) { tcIdbQueue = tcIdbQueue.then(() => tcIdbSet(TC_STATE_KEY + '_prev', str)).catch(() => {}); };
+    // Giữ 2 bản trước khi bị thay (mỗi lần đồng bộ lại đẩy lùi 1 nấc) để còn đường khôi phục
+    window.persistBackup = function(str) {
+      tcIdbQueue = tcIdbQueue.then(async () => {
+        try { const old = await tcIdbGet(TC_STATE_KEY + '_prev'); if (old && old !== str) await tcIdbSet(TC_STATE_KEY + '_prev2', old); } catch (e) {}
+        try { await tcIdbSet(TC_STATE_KEY + '_prev', str); } catch (e) {}
+      }).catch(() => {});
+    };
+
+    // Bản chụp lúc mở app hôm nay: phòng khi dữ liệu bị thay nhầm trong ngày
+    let snapChecked = false;
+    function ensureDailySnapshot(raw) {
+      if (snapChecked || !raw) return;
+      snapChecked = true;
+      const dayOf = (r) => { try { return new Date(JSON.parse(r).lastUpdated || 0).toDateString(); } catch (e) { return null; } };
+      tcIdbGet(TC_STATE_KEY + '_snap').then(old => {
+        if (old && dayOf(old) === new Date().toDateString()) return;
+        let usable = false;
+        try { usable = asArr(JSON.parse(raw).stories).length > 0; } catch (e) {}
+        if (usable) tcIdbSet(TC_STATE_KEY + '_snap', raw).catch(() => {});
+      }).catch(() => {});
+    }
+
+    // ===== Khôi phục bản lưu cũ =====
+    const BACKUP_SLOTS = [
+      ['teechat_state_v10_prev', 'Trước lần đồng bộ gần nhất'],
+      ['teechat_state_v10_prev2', 'Trước lần đồng bộ trước nữa'],
+      ['teechat_state_v10_bak', 'Trước khi dữ liệu bị thu nhỏ'],
+      ['teechat_state_v10_snap', 'Lúc mở app hôm nay']
+    ];
+    function timeAgo(t) {
+      if (!t) return 'không rõ thời gian';
+      const m = Math.round((Date.now() - t) / 60000);
+      if (m < 1) return 'vừa xong';
+      if (m < 60) return m + ' phút trước';
+      const h = Math.round(m / 60);
+      if (h < 24) return h + ' giờ trước';
+      const d = Math.round(h / 24);
+      return d < 30 ? d + ' ngày trước' : new Date(t).toLocaleDateString('vi-VN');
+    }
+    function backupStats(raw) {
+      try {
+        const s = JSON.parse(raw);
+        const msgs = Object.values(s.chatHistories || {}).reduce((n, h) => n + asArr(h).filter(m => m && m.ts).length, 0);
+        const lv = asArr(s.affectionLevels).map(a => (a && a.level) || 1);
+        const titles = asArr(s.stories).map(x => x && x.title).filter(Boolean);
+        return { t: s.lastUpdated || 0, stories: asArr(s.stories).length, msgs, titles, lv: lv.length ? Math.max.apply(null, lv) : 0, wallet: s.walletBalance || 0 };
+      } catch (e) { return null; }
+    }
+    function backupCard(key, label, raw, isCurrent) {
+      const st = backupStats(raw);
+      if (!st) return '';
+      const storyName = st.titles.length ? ` (${escapeHtml(st.titles.slice(0, 2).join(', '))}${st.titles.length > 2 ? '…' : ''})` : '';
+      const info = `${st.stories} truyện${storyName} · ${st.msgs} tin nhắn · thân mật cao nhất Lv.${st.lv || 1} · ví ${(st.wallet || 0).toLocaleString('vi-VN')}đ`;
+      return `<div class="char-card" style="display:block; margin-bottom:8px;">
+        <div style="font-weight:600; font-size:0.9rem;">${label}</div>
+        <div style="font-size:0.78rem; color:#777; margin:2px 0 4px;">${timeAgo(st.t)}${st.t ? ' · ' + new Date(st.t).toLocaleString('vi-VN') : ''}</div>
+        <div style="font-size:0.8rem; line-height:1.4;">${info}</div>
+        ${isCurrent ? '' : `<button class="btn btn-outline" style="margin-top:6px; font-size:0.78rem; padding:4px 10px;" onclick="restoreBackupNow('${key}')">↩️ Khôi phục bản này</button>`}
+      </div>`;
+    }
+    window.openRestoreModal = async function() {
+      const box = document.getElementById('restore-list');
+      if (!box) return;
+      box.innerHTML = '<div style="padding:10px; color:#777; font-size:0.85rem;">Đang đọc các bản lưu...</div>';
+      openModal('modal-restore');
+      let html = window.__lastRaw ? backupCard('current', 'Bản đang lưu trên máy', window.__lastRaw, true) : '';
+      for (const [key, label] of BACKUP_SLOTS) {
+        let raw = null;
+        try { raw = await tcIdbGet(key); } catch (e) {}
+        if (raw) html += backupCard(key, label, raw, false);
+      }
+      box.innerHTML = html || '<div style="padding:10px; color:#777; font-size:0.85rem;">Chưa có bản lưu cũ nào.</div>';
+    };
+    window.restoreBackupNow = async function(key) {
+      let raw = null;
+      try { raw = await tcIdbGet(key); } catch (e) {}
+      if (!raw) return alert('Không đọc được bản lưu này.');
+      let st = null; try { st = JSON.parse(raw); } catch (e) {}
+      if (!st || !Array.isArray(st.stories)) return alert('Bản lưu này không dùng được.');
+      if (!confirm('Khôi phục bản lưu này?\nDữ liệu đang dùng sẽ được giữ lại ở mục "Trước lần đồng bộ gần nhất".')) return;
+      try {
+        if (window.__lastRaw && window.persistBackup) window.persistBackup(window.__lastRaw);
+        st.lastUpdated = Date.now();
+        persistState(JSON.stringify(st));
+        loadStorage();
+        try { renderStoryList(); } catch (e) {}
+        try { if (window.renderCharacterList) window.renderCharacterList(); } catch (e) {}
+        try {
+          const det = document.getElementById('page-story-detail');
+          if (det && det.classList.contains('active')) { applyActiveStoryTheme(); renderChatHistory(); }
+        } catch (e) {}
+        try { if (window.autoSyncToCloud) window.autoSyncToCloud(true); } catch (e) {}
+        closeModal('modal-restore');
+        alert('Đã khôi phục xong.');
+      } catch (e) { alert('Khôi phục lỗi: ' + (e.message || e)); }
+    };
 
     function saveStorage() {
       // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
@@ -576,6 +684,7 @@
         affData.level -= 1;
         affData.points += affectionNeeded(affData.level);
       }
+      affData.updatedAt = Date.now();
       saveStorage();
     }
 
@@ -703,6 +812,7 @@
       const saved = readSavedRaw();
       if (saved) { try { window.state = JSON.parse(saved); window.__lastRaw = saved; } catch(e) {} }
       window.__stateLoaded = true;
+      try { ensureDailySnapshot(saved || window.__lastRaw); } catch (e) {}
 
       // API key lưu riêng, không đồng bộ. Chuyển key cũ (nếu có) sang kho riêng.
       let keys = loadKeys();
