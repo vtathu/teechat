@@ -527,36 +527,99 @@
       return aborted ? 99 : count;
     }
 
-    // Giải thử chỉ bằng 2 kỹ thuật dễ (ô chỉ còn 1 số, số chỉ có 1 chỗ trong hàng/cột/khối); true nếu giải xong
-    function sdkSolvableBySingles(p) {
+    // Chấm độ khó: 0 = chỉ cần ô/số duy nhất, 1 = cần thêm cặp đôi (naked/hidden pair), 2 = phải dùng kỹ thuật cao hơn hoặc đoán
+    function sdkTechniqueLevel(p) {
       const g = p.map(row => row.map(v => v || 0));
-      const units = [];
-      for (let i = 0; i < 9; i++) {
-        const row = [], col = [], box = [];
-        for (let j = 0; j < 9; j++) { row.push(i * 9 + j); col.push(j * 9 + i); box.push((Math.floor(i / 3) * 3 + Math.floor(j / 3)) * 9 + (i % 3) * 3 + (j % 3)); }
-        units.push(row, col, box);
-      }
-      const cand = (idx) => {
-        const r = Math.floor(idx / 9), c = idx % 9, br = r - r % 3, bc = c - c % 3; let used = 0;
-        for (let k = 0; k < 9; k++) { used |= 1 << g[r][k]; used |= 1 << g[k][c]; used |= 1 << g[br + Math.floor(k / 3)][bc + k % 3]; }
-        return used;
+      const boxOf = (r, c) => Math.floor(r / 3) * 3 + Math.floor(c / 3);
+      const rowBit = Array(9).fill(0), colBit = Array(9).fill(0), boxBit = Array(9).fill(0);
+      const cand = new Uint16Array(81);
+      const refresh = () => {
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+          cand[r * 9 + c] = g[r][c] ? 0 : (0x3FE & ~(rowBit[r] | colBit[c] | boxBit[boxOf(r, c)]));
+        }
       };
-      let progress = true;
-      while (progress) {
-        progress = false;
-        for (let idx = 0; idx < 81; idx++) {
-          const r = Math.floor(idx / 9), c = idx % 9; if (g[r][c]) continue;
-          const used = cand(idx); let n = 0, last = 0;
-          for (let v = 1; v <= 9; v++) if (!(used & (1 << v))) { n++; last = v; }
-          if (n === 1) { g[r][c] = last; progress = true; }
-        }
-        for (const u of units) for (let v = 1; v <= 9; v++) {
-          let place = -1, cnt = 0, has = false;
-          for (const idx of u) { const r = Math.floor(idx / 9), c = idx % 9; if (g[r][c] === v) { has = true; break; } if (!g[r][c] && !(cand(idx) & (1 << v))) { cnt++; place = idx; } }
-          if (!has && cnt === 1) { g[Math.floor(place / 9)][place % 9] = v; progress = true; }
-        }
+      const put = (r, c, v) => {
+        const b = 1 << v; g[r][c] = v; rowBit[r] |= b; colBit[c] |= b; boxBit[boxOf(r, c)] |= b; refresh();
+      };
+      for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (g[r][c]) {
+        const b = 1 << g[r][c]; rowBit[r] |= b; colBit[c] |= b; boxBit[boxOf(r, c)] |= b;
       }
-      return g.every(row => row.every(v => v));
+      refresh();
+      const units = [];
+      for (let r = 0; r < 9; r++) { const u = []; for (let c = 0; c < 9; c++) u.push(r * 9 + c); units.push(u); }
+      for (let c = 0; c < 9; c++) { const u = []; for (let r = 0; r < 9; r++) u.push(r * 9 + c); units.push(u); }
+      for (let br = 0; br < 9; br += 3) for (let bc = 0; bc < 9; bc += 3) {
+        const u = []; for (let r = br; r < br + 3; r++) for (let c = bc; c < bc + 3; c++) u.push(r * 9 + c); units.push(u);
+      }
+      const full = () => g.every(row => row.every(v => v));
+      const bits = (m) => { let n = 0; for (; m; m &= m - 1) n++; return n; };
+
+      const applySingles = () => {
+        let moved = false, again = true;
+        while (again) {
+          again = false;
+          for (let i = 0; i < 81; i++) {
+            const r = (i / 9) | 0, c = i % 9, m = cand[i];
+            if (!g[r][c] && m && !(m & (m - 1))) { put(r, c, Math.round(Math.log2(m))); again = moved = true; }
+          }
+          if (again) continue;
+          for (const u of units) for (let v = 1; v <= 9; v++) {
+            const b = 1 << v; let at = -1, n = 0, has = false;
+            for (const i of u) {
+              const r = (i / 9) | 0, c = i % 9;
+              if (g[r][c] === v) { has = true; break; }
+              if (!g[r][c] && (cand[i] & b)) { n++; at = i; }
+            }
+            if (!has && n === 1) { put((at / 9) | 0, at % 9, v); again = moved = true; if (full()) return moved; }
+          }
+        }
+        return moved;
+      };
+
+      // Bỏ ứng viên nhờ cặp đôi: 2 ô cùng đúng 2 khả năng (naked), hoặc 2 số chỉ nằm trong đúng 2 ô (hidden)
+      const applyPairs = () => {
+        let changed = false;
+        for (const u of units) {
+          const byMask = new Map();
+          for (const i of u) {
+            if (g[(i / 9) | 0][i % 9]) continue;
+            const m = cand[i];
+            if (bits(m) !== 2) continue;
+            if (!byMask.has(m)) byMask.set(m, []);
+            byMask.get(m).push(i);
+          }
+          for (const [m, cells] of byMask) {
+            if (cells.length < 2) continue;
+            for (const i of u) {
+              if (cells.indexOf(i) >= 0 || g[(i / 9) | 0][i % 9]) continue;
+              if (cand[i] & ~m) { cand[i] &= ~m; changed = true; }
+            }
+          }
+          const spots = {};
+          for (let v = 1; v <= 9; v++) spots[v] = [];
+          for (const i of u) {
+            if (g[(i / 9) | 0][i % 9]) continue;
+            for (let v = 1; v <= 9; v++) if (cand[i] & (1 << v)) spots[v].push(i);
+          }
+          for (let a = 1; a <= 9; a++) for (let b = a + 1; b <= 9; b++) {
+            if (spots[a].length !== 2 || spots[b].length !== 2) continue;
+            if (spots[a][0] !== spots[b][0] || spots[a][1] !== spots[b][1]) continue;
+            const m = (1 << a) | (1 << b);
+            for (const i of spots[a]) if (cand[i] !== m) { cand[i] = m; changed = true; }
+          }
+        }
+        return changed;
+      };
+
+      for (let round = 0; round < 80; round++) {
+        if (full()) return 0;
+        applySingles();
+        if (full()) return 0;
+        if (!applyPairs()) return 2;
+        applySingles();
+        if (full()) return 1;
+      }
+      return 2;
     }
 
     function generateRandomSudoku(targetGivens) {
@@ -607,12 +670,14 @@
       }
       let puzzle;
       if (targetGivens <= 20) {
-        // Địa ngục: thử nhiều lần trong ~1,2 giây, giữ đề ít số nhất mà chỉ dùng "điền số duy nhất" thì không giải xong
-        let best = null; const t0 = Date.now();
+        // Địa ngục: chỉ nhận đề mà "ô/số duy nhất + cặp đôi" vẫn bó tay, sau đó mới ưu tiên đề ít số nhất
+        let best = null, bestLev = -1;
+        const t0 = Date.now();
         do {
           const t = carve(targetGivens);
-          if (!sdkSolvableBySingles(t.p) && (!best || t.givens < best.givens)) best = t;
-          if (best && best.givens <= targetGivens + 1) break;
+          const lev = sdkTechniqueLevel(t.p);
+          if (lev > bestLev || (lev === bestLev && (!best || t.givens < best.givens))) { best = t; bestLev = lev; }
+          if (bestLev >= 2 && best.givens <= targetGivens + 2) break;
         } while (Date.now() - t0 < 1200);
         puzzle = (best || carve(targetGivens)).p;
       } else {
@@ -622,7 +687,7 @@
     }
 
     const SDK_REWARD = 100000000;
-    const SDK_GIVENS = { easy: 38, hard: 24, hell: 17 };
+    const SDK_GIVENS = { easy: 38, hard: 24, hell: 20 };
     const SDK_LABEL = { easy: '🟢 Dễ', hard: '🔴 Cực khó', hell: '💀 Địa ngục' };
     let sdk = null;
 
