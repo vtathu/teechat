@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=13" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=13"></noscript>
+  <link rel="stylesheet" href="style.css?v=15" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=15"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -229,6 +229,7 @@
       </div>
       <div class="scene-col left">
         <button class="scene-ic" onclick="openFs('work')"><span>💼</span><small>Đi làm</small></button>
+        <button class="scene-ic" onclick="openFs('biz')"><span>🏪</span><small>Tự kinh doanh</small></button>
         <button class="scene-ic" onclick="openFs('house')"><span>🏠</span><small>Nhà</small></button>
       <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
       </div>
@@ -269,6 +270,29 @@
         </div>
         <button class="btn btn-pink" style="width: 100%; margin-top: 4px;" onclick="executeWorkMinigame()">⚡ Làm Việc</button>
       </div>
+      <div class="life-card" style="gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-size:1.5rem;">🏪</div>
+          <div style="min-width:0;">
+            <div style="font-size:0.86rem; font-weight:bold; color:var(--app-dark-green);">Muốn tự làm chủ?</div>
+            <div style="font-size:0.72rem; color:var(--muted); line-height:1.35;">Mở quán mì cay riêng, tự nấu và tự thu tiền mỗi ngày.</div>
+          </div>
+        </div>
+        <button class="btn btn-outline" style="width:100%;" onclick="openFs('biz')">🏪 Tự kinh doanh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TỰ KINH DOANH -->
+  <div id="fs-biz" class="fs-page biz-fs">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🏪 Tự kinh doanh</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="biz-credit" id="biz-credit"></div>
+    <div class="fs-body biz-host" id="biz-body">
+      <iframe id="biz-frame" class="biz-frame" title="Mỳ cay nhà tui"></iframe>
     </div>
   </div>
 
@@ -802,16 +826,17 @@
   </div>
 
   <script src="theme.js?v=2"></script>
-  <script type="module" src="firebase.js?v=3"></script>
+  <script type="module" src="firebase.js?v=4"></script>
   <script src="core.js?v=1"></script>
   <script src="data-shop.js?v=7"></script>
-  <script src="shop.js?v=10"></script>
+  <script src="shop.js?v=11"></script>
   <script src="jobs.js?v=2"></script>
   <script src="craft.js?v=2"></script>
   <script src="quests.js?v=2"></script>
   <script src="pets.js?v=21"></script>
-  <script src="chat.js?v=6"></script>
+  <script src="chat.js?v=7"></script>
   <script src="ui.js?v=3"></script>
+  <script src="biz.js?v=6"></script>
   <script src="push.js?v=1"></script>
 </body>
 </html>

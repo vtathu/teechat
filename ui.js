@@ -53,7 +53,8 @@
     craft: () => { updateCraftPreview(); },
     house: () => { ensureActive(); houseTick(); renderHouse(); },
     mall: () => { renderMall(); },
-    bag: () => { renderBagLists(); applyBagTab(); }
+    bag: () => { renderBagLists(); applyBagTab(); },
+    biz: () => { if (window.Biz) window.Biz.render(); }
   };
 
   function openFs(name) {

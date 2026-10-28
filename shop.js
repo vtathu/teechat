@@ -8,10 +8,38 @@
     function saveKeys(arr) {
       try { localStorage.setItem('teechat_keys_v1', JSON.stringify(arr || [])); } catch (e) {}
     }
+    // Game Mỳ cay lưu riêng trong localStorage; gói kèm vào bản sao lưu để chuyển máy.
+    const BIZ_SAVE_KEY = 'mycay.save.v2';
+    function readBizSave() {
+      try {
+        const raw = localStorage.getItem(BIZ_SAVE_KEY);
+        const o = raw ? JSON.parse(raw) : null;
+        return o && typeof o === 'object' ? o : null;
+      } catch (e) { return null; }
+    }
+    window.syncBizSave = function () {
+      const biz = readBizSave();
+      if (!biz || !window.state) return false;
+      window.state.bizSave = biz;
+      return true;
+    };
+    // Khôi phục tiệm từ file sao lưu / cloud. force = ghi đè bản đang có trên máy.
+    window.applyBizSave = function (force) {
+      const bs = window.state && window.state.bizSave;
+      if (!bs || typeof bs !== 'object' || !bs.v) return false;
+      try {
+        if (!force && localStorage.getItem(BIZ_SAVE_KEY)) return false;
+        localStorage.setItem(BIZ_SAVE_KEY, JSON.stringify(bs));
+        if (window.Biz && typeof window.Biz.reload === 'function') window.Biz.reload();
+        return true;
+      } catch (e) { console.warn('Chưa khôi phục được tiệm', e); return false; }
+    };
     // Bản state để lưu / đồng bộ / xuất file: KHÔNG chứa API key
     function getSyncableState() {
       const c = JSON.parse(JSON.stringify(window.state));
       delete c.apiKeys;
+      const biz = readBizSave();
+      if (biz) c.bizSave = biz;
       return c;
     }
     // Giờ chuẩn: ưu tiên giờ server Firebase, không cho lùi về trước mốc đã thấy
@@ -98,6 +126,7 @@
       // Chưa nạp dữ liệu cũ (loadStorage chưa chạy) thì tuyệt đối không ghi đè, tránh xóa nhầm dữ liệu bằng bản trống
       if (!window.__stateLoaded) { console.warn('saveStorage bị chặn: dữ liệu chưa được nạp'); return; }
       let c, str;
+      try { window.syncBizSave(); } catch (e) {}
       try {
         c = getSyncableState(); delete c.lastUpdated;
         const sig = JSON.stringify(c);

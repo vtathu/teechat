@@ -156,6 +156,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 
         window.__cloudReady = true;
         window.loadStorage();
+        try { if (window.applyBizSave) window.applyBizSave(false); } catch (e) {}
         window.renderStoryList();
         // Chỉ làm mới khung chat nếu người dùng ĐANG ở trong chat; không kéo họ về chat khi đang ở trang chủ/shop/...
         try {
@@ -195,7 +196,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!user || !window.state) return;
       try {
         if (!window.__cloudReady) await reconcile(user);   // chưa đối chiếu xong thì đối chiếu trước, không ghi đè mù
-        else await set(ref(db, userPath(user.uid)), cloudCopy(window.state));
+        else {
+          try { if (window.syncBizSave) window.syncBizSave(); } catch (e) {}
+          await set(ref(db, userPath(user.uid)), cloudCopy(window.state));
+        }
         setSyncStatus(null);
       } catch (err) { reportSyncError(err); }
     }
@@ -226,6 +230,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!user) return alert("Đăng nhập trước!");
       try {
         if (typeof window.saveStorage === 'function') window.saveStorage();
+        try { if (window.syncBizSave) window.syncBizSave(); } catch (e) {}
         await set(ref(db, userPath(user.uid)), cloudCopy(window.state));
         setSyncStatus(null);
         alert("Đã đồng bộ lên Cloud thành công!");
@@ -236,7 +241,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       if (!user) return alert("Đăng nhập trước!");
       try {
         const snap = await get(ref(db, userPath(user.uid)));
-        if (snap.exists()) { window.state = stripKeys(snap.val()); window.saveStorage(); window.loadStorage(); window.renderStoryList(); if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId); alert("Đã tải về thành công!"); closeModal('modal-auth'); }
+        if (snap.exists()) {
+          const cloud = stripKeys(snap.val());
+          const bizCloud = cloud.bizSave; // saveStorage bên dưới đọc tiệm đang có trên máy, nên giữ riêng bản cloud
+          window.state = cloud; window.saveStorage(); window.loadStorage();
+          if (bizCloud) {
+            window.state.bizSave = bizCloud;
+            try { if (window.applyBizSave) window.applyBizSave(true); } catch (e) {}
+            window.saveStorage();
+          }
+          window.renderStoryList(); if (window.state.activeStoryId) window.openStoryDetail(window.state.activeStoryId); alert("Đã tải về thành công!"); closeModal('modal-auth');
+        }
         else alert("Chưa có dữ liệu trên Cloud!");
       } catch (err) { alert(err.message); }
     };

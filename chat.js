@@ -1596,7 +1596,14 @@ ${modeBlock}${hintBlock}
           const p = JSON.parse(evt.target.result);
           if (Array.isArray(p.apiKeys) && p.apiKeys.length) saveKeys(p.apiKeys); // file backup cũ có thể còn key
           delete p.apiKeys;
-          window.state = p; saveStorage(); loadStorage(); renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth');
+          const bizBackup = p.bizSave; // giữ riêng: saveStorage bên dưới đọc tiệm đang có trên máy và ghi đè
+          window.state = p; saveStorage(); loadStorage();
+          if (bizBackup) {
+            window.state.bizSave = bizBackup;
+            try { if (window.applyBizSave) window.applyBizSave(true); } catch (e) {}
+            saveStorage();
+          }
+          renderStoryList(); alert('Khôi phục thành công!'); closeModal('modal-auth');
         } catch(err) { alert('File không hợp lệ!'); }
       };
       reader.readAsText(file);
