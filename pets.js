@@ -5,7 +5,6 @@
 (function () {
   'use strict';
 
-  
   // ---------- CẤU HÌNH ĐỒ HỌA ----------
   // Ảnh thú: pets/<loài>_<giới>_<màu>_<dáng>.png  ví dụ pets/cat_male_trang_idle.png
   //   loài : cat, dog, golden, rabbit, parrot, hamster, fish
@@ -279,7 +278,7 @@
       .pet-chips{display:flex;flex-wrap:wrap;gap:6px}
       .pet-chip{padding:5px 10px;border-radius:14px;border:2px solid #e2e8f0;background:#fff;font-size:0.76rem;color:#4a5568;cursor:pointer}
       .pet-chip.on{border-color:var(--app-dark-green);background:#f0faf5;color:var(--app-dark-green);font-weight:bold}
-      .pet-stage{position:relative;width:130px;height:130px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+      .pet-stage{position:relative;width:130px;height:130px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;border-radius:16px;overflow:hidden;background:url('bg/pet_day.jpg') center bottom/cover no-repeat;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
       .pet-img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:50% 100%;animation:petBreathe 3.2s ease-in-out infinite}
       .pet-emoji{font-size:70px;line-height:1;transform-origin:50% 100%;animation:petBreathe 3.2s ease-in-out infinite}
       .pose-sleep .pet-img,.pose-sleep .pet-emoji{animation-duration:5.5s}

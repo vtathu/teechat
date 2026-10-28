@@ -184,8 +184,8 @@
     const art = $('scene-art'); if (!art) return;
     const h = mainHouse();
     if (!h) {
-      art.className = 'scene-art night'; art.style.background = '';
-      art.innerHTML = starsHtml() + '<div class="moon">🌙</div><div class="cap">Chưa có nhà ✨<br><span style="font-weight:normal;font-size:.72rem;">Mua nhà ở 🛍️ Teemall để có cảnh nhà của riêng mình</span></div>';
+      art.className = 'scene-art night bg-home'; art.style.background = '';
+      art.innerHTML = '<div class="cap">Chưa có nhà ✨<br><span style="font-weight:normal;font-size:.72rem;">Mua nhà ở 🛍️ Teemall để có cảnh nhà của riêng mình</span></div>';
       return;
     }
     const loc = estateLoc(h), sc = sceneFor(loc);

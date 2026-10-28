@@ -277,6 +277,7 @@
 .life-scene { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .scene-art { position: absolute; inset: 0; }
 .scene-art.night { background: linear-gradient(#0b1026, #243b6b 70%, #3b2f63); }
+.scene-art.night.bg-home { background-color: #0b1026; background-image: linear-gradient(rgba(6,12,28,.1), rgba(6,12,28,.45)), url('bg/home_night.jpg'); background-repeat: no-repeat; background-size: cover, cover; background-position: 58% 25%; }
 .scene-art .star { position: absolute; background: #fff; border-radius: 50%; animation: sceneTwinkle 3s ease-in-out infinite; }
 .scene-art .moon { position: absolute; top: 18%; right: 14%; font-size: 3.2rem; filter: drop-shadow(0 0 14px #fff8); }
 .scene-art .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; }
