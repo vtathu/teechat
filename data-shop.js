@@ -18,6 +18,15 @@ const REAL_ESTATE_MAPS = [
       { id: 'loc-dtv', name: "🏜️ Ốc Đảo Tinh Vân (Thung Lũng Cát Vàng)", mult: 0.6, desc: "Ốc đảo huyền ảo nằm giữa sa mạc cát vàng lung linh, đêm xuống bầu trời dày đặc dải ngân hà phản chiếu lên hồ nước ngọc bích. Thích hợp cho người tìm kiếm sự huyền bí, muốn tách biệt hoàn toàn khỏi thế giới xô xáp để ngắm nhìn vũ trụ và tìm lại bản ngã." }
     ];
 
+    // Ảnh nhà đất: <slug>_out.jpg (mặt ngoài, làm avatar) và <slug>_in.jpg (nội thất, làm nền cảnh)
+    const HOUSE_ART = {
+      'item-901': 'phong-tro', 'item-902': 'pho-cho', 'item-903': 'studio-vintage', 'item-904': 'chung-cu',
+      'item-905': 'nha-pho', 'item-906': 'biet-thu-pho', 'item-907': 'penthouse', 'item-908': 'san-vuon',
+      'item-909': 'nha-go', 'item-910': 'bien', 'item-911': 'lau-dai', 'item-912': 'cao-oc',
+      'item-913': 'dao', 'item-914': 'dinh-thu'
+    };
+    window.HOUSE_ART = HOUSE_ART;
+
     const SHOP_CATALOG = [
       { id: 'item-101', cat: 'flower', name: '🌷 Cành Hồng Lẻ', price: 50000, desc: 'Một cành hoa e ấp làm quen nhẹ nhàng.', tag: 'romantic' },
       { id: 'item-102', cat: 'flower', name: '🌿 Chậu Cây Trầu Bà Thủy Sinh', price: 80000, desc: 'Xanh mát dịu mắt, dễ chăm sóc.', tag: 'real' },
@@ -217,6 +226,7 @@ const REAL_ESTATE_MAPS = [
       { id: 'item-1050', cat: 'pet', name: "🐹 Hamster Kèm Lồng Đẹp", price: 450000, desc: "Nhỏ xíu, ham chạy.", tag: 'romantic' },
       { id: 'item-1051', cat: 'pet', name: "🐠 Bể Cá Cảnh Thủy Sinh", price: 6000000, desc: "Xanh mát góc nhà.", tag: 'romantic' },
       { id: 'item-1052', cat: 'pet', name: "🦮 Chó Golden Huấn Luyện Sẵn", price: 35000000, desc: "Hiền lành, trung thành.", tag: 'romantic' },
+      { id: 'item-1097', cat: 'pet', name: "🐠 Cá Cảnh", price: 80000, desc: "Chọn màu và giới tính. Cần có bể cá đã nuôi để thả cá vào.", tag: 'romantic' },
       { id: 'item-1053', cat: 'book', name: "📚 Bộ Truyện Ngôn Tình Trọn Bộ", price: 950000, desc: "Đọc mãi không chán.", tag: 'art' },
       { id: 'item-1054', cat: 'book', name: "📓 Sổ Tay Bìa Da Handmade", price: 350000, desc: "Ghi lại mọi điều đẹp.", tag: 'art' },
       { id: 'item-1055', cat: 'book', name: "🖋️ Bút Máy Mạ Vàng", price: 4800000, desc: "Nét chữ sang trọng.", tag: 'art' },

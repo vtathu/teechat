@@ -14,7 +14,22 @@
   // Chưa có ảnh thì tự hiện emoji thay thế.
   const PET_ASSET_BASE = 'pets/';
   // Ảnh món đồ (điền khi có ảnh): ITEM_IMG['pt-acc-crown'] = 'pets/items/crown.png'
-  const ITEM_IMG = {};
+  const ITEM_IMG = {
+    'pt-bowl-plain': 'img/pet/bowl-plain.png',
+    'pt-bowl-ceramic': 'img/pet/bowl-ceramic.png',
+    'pt-bowl-bone': 'img/pet/bowl-bone.png',
+    'pt-bowl-fish': 'img/pet/bowl-fish.png',
+    'pt-bowl-hay': 'img/pet/bowl-hay.png',
+    'pt-bowl-cup': 'img/pet/bowl-cup.png',
+    'pt-bowl-mini': 'img/pet/bowl-mini.png',
+    'pt-bowl-auto': 'img/pet/bowl-auto.png',
+    'pt-food-kibble': 'img/pet/food-kibble.png',
+    'pt-food-fishball': 'img/pet/food-fishball.png',
+    'pt-food-premium': 'img/pet/food-premium.png',
+    'pt-tank-m': 'img/pet/tank.png',
+    'pt-tank-l': 'img/pet/tank.png'
+  };
+  const FISH_ITEM_ID = 'item-1097';
 
   const SPECIES = {
     cat:     { name: 'Mèo',        emoji: '🐱', walk: true },
@@ -127,8 +142,8 @@
     mk('home-hutch', 'home', '🏡', 'Chuồng thỏ', 1000000, ['rabbit'], { slot: 'home', fx: { regen: 1.4 }, desc: 'Hồi sức nhanh hơn 40%.' }),
     mk('home-cattree', 'home', '🌳', 'Cây leo mèo', 1200000, ['cat'], { slot: 'home', fx: { regen: 1.4 }, desc: 'Hồi sức nhanh hơn 40%.' }),
     mk('home-doghouse', 'home', '🛖', 'Nhà chó', 1500000, ['dog', 'golden'], { slot: 'home', fx: { regen: 1.4 }, desc: 'Hồi sức nhanh hơn 40%.' }),
-    mk('tank-m', 'home', '🫙', 'Bể vừa (chứa 10 cá)', 2500000, ['fish'], { slot: 'home', cap: 10, desc: 'Chứa tối đa 10 cá.' }),
-    mk('tank-l', 'home', '🪟', 'Bể lớn (chứa 16 cá)', 6000000, ['fish'], { slot: 'home', cap: 16, desc: 'Chứa tối đa 16 cá.' }),
+    mk('tank-m', 'home', '🫙', 'Nâng cấp bể vừa (10 cá)', 2500000, ['fish'], { slot: 'home', cap: 10, desc: 'Gắn vào bể đang nuôi để tăng sức chứa.' }),
+    mk('tank-l', 'home', '🪟', 'Nâng cấp bể lớn (16 cá)', 6000000, ['fish'], { slot: 'home', cap: 16, desc: 'Gắn vào bể đang nuôi để tăng sức chứa.' }),
     // Đồ bể
     mk('tank-gravel', 'tankdecor', '🪨', 'Sỏi màu', 60000, ['fish'], { slot: 'gravel', desc: 'Trang trí đáy bể.' }),
     mk('tank-plant', 'tankdecor', '🌿', 'Cây thủy sinh', 80000, ['fish'], { slot: 'plant', desc: 'Xanh mát cho bể.' }),
@@ -136,7 +151,7 @@
     mk('tank-light', 'tankdecor', '💡', 'Đèn bể', 200000, ['fish'], { slot: 'light', desc: 'Bể sáng lung linh.' }),
     mk('tank-filter', 'tankdecor', '🌀', 'Máy lọc nước', 400000, ['fish'], { slot: 'filter', fx: { cleanDecay: 0.5 }, desc: 'Nước bẩn chậm gấp đôi.' })
   ];
-  // Cá: 5 màu đóng vai 5 loài, tên/giá/độ hiếm khác nhau
+  // Cá: 5 màu đóng vai 5 loài, tên/giá/độ hiếm khác nhau (mua ở shop thú cưng, thả vào bể)
   const FISH_SPECIES = {
     'Trắng': { name: 'Cá Bạch Kim', price: 80000, sell: 20000 },
     'Xám': { name: 'Cá Tro', price: 90000, sell: 22000 },
@@ -145,10 +160,6 @@
     'Vàng': { name: 'Cá Hoàng Kim', price: 380000, sell: 120000 }
   };
   const FISH_SELL = Object.keys(FISH_SPECIES).reduce((o, c) => { o[c] = FISH_SPECIES[c].sell; return o; }, {});
-  Object.keys(COLORS).forEach(c => ['male', 'female'].forEach(g => {
-    const sp = FISH_SPECIES[c] || { name: 'Cá ' + c, price: 80000 };
-    ITEMS.push(mk('fish-' + colorKey(c) + '-' + g, 'fish', '🐟', sp.name + (g === 'male' ? ' (đực)' : ' (cái)'), sp.price, ['fish'], { fish: { g: g, c: c }, desc: 'Một bé ' + sp.name.toLowerCase() + ' thả vào bể cá.' }));
-  }));
   const ITEM_BY_ID = {}; ITEMS.forEach(i => { ITEM_BY_ID[i.id] = i; });
   const okFor = (it, sp) => it.for === 'all' || (it.for || []).indexOf(sp) !== -1;
 
@@ -258,7 +269,7 @@
       .pet-bar b{width:20px;text-align:right;font-size:0.62rem}
       .pet-btns{display:flex;flex-wrap:wrap;gap:4px}
       .pet-btns .btn{padding:4px 8px;font-size:0.7rem}
-      .pet-young{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;transition:transform .35s ease;transform-origin:50% 100%}
+      .pet-young{position:absolute;left:0;bottom:0;width:100%;aspect-ratio:520/480;display:flex;align-items:flex-end;justify-content:center;transition:transform .35s ease;transform-origin:50% 100%}
       .pet-lv{display:flex;align-items:center;gap:6px;font-size:0.64rem;color:#718096}
       .pet-lv-badge{background:var(--app-green);color:#fff;border-radius:8px;padding:1px 6px;font-weight:bold;font-size:0.64rem;white-space:nowrap}
       .pet-lv-track{flex:1;height:6px;background:#edf2f7;border-radius:4px;overflow:hidden}
@@ -278,25 +289,30 @@
       .pet-chips{display:flex;flex-wrap:wrap;gap:6px}
       .pet-chip{padding:5px 10px;border-radius:14px;border:2px solid #e2e8f0;background:#fff;font-size:0.76rem;color:#4a5568;cursor:pointer}
       .pet-chip.on{border-color:var(--app-dark-green);background:#f0faf5;color:var(--app-dark-green);font-weight:bold}
-      .pet-stage{position:relative;width:130px;height:130px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;border-radius:16px;overflow:hidden;background:url('bg/pet_day.jpg') center bottom/cover no-repeat;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
+      .pet-stage{position:relative;width:100%;height:240px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;border-radius:16px;overflow:hidden;background:url('bg/pet_day.jpg') center bottom/cover no-repeat;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
       .pet-img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:50% 100%;animation:petBreathe 3.2s ease-in-out infinite}
-      .pet-emoji{font-size:70px;line-height:1;transform-origin:50% 100%;animation:petBreathe 3.2s ease-in-out infinite}
+      .pet-emoji{font-size:104px;line-height:1;transform-origin:50% 100%;animation:petBreathe 3.2s ease-in-out infinite}
       .pose-sleep .pet-img,.pose-sleep .pet-emoji{animation-duration:5.5s}
       .pose-happy .pet-img,.pose-happy .pet-emoji{animation:petHop 1.1s ease-in-out infinite}
       .pose-hungry .pet-img,.pose-hungry .pet-emoji{animation:petSad 2.8s ease-in-out infinite}
       .pet-jump .pet-img,.pet-jump .pet-emoji{animation:petJump .5s ease-out 1}
-      .pet-ov{position:absolute;pointer-events:none}
-      .pet-ov.acc{top:2px;right:8px;font-size:26px}
-      .pet-ov.outfit{bottom:6px;left:50%;transform:translateX(-50%);font-size:26px}
+      .pet-ov{position:absolute;pointer-events:none;z-index:2;line-height:1;transform-origin:50% 50%}
       .pet-ovimg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
-      .pet-fx{position:absolute;right:4px;top:0;font-weight:bold;color:#3182ce;font-size:1.1rem;pointer-events:none}
+      .pet-bowl{position:absolute;bottom:3%;left:74%;max-width:20%;max-height:15%;z-index:3;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.18))}
+      .pet-bowl-emoji{position:absolute;bottom:4%;left:77%;font-size:26px;line-height:1;z-index:3;pointer-events:none}
+      .pet-fx{position:absolute;left:52%;top:32%;font-weight:bold;color:#3182ce;font-size:1.3rem;pointer-events:none}
       .pose-sleep .pet-fx{animation:petZ 2.2s ease-in-out infinite}
       .pet-heart{position:absolute;pointer-events:none;font-size:20px;animation:petHeart .9s ease-out forwards}
-      .pet-tank{position:relative;height:130px;border-radius:14px;overflow:hidden;background:linear-gradient(#bee3f8,#4299e1);border:2px solid #90cdf4}
-      .pet-tank .dec{position:absolute;font-size:22px;pointer-events:none}
+      .pet-tank{position:relative;height:225px;border-radius:14px;overflow:hidden;background:#eaf7ff;border:2px solid #cbd5e0}
+      .pet-tank>img.tank-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+      .pet-tank .dec{position:absolute;font-size:26px;pointer-events:none}
       .pet-fish{position:absolute;left:2%;animation:petSwim ease-in-out infinite alternate}
-      .pet-fish>span,.pet-fish>img{display:block;animation:petFlip linear infinite;font-size:22px}
-      .pet-fish img{width:34px;height:auto}
+      .pet-fish>span,.pet-fish>img{display:block;animation:petFlip linear infinite;font-size:28px}
+      .pet-fish img{width:46px;height:auto}
+      .pet-topbar{display:flex;align-items:flex-start;gap:6px;width:100%}
+      .pet-rail{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}
+      .pet-rail button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:44px;padding:5px 8px;border-radius:12px;border:2px solid var(--app-green);background:#fff;color:var(--app-dark-green);font-weight:bold;font-size:0.6rem;line-height:1.15;cursor:pointer}
+      .pet-rail button span{font-size:1.15rem;line-height:1}
       .pet-item{display:flex;align-items:center;gap:8px;background:#f7faf8;border:1px solid #e2e8f0;border-radius:12px;padding:8px}
       .pet-item .ic{font-size:1.6rem;width:38px;text-align:center}
       .pet-item .ic img{width:34px;height:34px;object-fit:contain}
@@ -310,7 +326,7 @@
       @keyframes petJump{0%{transform:translateY(0)}40%{transform:translateY(-20px) scale(1.05,.95)}100%{transform:translateY(0)}}
       @keyframes petZ{0%{opacity:0;transform:translateY(6px)}50%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
       @keyframes petHeart{0%{opacity:1;transform:translateY(0) scale(.8)}100%{opacity:0;transform:translateY(-44px) scale(1.2)}}
-      @keyframes petSwim{from{transform:translateX(0)}to{transform:translateX(96px)}}
+      @keyframes petSwim{from{transform:translateX(0)}to{transform:translateX(var(--swim,96px))}}
       @keyframes petFlip{0%,49.9%{transform:scaleX(-1)}50%,100%{transform:scaleX(1)}}
       @keyframes petBubble{0%{transform:translateY(0);opacity:0}12%{opacity:.8}100%{transform:translateY(-112px);opacity:0}}
       @media (prefers-reduced-motion: reduce){.pet-img,.pet-emoji,.pet-fish,.pet-fish>span,.pet-fish>img,.pet-bubble{animation:none!important}}
@@ -325,18 +341,69 @@
     if (failed.has(src)) return `<span class="${cls}">${emoji}</span>`;
     return `<img class="${cls}" src="${src}" alt="" onerror="PET.imgFail(this)"><span class="${cls}" style="display:none">${emoji}</span>`;
   }
+  // Mốc trên cơ thể từng loài (% chiều cao khung) để đặt đồ mặc cho khớp
+  const BODY_ANCHOR = {
+    cat:     { head: 24, face: 48, neck: 68, body: 75 },
+    dog:     { head: 24, face: 48, neck: 68, body: 75 },
+    golden:  { head: 41, face: 60, neck: 75, body: 80 },
+    rabbit:  { head: 41, face: 60, neck: 75, body: 80 },
+    parrot:  { head: 42, face: 60, neck: 75, body: 80 },
+    hamster: { head: 40, face: 59, neck: 74, body: 79 }
+  };
+  // at: mốc cơ thể, x: % ngang, dy: lệch dọc, s: cỡ chữ, r: xoay
+  const OV_ANCHOR = {
+    'pt-acc-bow':     { at: 'head', x: 35, dy: 8, s: 26, r: 12 },
+    'pt-acc-flower':  { at: 'head', x: 35, dy: 4, s: 24 },
+    'pt-acc-collar':  { at: 'neck', x: 50, dy: 2, s: 24 },
+    'pt-acc-scarf':   { at: 'neck', x: 50, dy: 0, s: 30 },
+    'pt-acc-shades':  { at: 'face', x: 50, dy: -2, s: 26 },
+    'pt-acc-beanie':  { at: 'head', x: 50, dy: 1, s: 30 },
+    'pt-acc-party':   { at: 'head', x: 50, dy: 0, s: 30, r: -8 },
+    'pt-acc-crown':   { at: 'head', x: 50, dy: 1, s: 28 },
+    'pt-acc-phones':  { at: 'face', x: 50, dy: -2, s: 34 },
+    'pt-acc-wings':   { at: 'body', x: 78, dy: -3, s: 32 },
+    'pt-out-tee':     { at: 'body', x: 50, dy: 5, s: 32 },
+    'pt-out-sweater': { at: 'body', x: 50, dy: 5, s: 32 },
+    'pt-out-dress':   { at: 'body', x: 50, dy: 6, s: 32 },
+    'pt-out-rain':    { at: 'body', x: 50, dy: 5, s: 30 }
+  };
+  // Mép trên của phần thú trong ảnh theo tư thế — tư thế nằm ngủ thấp hơn nhiều
+  const CONTENT_TOP = {
+    cat:     { idle: 16.7, sleep: 37.5 },
+    dog:     { idle: 17.3, sleep: 46.5 },
+    golden:  { idle: 34.6, sleep: 51.7 },
+    rabbit:  { idle: 39.4, sleep: 44.8 },
+    parrot:  { idle: 37.5, sleep: 54.6 },
+    hamster: { idle: 35.4, sleep: 41.0 }
+  };
+  const CONTENT_BOT = 98.1;
+  // Hệ số chỉnh cỡ riêng: hamster tròn nên trông to hơn các loài khác
+  const SPECIES_SCALE = { hamster: 0.88 };
   function stageHtml(p) {
     const sp = SPECIES[p.species], pose = poseOf(p), w = p.worn || {};
+    const anchor = BODY_ANCHOR[p.species] || BODY_ANCHOR.dog;
+    const ct = CONTENT_TOP[p.species] || CONTENT_TOP.dog;
     let ov = '';
     ['outfit', 'acc'].forEach(slot => {
       const it = w[slot] && ITEM_BY_ID[w[slot]];
       if (!it) return;
-      ov += ITEM_IMG[it.id] ? `<img class="pet-ovimg" src="${ITEM_IMG[it.id]}" alt="">` : `<span class="pet-ov ${slot}">${it.emoji}</span>`;
+      if (ITEM_IMG[it.id]) { ov += `<img class="pet-ovimg" src="${ITEM_IMG[it.id]}" alt="">`; return; }
+      const a = OV_ANCHOR[it.id] || { at: slot === 'acc' ? 'head' : 'body', x: 50, dy: 0, s: 28 };
+      let top = (anchor[a.at] || 50) + (a.dy || 0);
+      if (pose === 'sleep') {
+        const idleH = CONTENT_BOT - ct.idle, sleepH = CONTENT_BOT - ct.sleep;
+        top = ct.sleep + (top - ct.idle) * (sleepH / idleH);
+      }
+      ov += `<span class="pet-ov ${slot}" style="left:${a.x}%;top:${top.toFixed(1)}%;font-size:${a.s || 28}px;transform:translate(-50%,-50%) rotate(${a.r || 0}deg)">${it.emoji}</span>`;
     });
+    const bit = w.bowl && ITEM_BY_ID[w.bowl];
+    const bowl = bit
+      ? (ITEM_IMG[bit.id] ? `<img class="pet-bowl" src="${ITEM_IMG[bit.id]}" alt="">` : `<span class="pet-bowl-emoji">${bit.emoji}</span>`)
+      : '';
     const fx = pose === 'sleep' ? '<span class="pet-fx">💤</span>' : '';
     // Lv1 còn nhỏ, lớn dần tới Lv5; ảnh không đổi, chỉ scale cả khối.
-    const sc = (0.7 + 0.06 * (Math.min(5, levelOf(p)) - 1)).toFixed(2);
-    return `<div class="pet-stage pose-${pose}" onclick="PET.tap('${p.id}',this,event)"><div class="pet-young" style="transform:scale(${sc})">${imgOrEmoji(petSrc(p, pose), sp.emoji, 'pet-img')}${ov}</div>${fx}</div>`;
+    const sc = ((0.62 + 0.05 * (Math.min(5, levelOf(p)) - 1)) * (SPECIES_SCALE[p.species] || 1)).toFixed(2);
+    return `<div class="pet-stage pose-${pose}" onclick="PET.tap('${p.id}',this,event)">${bowl}<div class="pet-young" style="transform:scale(${sc})">${imgOrEmoji(petSrc(p, pose), sp.emoji, 'pet-img')}${ov}${fx}</div></div>`;
   }
   function bar(icon, val, color) {
     return `<div class="pet-bar"><span>${icon}</span><div class="tr"><i style="width:${Math.round(val)}%;background:${color}"></i></div><b>${Math.round(val)}</b></div>`;
@@ -344,13 +411,14 @@
   function itemIcon(it) { return ITEM_IMG[it.id] ? `<img src="${ITEM_IMG[it.id]}" alt="">` : it.emoji; }
   const forEmoji = (it) => (it.for || []).map(s => (SPECIES[s] || {}).emoji || '').join('');
 
-  function fishHtml(f) {
-    const h = hashStr(f.id || '');
-    const top = 8 + (h % 55), dur = 6 + (h % 7), delay = -(h % 9);
+  function fishHtml(f, i) {
+    const h = hashStr(f.id || '') + (i || 0) * 37;
+    const top = 20 + (h % 42), dur = 6 + (h % 7), delay = -(h % 9);
+    const swim = 120 + (h % 130);
     const src = PET_ASSET_BASE + 'fish_' + f.g + '_' + colorKey(f.c) + '_idle.png';
     const inner = failed.has(src) ? `<span style="animation-duration:${dur * 2}s;animation-delay:${delay}s">${colorKey(f.c) === 'vang' ? '🐠' : '🐟'}</span>`
       : `<img src="${src}" alt="" style="animation-duration:${dur * 2}s;animation-delay:${delay}s" onerror="PET.fishImgFail(this)"><span style="display:none;animation-duration:${dur * 2}s;animation-delay:${delay}s">🐟</span>`;
-    return `<div class="pet-fish" style="top:${top}%;animation-duration:${dur}s;animation-delay:${delay}s">${inner}</div>`;
+    return `<div class="pet-fish" style="top:${top}%;--swim:${swim}px;animation-duration:${dur}s;animation-delay:${delay}s">${inner}</div>`;
   }
   function tankHtml(p) {
     const w = p.worn || {};
@@ -362,8 +430,7 @@
     if (w.filter) dec += `<span class="dec" style="top:2px;left:8px">${ITEM_BY_ID[w.filter].emoji}</span>`;
     let bub = '';
     for (let i = 0; i < 3; i++) bub += `<span class="pet-bubble" style="left:${16 + i * 30}%;animation-delay:${(i * 1.4).toFixed(1)}s"></span>`;
-    const fish = (p.fish || []).map(fishHtml).join('');
-    return `<div class="pet-tank">${dec}${bub}${fish}</div>`;
+    const fish = (p.fish || []).map(fishHtml).join('');    return `<div class="pet-tank"><img class="tank-bg" src="img/pet/tank.png" alt="">${dec}${bub}${fish}</div>`;
   }
 
   function petCardHtml(p) {
@@ -381,20 +448,21 @@
     const walks = TUNE.walksPerDay - p.daily.walks, plays = TUNE.playsPerDay - p.daily.plays;
     const bars = `<div class="pet-bars">${bar('🍖', st.food, '#ed8936')}${bar('😊', st.mood, '#ec6f9a')}${bar(tank ? '💧' : '🛁', st.clean, '#4299e1')}${tank ? '' : bar('⚡', st.energy, '#ecc94b')}</div>`;
     const lvRow = tank ? '' : `<div class="pet-lv"><span class="pet-lv-badge">Lv.${q.lv}</span><div class="pet-lv-track"><i style="width:${q.pct}%"></i></div><span class="pet-lv-txt">${q.next ? q.xp + '/' + q.next + ' XP' : 'MAX'}</span></div>`;
-    const playName = { cat: '🐾 Đuổi chấm sáng', dog: '🥏 Hứng đĩa', golden: '🥏 Hứng đĩa' }[p.species] || '🎮 Chơi';
+    const playName = { cat: '🐾 Đuổi chấm sáng', dog: '🥏 Hứng đĩa', golden: '🥏 Hứng đĩa', rabbit: '🥕 Nhặt cà rốt', parrot: '🎵 Nhại tiếng', hamster: '🌻 Bắt hạt' }[p.species] || '🎮 Chơi';
+    const outingName = WALK_SPECIES[p.species] ? '🦮 Dắt đi chơi' : '☕ Ra quán chơi';
     const vetBtn = (p.sick || p.injured) ? `<button class="btn btn-pink" onclick="PET.vet('${p.id}')">🩺 Khám (${money(TUNE.vetCost)})</button>` : '';
     const btns = tank
       ? `<button class="btn" onclick="PET.openFeed('${p.id}')">🍤 Cho ăn</button>
          <button class="btn" onclick="PET.bathe('${p.id}')">💧 Thay nước (${money(TUNE.tankCleanCost)})</button>
-         <button class="btn" onclick="PET.openAddFish('${p.id}')">🐟 Chợ cá</button>
          <button class="btn btn-outline" onclick="PET.openEquip('${p.id}')">🪴 Đồ bể</button>
+         <button class="btn btn-pink" onclick="PET.openWalk('${p.id}')">🏠 Mời về chơi (${walks})</button>
          ${vetBtn}
          <button class="btn btn-outline" onclick="PET.rename('${p.id}')">✏️ Tên</button>
          <button class="btn btn-outline" onclick="PET.sellPet('${p.id}')">💰 Bán</button>`
       : `<button class="btn" onclick="PET.openFeed('${p.id}')">🍖 Cho ăn</button>
          <button class="btn" onclick="PET.bathe('${p.id}')">🛁 Tắm (${money(TUNE.bathCost)})</button>
          <button class="btn" onclick="PET.play('${p.id}')">${playName} (${plays})</button>
-         ${WALK_SPECIES[p.species] ? `<button class="btn btn-pink" onclick="PET.openWalk('${p.id}')">🦮 Dắt đi chơi (${walks})</button>` : ''}
+         <button class="btn btn-pink" onclick="PET.openWalk('${p.id}')">${outingName} (${walks})</button>
          ${vetBtn}
          <button class="btn btn-outline" onclick="PET.openEquip('${p.id}')">👕 Đồ mặc</button>
          <button class="btn btn-outline" onclick="PET.openBreed('${p.id}')">🍼 Lai tạo</button>
@@ -403,6 +471,8 @@
     let fishRow = '';
     if (tank && (p.fish || []).length) {
       fishRow = `<div class="pet-chips">${p.fish.map(f => `<span class="pet-chip" onclick="PET.sellFish('${p.id}','${f.id}')" title="Bấm để bán">${f.g === 'male' ? '♂' : '♀'} ${esc((FISH_SPECIES[f.c] || {}).name || 'Cá ' + f.c)} · ${money(FISH_SELL[f.c] || TUNE.fishSell)}</span>`).join('')}</div>`;
+    } else if (tank) {
+      fishRow = `<div style="font-size:.74rem;color:#718096;line-height:1.4;">Bể đang trống. Mua cá ở 🛍️ Teemall → Shop thú cưng (chọn màu + giới tính), rồi vào 🎒 Túi → Thú cưng bấm “Thả vào bể”.</div>`;
     }
     return `<div class="pet-card">
       <div class="pet-head"><div><div class="pet-name">${tank ? '🫧' : sp.emoji} ${esc(p.name)}</div><div class="pet-sub">${sub}</div></div><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${tags}</div></div>
@@ -426,9 +496,15 @@
     }
     if (!pets.some(x => x.id === selPet)) selPet = pets[0].id;
     const cur = pets.find(x => x.id === selPet);
-    const sw = pets.length > 1 ? `<div class="pet-chips">${pets.map(x => `<span class="pet-chip ${x.id === selPet ? 'on' : ''}" onclick="PET.selPet('${x.id}')">${isTank(x) ? '🫧' : SPECIES[x.species].emoji} ${esc(x.name)}</span>`).join('')}</div>` : '';
-    const dock = `<div class="pet-card"><div style="font-weight:bold;color:var(--app-dark-green);font-size:0.85rem;">Túi & cửa hàng</div><div class="pet-btns"><button class="btn btn-outline" onclick="PET.view('bag')">🎒 Túi thú cưng</button><button class="btn btn-outline" onclick="PET.view('shop')">🏪 Cửa hàng thú</button></div></div>`;
-    return sw + petCardHtml(cur) + dock;
+    const chips = pets.length > 1 ? pets.map(x => `<span class="pet-chip ${x.id === selPet ? 'on' : ''}" onclick="PET.selPet('${x.id}')">${isTank(x) ? '🫧' : SPECIES[x.species].emoji} ${esc(x.name)}</span>`).join('') : '';
+    const bar = `<div class="pet-topbar">
+      <div class="pet-chips" style="flex:1;min-width:0">${chips}</div>
+      <div class="pet-rail">
+        <button onclick="PET.view('bag')" title="Túi thú cưng"><span>🎒</span>Túi</button>
+        <button onclick="PET.view('shop')" title="Cửa hàng thú"><span>🏪</span>Shop</button>
+      </div>
+    </div>`;
+    return bar + petCardHtml(cur);
   }
   function viewShop() {
     const chips = PCATS.map(c => `<span class="pet-chip ${shopCat === c[0] ? 'on' : ''}" onclick="PET.shopCat('${c[0]}')">${c[1]} ${c[2]}</span>`).join('');
@@ -444,6 +520,18 @@
       </div>`;
     }).join('');
     return `<div class="pet-card"><div style="font-weight:bold;color:var(--app-dark-green)">🏪 Cửa hàng thú cưng</div><div class="pet-chips">${chips}</div><div style="display:flex;flex-direction:column;gap:6px">${rows}</div></div>`;
+  }
+  function tankShopCard() {
+    let price = 6000000;
+    try { const c = SHOP_CATALOG.find(x => x.id === 'item-1051'); if (c) price = c.price; } catch (e) {}
+    return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
+      <div class="pet-bigic" style="height:88px;background:linear-gradient(135deg,#eaf7ff,#d6f0ff);display:flex;align-items:center;justify-content:center;"><img src="img/pet/tank.png" alt="" style="max-width:100%;max-height:74px;object-fit:contain;"></div>
+      <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
+        <div style="font-size:0.78rem;line-height:1.25;min-height:2.5em;">Bể cá thủy sinh</div>
+        <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${money(price)}</div>
+        <div style="font-size:0.66rem;color:#888;line-height:1.3;">Mua rồi nhận nuôi bể để thả cá.</div>
+        <button class="btn" style="background:#ee4d2d;color:#fff;border:none;padding:6px;font-size:0.78rem;margin-top:2px;" onclick="openBuyDetailModal('item-1051')">🛒 Mua ngay</button>
+      </div></div>`;
   }
   function gearShopHtml() {
     const cats = [['animal', '🐾', 'Thú cưng']].concat(PCATS);
@@ -467,6 +555,7 @@
           <button class="btn" style="background:#ee4d2d;color:#fff;border:none;padding:6px;font-size:0.78rem;margin-top:2px;" onclick="PET.buy('${it.id}')">🛒 Mua ngay</button>
         </div></div>`;
     }).join('');
+    if (shopCat === 'home') cards = tankShopCard() + cards;
     if (!cards) cards = '<div style="grid-column:1/-1;text-align:center;color:#888;font-size:0.85rem;padding:24px;">Chưa có sản phẩm.</div>';
     const cur = cats.find(c => c[0] === shopCat) || cats[0];
     return `<div class="mall-split"><div class="mall-side">${side}</div>
@@ -523,7 +612,8 @@
     const v = obj.variants || {}, txt = (obj.desc || '') + ' ' + (obj.singleName || '') + ' ' + (obj.name || '');
     let g = v.gender || (/Giới tính:\s*(Đực|Cái)/.exec(txt) || [])[1];
     let c = v.fur || (/Màu lông:\s*(Trắng|Vàng|Xám|Đen|Nâu)/.exec(txt) || [])[1];
-    return { gender: g === 'Đực' ? 'male' : g === 'Cái' ? 'female' : null, color: c || null };
+    let fc = v.fishColor || (/Màu cá:\s*(Trắng|Vàng|Xám|Đen|Nâu)/.exec(txt) || [])[1];
+    return { gender: g === 'Đực' ? 'male' : g === 'Cái' ? 'female' : null, color: c || null, fishColor: fc || null };
   }
   function paidOf(obj) {
     if (obj.paid) return obj.paid;
@@ -575,7 +665,9 @@
 
   function adopt(uid) {
     const obj = findInv(uid);
-    if (!obj || !PET_BY_ITEM[obj.id]) return;
+    if (!obj) return;
+    if (obj.id === FISH_ITEM_ID) return openPutFish(uid);
+    if (!PET_BY_ITEM[obj.id]) return;
     const sp = PET_BY_ITEM[obj.id], tank = SPECIES[sp].tank;
     const defName = tank ? 'Bể cá nhà mình' : DEFAULT_NAMES[rand(0, DEFAULT_NAMES.length - 1)];
     openModal2(tank ? '🫧 Đặt tên cho bể cá' : '🐾 Đặt tên cho bé ' + SPECIES[sp].name.toLowerCase(), `
@@ -609,10 +701,7 @@
       worn: {}, daily: { d: '', walks: 0, plays: 0, taps: 0 }, paid: paidOf(obj),
       xp: 0, lv: 1, breedTs: 0
     };
-    if (tank) {
-      const cs = Object.keys(COLORS);
-      p.fish = ['male', 'female'].map(g => ({ id: 'f-' + t.toString(36) + Math.random().toString(36).slice(2, 6), g: g, c: cs[rand(0, cs.length - 1)], born: t }));
-    }
+    if (tank) p.fish = [];
     takeOneFromInv(obj);
     S().pets.push(p);
     save();
@@ -633,8 +722,14 @@
     toast('💰 Đã bán, nhận ' + money(price));
   }
   function invButtons(obj) {
-    if (!obj || !PET_BY_ITEM[obj.id]) return '';
+    if (!obj) return '';
     const st = 'padding:2px 8px;font-size:0.72rem;';
+    if (obj.id === FISH_ITEM_ID) {
+      const v = parseVariants(obj), price = FISH_SELL[v.fishColor] || TUNE.fishSell;
+      return ` <button class="btn btn-outline" style="${st}" onclick="PET.openPutFish('${obj.uniqueId}')">🐟 Thả vào bể</button>`
+        + ` <button class="btn btn-outline" style="${st}" onclick="PET.sellFishInv('${obj.uniqueId}')">💰 Bán ${money(price)}</button>`;
+    }
+    if (!PET_BY_ITEM[obj.id]) return '';
     return ` <button class="btn btn-outline" style="${st}" onclick="openSelectCharGiftModal('${obj.uniqueId}')">🎁 Tặng</button>`
       + ` <button class="btn btn-outline" style="${st}" onclick="PET.adopt('${obj.uniqueId}')">🐾 Nuôi</button>`
       + ` <button class="btn btn-outline" style="${st}" onclick="PET.sellInv('${obj.uniqueId}')">💰 Bán</button>`;
@@ -701,8 +796,10 @@
   function play(id) {
     const p = findPet(id); if (!p || isTank(p)) return;
     tickPet(p); ensureDaily(p);
-    if (p.species === 'dog' || p.species === 'golden') return openFrisbee(id);
+    if (p.species === 'dog' || p.species === 'golden' || p.species === 'rabbit') return openFrisbee(id);
     if (p.species === 'cat') return openLightDot(id);
+    if (p.species === 'parrot') return openEcho(id);
+    if (p.species === 'hamster') return openHole(id);
     if (p.sick) return toast(p.name + ' đang ốm, cho đi khám trước nhé.');
     if (p.injured) return toast(p.name + ' đang bị thương, cho đi khám trước nhé.');
     if (p.daily.plays >= TUNE.playsPerDay) return toast('Hôm nay chơi đủ rồi, mai chơi tiếp nhé.');
@@ -775,11 +872,12 @@
   function openFrisbee(id) {
     const p = startPlay(id); if (!p) return;
     const W = 340, H = 380, g = game;
+    const carrot = p.species === 'rabbit';
     g.kind = 'frisbee'; g.miss = 0; g.lane = 1; g.items = []; g.spawn = 0.6; g.time = 0; g.limit = 45;
-    openModal2('🥏 Hứng đĩa cùng ' + p.name, `
+    openModal2(carrot ? '🥕 Nhặt cà rốt cùng ' + p.name : '🥏 Hứng đĩa cùng ' + p.name, `
       <div class="pg-score"><span id="pg-score">Điểm: 0</span><span id="pg-time">45s</span></div>
       <canvas id="pg-canvas" class="pg-canvas" width="${W}" height="${H}"></canvas>
-      <div class="pg-hint">Đỡ đĩa rơi xuống bằng cách đứng đúng làn. Trượt 3 lần là kết thúc, càng lâu đĩa càng nhanh.</div>
+      <div class="pg-hint">${carrot ? 'Nhặt cà rốt rơi xuống bằng cách đứng đúng làn. Trượt 3 lần là kết thúc, càng lâu càng nhanh.' : 'Đỡ đĩa rơi xuống bằng cách đứng đúng làn. Trượt 3 lần là kết thúc, càng lâu đĩa càng nhanh.'}</div>
       <div class="pg-lanes">
         <button data-lane="0" onclick="PET.gameLane(0)">◀ Trái</button>
         <button data-lane="1" onclick="PET.gameLane(1)">▲ Giữa</button>
@@ -798,7 +896,8 @@
     window.addEventListener('keydown', onKey);
     g.cleanup = () => window.removeEventListener('keydown', onKey);
     const cvs = canvasOf();
-    const dogEmoji = p.species === 'golden' ? '🦮' : '🐶';
+    const petEmoji = carrot ? '🐰' : (p.species === 'golden' ? '🦮' : '🐶');
+    const itemEmoji = carrot ? '🥕' : '🥏';
     const draw = () => {
       if (!cvs) return;
       const x = cvs.getContext('2d'), W2 = cvs.width, H2 = cvs.height;
@@ -810,11 +909,11 @@
       x.fillStyle = '#c6f6d5'; x.fillRect(0, H2 - 46, W2, 46);
       x.textAlign = 'center'; x.textBaseline = 'middle';
       x.font = '40px serif';
-      x.fillText(dogEmoji, W2 * (g.lane * 2 + 1) / 6, H2 - 34);
+      x.fillText(petEmoji, W2 * (g.lane * 2 + 1) / 6, H2 - 34);
       x.font = '27px serif';
-      g.items.forEach(f => x.fillText('🥏', W2 * (f.lane * 2 + 1) / 6, f.y));
-      x.textAlign = 'left'; x.font = 'bold 13px sans-serif'; x.fillStyle = '#c53030';
-      x.fillText('Trượt: ' + g.miss + '/3', 10, 16);
+      g.items.forEach(f => x.fillText(itemEmoji, W2 * (f.lane * 2 + 1) / 6, f.y));
+      x.textAlign = 'right'; x.font = 'bold 13px sans-serif'; x.fillStyle = '#c53030';
+      x.fillText('Trượt: ' + g.miss + '/3', W2 - 10, 16);
     };
     runLoop(g, (dt) => {
       g.time += dt;
@@ -909,6 +1008,128 @@
       g.cat.x += (g.dot.x - g.cat.x) * ease;
       g.cat.y += ((g.dot.y + 34) - g.cat.y) * ease;
       g.cat.y = Math.min(H - 26, Math.max(46, g.cat.y));
+      setHud(g.score, g.limit - g.time);
+      draw();
+    });
+  }
+  function openEcho(id) {
+    const p = startPlay(id); if (!p) return;
+    const g = game;
+    g.kind = 'echo'; g.round = 1; g.idx = 0; g.busy = true; g.score = 0; g.timers = [];
+    g.seq = [rand(0, 2), rand(0, 2)];
+    const NOTES = [['🔴', '#f56565'], ['🟢', '#48bb78'], ['🔵', '#4299e1']];
+    openModal2('🎵 Nhại tiếng cùng ' + p.name, `
+      <div class="pg-score"><span id="pg-score">Vòng: 0</span><span id="pg-time">Bắt chước</span></div>
+      <div id="echo-pads" style="display:flex;gap:10px;justify-content:center;padding:12px 0;">
+        ${NOTES.map((n, i) => `<button data-n="${i}" onclick="PET.echoTap(${i})" style="width:82px;height:82px;border-radius:22px;border:3px solid #e2e8f0;background:${n[1]}22;font-size:2rem;cursor:pointer;-webkit-tap-highlight-color:transparent;">${n[0]}</button>`).join('')}
+      </div>
+      <div class="pg-hint" id="echo-hint">Nghe và bấm lại đúng thứ tự các nốt. Bấm sai là kết thúc.</div>`);
+    const pads = () => Array.from(document.querySelectorAll('#echo-pads button'));
+    const hud = () => {
+      const s = document.getElementById('pg-score'), t = document.getElementById('pg-time');
+      if (s) s.textContent = 'Vòng: ' + g.round;
+      if (t) t.textContent = 'Bắt chước';
+    };
+    g.flash = (i, on) => {
+      const b = pads()[i]; if (!b) return;
+      b.style.transform = on ? 'scale(1.12)' : 'scale(1)';
+      b.style.boxShadow = on ? '0 0 0 5px ' + NOTES[i][1] : 'none';
+      b.style.background = on ? NOTES[i][1] + '55' : NOTES[i][1] + '22';
+    };
+    g.cleanup = () => g.timers.forEach(clearTimeout);
+    const showSeq = () => {
+      g.busy = true; g.idx = 0; hud();
+      const hint = document.getElementById('echo-hint'); if (hint) hint.textContent = 'Đang phát… nghe kỹ nhé!';
+      g.seq.forEach((n, i) => {
+        g.timers.push(setTimeout(() => g.flash(n, true), 500 + i * 620));
+        g.timers.push(setTimeout(() => g.flash(n, false), 880 + i * 620));
+      });
+      g.timers.push(setTimeout(() => {
+        if (game !== g) return;
+        g.busy = false;
+        const h = document.getElementById('echo-hint'); if (h) h.textContent = 'Đến lượt bạn — bấm lại ' + g.seq.length + ' nốt.';
+      }, 540 + g.seq.length * 620));
+    };
+    g.nextRound = () => {
+      g.round++; g.seq.push(rand(0, 2)); g.score = g.round - 1;
+      showSeq();
+    };
+    showSeq();
+  }
+  function echoTap(i) {
+    const g = game;
+    if (!g || g.kind !== 'echo' || g.busy) return;
+    g.flash(i, true);
+    g.timers.push(setTimeout(() => { if (game === g) g.flash(i, false); }, 180));
+    if (i !== g.seq[g.idx]) { toast('❌ Sai nốt rồi!'); return finishGame(g); }
+    g.idx++;
+    if (g.idx >= g.seq.length) {
+      g.score = g.round;
+      if (g.round >= 8) return finishGame(g);
+      g.busy = true; toast('✅ Đúng rồi!');
+      g.timers.push(setTimeout(() => { if (game === g) g.nextRound(); }, 700));
+    }
+  }
+  function openHole(id) {
+    const p = startPlay(id); if (!p) return;
+    const W = 340, H = 380, g = game;
+    g.kind = 'hole'; g.time = 0; g.limit = 35; g.spawn = 0.25; g.score = 0; g.items = [];
+    const cells = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) cells.push({ x: 62 + c * 108, y: 110 + r * 104, r: 40 });
+    g.items.push({ cell: rand(0, 8), good: true, up: 0, life: 1.6 });
+    openModal2('🌻 Bắt hạt cùng ' + p.name, `
+      <div class="pg-score"><span id="pg-score">Điểm: 0</span><span id="pg-time">35s</span></div>
+      <canvas id="pg-canvas" class="pg-canvas" width="${W}" height="${H}"></canvas>
+      <div class="pg-hint">Bấm vào 🌰/🌻 khi nhô lên khỏi hang. Tránh nấm 🍄 (bị trừ điểm).</div>`);
+    const cvs = canvasOf();
+    const onDown = (e) => {
+      if (!cvs) return;
+      const r = cvs.getBoundingClientRect();
+      const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+      for (let i = g.items.length - 1; i >= 0; i--) {
+        const it = g.items[i], c = cells[it.cell];
+        if (Math.hypot(x - c.x, y - c.y) <= c.r + 12) {
+          if (it.good) g.score++;
+          else g.score = Math.max(0, g.score - 1);
+          g.items.splice(i, 1);
+          break;
+        }
+      }
+    };
+    cvs.addEventListener('pointerdown', onDown);
+    g.cleanup = () => cvs.removeEventListener('pointerdown', onDown);
+    const draw = () => {
+      if (!cvs) return;
+      const x = cvs.getContext('2d'), H2 = cvs.height;
+      x.clearRect(0, 0, W, H2);
+      x.fillStyle = '#fdf6e3'; x.fillRect(0, 0, W, H2);
+      x.fillStyle = '#e6d5b8'; x.fillRect(0, 0, W, 66);
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '26px serif';
+      x.fillText('🐹', W / 2, 33);
+      cells.forEach(c => {
+        x.beginPath(); x.ellipse(c.x, c.y, c.r, c.r * 0.55, 0, 0, Math.PI * 2);
+        x.fillStyle = '#8b5e3c'; x.fill();
+        x.beginPath(); x.ellipse(c.x, c.y + 4, c.r * 0.8, c.r * 0.4, 0, 0, Math.PI * 2);
+        x.fillStyle = '#5d3a22'; x.fill();
+      });
+      x.font = '34px serif';
+      g.items.forEach(it => { const c = cells[it.cell]; x.fillText(it.good ? (it.cell % 2 ? '🌻' : '🌰') : '🍄', c.x, c.y + 2 - it.up); });
+    };
+    runLoop(g, (dt) => {
+      g.time += dt;
+      if (g.time >= g.limit) return finishGame(g);
+      g.spawn -= dt;
+      if (g.spawn <= 0) {
+        g.spawn = Math.max(0.35, 0.55 - g.score * 0.01);
+        const used = new Set(g.items.map(i => i.cell));
+        const free = cells.map((_, i) => i).filter(i => !used.has(i));
+        if (free.length) g.items.push({ cell: free[rand(0, free.length - 1)], good: Math.random() < 0.78, up: 0, life: 1.5 });
+      }
+      for (let i = g.items.length - 1; i >= 0; i--) {
+        const it = g.items[i];
+        it.life -= dt; it.up = Math.min(14, it.up + 90 * dt);
+        if (it.life <= 0) g.items.splice(i, 1);
+      }
       setHud(g.score, g.limit - g.time);
       draw();
     });
@@ -1021,12 +1242,24 @@
   }
 
   // ---------- SHOP, ĐỒ MẶC, THẢ CÁ ----------
+  // Món hiện lên hình thú/bể: mua về là dùng luôn cho bé đang chọn nếu ô đó còn trống
+  const VISUAL_SLOTS = { acc: 1, outfit: 1, bowl: 1, gravel: 1, plant: 1, cave: 1, light: 1, filter: 1 };
   function buy(itemId) {
     const it = ITEM_BY_ID[itemId]; if (!it) return;
     if (!spend(it.price)) return;
     bagAdd(itemId, it.pack || 1);
+    let used = '';
+    const p = findPet(selPet);
+    if (p && it.slot && VISUAL_SLOTS[it.slot] && okFor(it, p.species) && bagQty(itemId) > 0) {
+      p.worn = p.worn || {};
+      if (!p.worn[it.slot]) {
+        p.worn[it.slot] = itemId;
+        bagAdd(itemId, -1);
+        used = ` · đã dùng cho ${p.name}`;
+      }
+    }
     commit();
-    toast(`🛍️ Đã mua ${it.name}`);
+    toast(`🛍️ Đã mua ${it.name}${used}`);
   }
   function slotsFor(p) { return isTank(p) ? SLOTS_TANK : SLOTS_STD; }
   function openEquip(id) {
@@ -1066,47 +1299,51 @@
     delete p.worn[slot];
     save(); render(); openEquip(id);
   }
-  function openAddFish(id) {
-    const p = findPet(id); if (!p || !isTank(p)) return;
-    const cap = tankCap(p), n = (p.fish || []).length;
-    if (n >= cap) return toast(`Bể đã đầy (${n}/${cap}). Mua bể lớn hơn hoặc bán bớt cá.`);
-    const fishIds = Object.keys(ensure().petBag).filter(i => bagQty(i) > 0 && ITEM_BY_ID[i] && ITEM_BY_ID[i].cat === 'fish');
-    const bagRows = fishIds.map(i => {
-      const it = ITEM_BY_ID[i];
-      return `<div class="pet-item"><div class="ic">${it.emoji}</div><div class="tx"><b>${esc(it.name)}</b><div>có ${bagQty(i)}</div></div><button class="btn btn-pink" onclick="PET.addFish('${id}','${i}')">Thả</button></div>`;
-    }).join('');
-    const saleRows = ITEMS.filter(i => i.cat === 'fish' && i.fish).map(it => {
-      const r = RARITY[it.fish.c] || 1;
-      return `<div class="pet-item"><div class="ic">${it.emoji}</div><div class="tx"><b>${esc(it.name)}</b><div>${RARITY_STAR[r]} ${RARITY_LABEL[r]} · ${money(it.price)}</div></div><button class="btn" onclick="PET.buyFish('${id}','${it.id}')">Mua & thả</button></div>`;
-    }).join('');
-    openModal2(`🐟 Chợ cá — ${p.name} (${n}/${cap})`,
-      (bagRows ? `<div style="font-weight:bold;font-size:.8rem;color:var(--app-dark-green)">Cá trong kho</div>${bagRows}` : '') +
-      `<div style="font-weight:bold;font-size:.8rem;color:var(--app-dark-green);margin-top:6px">Mua cá thả ngay</div>${saleRows}`);
+  function hasTank() { return ensure().pets.some(p => p && isTank(p)); }
+  function openPutFish(uid) {
+    const obj = findInv(uid); if (!obj || obj.id !== FISH_ITEM_ID) return;
+    const tanks = ensure().pets.filter(p => p && isTank(p));
+    if (!tanks.length) {
+      if (confirm('Bạn chưa có bể cá nào.\nMua bể ở Teemall → Shop thú cưng rồi nhận nuôi bể trước khi thả cá.\n\nMở shop để mua bể?')) window.PET.view('shop');
+      return;
+    }
+    const avail = tanks.filter(p => (p.fish || []).length < tankCap(p));
+    if (!avail.length) return toast('Tất cả bể đã đầy, mua bể lớn hơn hoặc bán bớt cá nhé.');
+    const v = parseVariants(obj), c = v.fishColor || 'Trắng', g = v.gender || 'male';
+    const fn = (FISH_SPECIES[c] || {}).name || ('Cá ' + c);
+    if (avail.length === 1) {
+      if (confirm(`Thả ${fn} ${g === 'male' ? 'đực' : 'cái'} vào ${avail[0].name}?`)) putFishInTank(uid, avail[0].id);
+      return;
+    }
+    openModal2('🐟 Thả cá vào bể nào?', avail.map(p => `<div class="pet-item"><div class="tx"><b>${esc(p.name)}</b><div>${(p.fish || []).length}/${tankCap(p)} cá</div></div><button class="btn btn-pink" onclick="PET.putFishInTank('${uid}','${p.id}')">Thả vào đây</button></div>`).join(''));
   }
-  function buyFish(id, itemId) {
-    const p = findPet(id), it = ITEM_BY_ID[itemId];
-    if (!p || !it || !it.fish) return;
-    if (!isTank(p)) return toast('Chỉ thả cá vào bể cá được thôi.');
-    if ((p.fish || []).length >= tankCap(p)) return toast('Bể đã đầy.');
-    if (!spend(it.price)) return;
+  function putFishInTank(uid, petId) {
+    const obj = findInv(uid), p = findPet(petId);
+    if (!obj || obj.id !== FISH_ITEM_ID || !p || !isTank(p)) return;
+    if ((p.fish || []).length >= tankCap(p)) { closeModal2(); return toast('Bể đã đầy.'); }
+    const v = parseVariants(obj), c = v.fishColor || 'Trắng', g = v.gender || 'male';
     p.fish = p.fish || [];
-    p.fish.push({ id: 'f-' + now().toString(36) + Math.random().toString(36).slice(2, 6), g: it.fish.g, c: it.fish.c, born: now() });
+    p.fish.push({ id: 'f-' + now().toString(36) + Math.random().toString(36).slice(2, 6), g: g, c: c, born: now() });
+    takeOneFromInv(obj);
     closeModal2(); commit();
-    toast('🐟 Đã thả cá vào bể');
+    toast('🐟 Đã thả cá vào ' + p.name);
   }
-  function addFish(id, itemId) {
-    const p = findPet(id), it = ITEM_BY_ID[itemId];
-    if (!p || !it || !it.fish || bagQty(itemId) <= 0) return;
-    if (!isTank(p)) return toast('Chỉ thả cá vào bể cá được thôi.');
-    if ((p.fish || []).length >= tankCap(p)) return toast('Bể đã đầy.');
-    p.fish = p.fish || [];
-    p.fish.push({ id: 'f-' + now().toString(36) + Math.random().toString(36).slice(2, 6), g: it.fish.g, c: it.fish.c, born: now() });
-    bagAdd(itemId, -1);
-    closeModal2(); commit();
-    toast('🐟 Đã thả cá vào bể');
+  function sellFishInv(uid) {
+    const obj = findInv(uid); if (!obj || obj.id !== FISH_ITEM_ID) return;
+    const v = parseVariants(obj), price = FISH_SELL[v.fishColor] || TUNE.fishSell;
+    const fn = (FISH_SPECIES[v.fishColor] || {}).name || 'cá';
+    if (!confirm(`Bán 1 ${fn} với giá ${money(price)}?`)) return;
+    takeOneFromInv(obj);
+    S().walletBalance = (S().walletBalance || 0) + price;
+    save();
+    if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+    toast('💰 Đã bán, nhận ' + money(price));
   }
 
-  // ---------- DẮT ĐI CHƠI ----------
+  // ---------- RA CHƠI ----------
+  // walk: chó/mèo/thỏ dắt đi dạo · cafe: vẹt/hamster ra quán · home: bể cá mời nhân vật về ngắm
+  const modeOf = (p) => isTank(p) ? 'home' : (WALK_SPECIES[p.species] ? 'walk' : 'cafe');
+  const MODE_LABEL = { walk: 'dắt đi', cafe: 'ra quán', home: 'mời bạn' };
   function walkLuck(p) {
     let n = 0;
     Object.keys(p.worn || {}).forEach(slot => {
@@ -1117,24 +1354,32 @@
   }
   function openWalk(id) {
     const p = findPet(id); if (!p) return; tickPet(p); ensureDaily(p);
-    if (!WALK_SPECIES[p.species]) return toast(`${SPECIES[p.species].name} ở nhà chơi thôi, không dắt đi dạo được.`);
-    if (p.sick) return toast(p.name + ' đang ốm, cho đi khám trước nhé.');
+    const mode = modeOf(p), cafe = mode === 'cafe', home = mode === 'home';
+    const left = TUNE.walksPerDay - p.daily.walks;
+    if (p.sick) return toast(home ? 'Nước bể đang bẩn, thay nước trước rồi mời bạn nhé.' : p.name + ' đang ốm, cho đi khám trước nhé.');
     if (p.injured) return toast(p.name + ' đang bị thương, cho đi khám trước nhé.');
-    if (p.daily.walks >= TUNE.walksPerDay) return toast('Hôm nay đã dắt đi đủ ' + TUNE.walksPerDay + ' lần rồi.');
-    if (p.stats.energy < 25) return toast(p.name + ' mệt rồi, nghỉ chút đã nhé.');
-    if (p.stats.food < 15) return toast(p.name + ' đói quá, cho ăn trước nhé.');
+    if (left <= 0) return toast(`Hôm nay đã ${MODE_LABEL[mode]} đủ ${TUNE.walksPerDay} lần rồi.`);
+    if (!home && p.stats.energy < 25) return toast(p.name + ' mệt rồi, nghỉ chút đã nhé.');
+    if (!home && p.stats.food < 15) return toast(p.name + ' đói quá, cho ăn trước nhé.');
     const story = (S().stories || []).find(s => s.id === S().activeStoryId);
     const chars = (story && story.characters) || [];
+    if (home && !chars.length) return toast('Truyện đang mở chưa có nhân vật để mời về nhà.');
+    const inviteTxt = home ? 'Mời về nhà' : cafe ? 'Rủ đi quán' : 'Đi cùng';
     const rows = chars.map(c => {
       const a = (S().affectionLevels || {})[c.id] || { level: 1 };
-      return `<div class="pet-item"><div class="tx"><b>${esc(c.name)}</b><div>Thân mật Lv.${a.level || 1}</div></div><button class="btn btn-pink" onclick="PET.walk('${id}','${c.id}')">Đi cùng</button></div>`;
+      return `<div class="pet-item"><div class="tx"><b>${esc(c.name)}</b><div>Thân mật Lv.${a.level || 1}</div></div><button class="btn btn-pink" onclick="PET.walk('${id}','${c.id}')">${inviteTxt}</button></div>`;
     }).join('');
-    const luck = walkLuck(p);
-    const luckTxt = luck ? `<div style="font-size:0.76rem;color:#2f855a;">👗 ${p.name} đang mặc đồ đẹp — chuyến đi dễ gặp chuyện vui hơn.</div>` : '';
-    openModal2(`Dắt ${p.name} đi chơi (còn ${TUNE.walksPerDay - p.daily.walks} lượt)`,
+    const luck = home ? 0 : walkLuck(p);
+    const luckTxt = luck ? `<div style="font-size:0.76rem;color:#2f855a;">👗 ${p.name} đang mặc đồ đẹp — ${cafe ? 'ra quán dễ được khen' : 'chuyến đi dễ gặp chuyện vui'} hơn.</div>` : '';
+    const title = home ? `🏠 Mời nhân vật về ngắm ${p.name} (còn ${left} lượt)`
+      : cafe ? `☕ Ra quán chơi cùng ${p.name} (còn ${left} lượt)`
+        : `🦮 Dắt ${p.name} đi chơi (còn ${left} lượt)`;
+    const emptyTxt = cafe ? 'Truyện đang mở chưa có nhân vật để rủ đi cùng.' : 'Truyện đang mở chưa có nhân vật để đi cùng.';
+    const solo = home ? '' : `<div class="pet-item"><div class="tx"><b>${cafe ? 'Ngồi một mình với bé' : 'Đi một mình'}</b><div>Không tăng thân mật</div></div><button class="btn btn-outline" onclick="PET.walk('${id}','')">${cafe ? 'Ra quán' : 'Đi'}</button></div>`;
+    openModal2(title,
       luckTxt +
-      (rows || '<div style="font-size:0.8rem;color:#888">Truyện đang mở chưa có nhân vật để đi cùng.</div>')
-      + `<div class="pet-item"><div class="tx"><b>Đi một mình</b><div>Không tăng thân mật</div></div><button class="btn btn-outline" onclick="PET.walk('${id}','')">Đi</button></div>`);
+      (rows || `<div style="font-size:0.8rem;color:#888">${emptyTxt}</div>`)
+      + solo);
   }
   function pickWeighted(table) {
     const total = table.reduce((s, x) => s + x[1], 0);
@@ -1146,13 +1391,25 @@
     try { return `${BOX_TIERS[tier].icon} Box ${BOX_TIERS[tier].label} ${CRAFTS[theme].label}`; } catch (e) { return '🎁 một chiếc box'; }
   }
   // Trả về kết quả chuyến đi (không đụng state), tách riêng để dễ chỉnh/thử
-  function rollWalk(p, withChar) {
+  function rollWalk(p, withChar, mode) {
+    const cafe = mode === 'cafe', home = mode === 'home';
     const happy = p.stats.mood >= 70, dressed = walkLuck(p);
     const good = (happy ? 1.15 : 1) + dressed * 0.12;
     const bad = Math.max(0.5, (happy ? 0.72 : 1) - dressed * 0.08);
-    const table = withChar
-      ? [['calm', 34 * good], ['friend', 14 * good], ['money', 9 * good], ['box', 10 * good], ['mess', 8 * bad], ['rain', 5], ['bite', 4 * bad], ['car', 2 * bad], ['leg', 3 * bad]]
-      : [['calm', 45 * good], ['money', 22 * good], ['box', 10 * good], ['mess', 10 * bad], ['rain', 8], ['car', 2 * bad], ['leg', 3 * bad]];
+    let table;
+    if (home) {
+      // Ở nhà ngắm bể: chỉ chuyện ấm cúng, cá không bị thương.
+      table = [['calm', 44 * good], ['friend', 22 * good], ['box', 14 * good], ['mess', 10 * bad]];
+    } else if (cafe) {
+      // Ra quán: vẫn có sự kiện xui và tai nạn (té ghế, chó hoang lao vào).
+      table = withChar
+        ? [['calm', 32 * good], ['friend', 14 * good], ['money', 8 * good], ['box', 8 * good], ['mess', 8 * bad], ['rain', 5], ['bite', 4 * bad], ['trip', 3 * bad], ['stray', 2 * bad]]
+        : [['calm', 44 * good], ['money', 22 * good], ['box', 8 * good], ['mess', 12 * bad], ['rain', 8], ['trip', 3 * bad], ['stray', 2 * bad]];
+    } else {
+      table = withChar
+        ? [['calm', 34 * good], ['friend', 14 * good], ['money', 9 * good], ['box', 10 * good], ['mess', 8 * bad], ['rain', 5], ['bite', 4 * bad], ['car', 2 * bad], ['leg', 3 * bad]]
+        : [['calm', 45 * good], ['money', 22 * good], ['box', 10 * good], ['mess', 10 * bad], ['rain', 8], ['car', 2 * bad], ['leg', 3 * bad]];
+    }
     const ev = pickWeighted(table);
     const r = { ev: ev, aff: 0, money: 0, mood: 0, box: null, injure: false };
     if (ev === 'calm') { r.aff = rand(2, 3) + (happy ? 1 : 0); r.mood = 10; }
@@ -1168,10 +1425,29 @@
     else if (ev === 'bite') { r.aff = -3; r.mood = -6; }
     else if (ev === 'car') { r.aff = 2; r.mood = -22; r.injure = true; }
     else if (ev === 'leg') { r.aff = 2; r.mood = -15; r.injure = true; }
+    else if (ev === 'trip') { r.aff = 2; r.mood = -15; r.injure = true; }
+    else if (ev === 'stray') { r.aff = 2; r.mood = -22; r.injure = true; }
     if (!withChar) r.aff = 0;
     return r;
   }
-  function walkText(ev, petName, who, r) {
+  function walkText(ev, petName, who, r, mode) {
+    const cafeTxt = {
+      calm: `${who} và ${petName} ngồi ở quán nước ven phố, vừa nhâm nhi vừa ngắm dòng người qua lại.`,
+      friend: `Một bạn nhỏ trong quán mê tít ${petName}, ${who} cười tít mắt khoe bé cưng.`,
+      money: `${who} nhặt được ${money(r.money)} rơi dưới gầm bàn.`,
+      box: `Chủ quán thấy ${petName} dễ thương quá nên tặng ${who} ${r.box ? boxLabel(r.box.theme, r.box.tier) : 'một món quà nhỏ'}.`,
+      mess: `${petName} nghịch làm đổ ly nước của khách, ${who} phải đền ${money(-r.money)}.`,
+      rain: `Trời mưa tóe nước, ${who} ôm ${petName} ngồi đợi mãi mới bắt được xe về.`,
+      bite: `${petName} cắn vào tay một vị khách đang trêu, ${who} phải xin lỗi rối rít.`,
+      trip: `${petName} trượt chân ngã khỏi ghế, ${who} phát hiện bé bị thương ở chân và vội bế về.`,
+      stray: `Một con chó hoang lao vào quán, ${petName} hoảng hốt nhảy xuống và bị thương, ${who} vội bế bé chạy về.`
+    };
+    const homeTxt = {
+      calm: `${who} ghé nhà chơi, hai người ngồi ngắm đàn cá trong ${petName} bơi lững lờ cả buổi chiều.`,
+      friend: `Đàn cá trong ${petName} bơi sát mặt kính như chào ${who}, cả hai cười rộ lên.`,
+      box: `${who} mang ${r.box ? boxLabel(r.box.theme, r.box.tier) : 'một món quà nhỏ'} tới làm quà, vừa ngắm cá vừa mở quà.`,
+      mess: `Cá quẫy nước bắn tung tóe, ${who} lỡ làm vỡ đồ trang trí, mất ${money(-r.money)}.`
+    };
     const t = {
       calm: `${petName} tung tăng cùng ${who} dạo quanh công viên, cả hai cười nói vui vẻ.`,
       friend: `${petName} làm quen được với một bé thú khác, ${who} bật cười vì cảnh tượng đáng yêu.`,
@@ -1183,17 +1459,38 @@
       car: `${petName} sổng dây lao ra lòng đường và bị xe tông, ${who} hoảng hốt bế bé chạy về ngay.`,
       leg: `${petName} trượt chân té ngã, ${who} phát hiện chân bé đã gãy và vội đưa đi khám.`
     };
-    return t[ev] || '';
+    return (mode === 'home' ? homeTxt : mode === 'cafe' ? cafeTxt : t)[ev] || '';
+  }
+  let lastOuting = null;
+  function chatAbout() {
+    const c = lastOuting; closeModal2();
+    const st = S();
+    const story = (st.stories || []).find(s => s.id === st.activeStoryId);
+    const ch = c && story ? (story.characters || []).find(x => x.id === c.charId) : null;
+    if (!ch) return;
+    try {
+      if (!st.chatHistories) st.chatHistories = {};
+      const arr = st.chatHistories[story.id] || (st.chatHistories[story.id] = []);
+      arr.push({ sender: 'system', text: '🐾 ' + c.text, event: true, ts: now() });
+      save();
+    } catch (e) {}
+    try { if (typeof closeAllFs === 'function') closeAllFs(); } catch (e) {}
+    try { if (typeof window.switchStoryTab === 'function') window.switchStoryTab('chat'); } catch (e) {}
+    try { if (typeof renderChatHistory === 'function') renderChatHistory(); } catch (e) {}
   }
   function walk(id, charId) {
-    const p = findPet(id); if (!p || !WALK_SPECIES[p.species]) return; tickPet(p); ensureDaily(p);
-    if (p.daily.walks >= TUNE.walksPerDay || p.sick || p.injured || p.stats.energy < 25 || p.stats.food < 15) return closeModal2();
+    const p = findPet(id); if (!p) return; tickPet(p); ensureDaily(p);
+    const mode = modeOf(p), cafe = mode === 'cafe', home = mode === 'home';
+    if (p.daily.walks >= TUNE.walksPerDay || p.sick || p.injured) return closeModal2();
+    if (!home && (p.stats.energy < 25 || p.stats.food < 15)) return closeModal2();
     const story = (S().stories || []).find(s => s.id === S().activeStoryId);
     const ch = charId && story ? (story.characters || []).find(c => c.id === charId) : null;
+    if (home && !ch) return closeModal2();
     const who = ch ? ch.name : 'bạn';
-    const r = rollWalk(p, !!ch);
+    const r = rollWalk(p, !!ch, mode);
     p.daily.walks++;
-    p.stats.energy = clamp(p.stats.energy - 20); p.stats.food = clamp(p.stats.food - 8); p.stats.clean = clamp(p.stats.clean - 12);
+    const cost = home ? { energy: 0, food: 0, clean: 4 } : cafe ? { energy: 10, food: 10, clean: 6 } : { energy: 20, food: 8, clean: 12 };
+    p.stats.energy = clamp(p.stats.energy - cost.energy); p.stats.food = clamp(p.stats.food - cost.food); p.stats.clean = clamp(p.stats.clean - cost.clean);
     p.stats.mood = clamp(p.stats.mood + r.mood);
     if (r.injure) p.injured = true;
     if (r.money > 0) S().walletBalance = (S().walletBalance || 0) + r.money;
@@ -1202,18 +1499,26 @@
     if (ch && r.aff && typeof addAffectionPoints === 'function') addAffectionPoints(ch.id, r.aff);
     addXp(p, TUNE.xp.walk);
     try { if (typeof mtrack === 'function') mtrack('petWalks', 1); } catch (e) {}
-    const text = walkText(r.ev, p.name, who, r);
-    if (ch) addPetMemory(ch.id, `${(S().persona && S().persona.name) || 'Bạn'} dắt ${p.name} đi dạo cùng ${ch.name}. ${text}`);
+    const text = walkText(r.ev, p.name, who, r, mode);
+    const owner = (S().persona && S().persona.name) || 'Bạn';
+    if (ch) addPetMemory(ch.id, home
+      ? `${owner} mời ${ch.name} về nhà ngắm ${p.name}. ${text}`
+      : cafe ? `${owner} cùng ${ch.name} ra quán ngồi chơi với ${p.name}. ${text}`
+        : `${owner} dắt ${p.name} đi dạo cùng ${ch.name}. ${text}`);
+    lastOuting = ch ? { charId: ch.id, text: text } : null;
     save(); refreshWallet(); render();
 
     const a = ch ? ((S().affectionLevels || {})[ch.id] || { level: 1, points: 0 }) : null;
     const affTxt = ch && r.aff ? `<div style="font-size:0.85rem;font-weight:bold;color:${r.aff > 0 ? '#2f855a' : '#c53030'}">${r.aff > 0 ? '+' : ''}${r.aff} thân mật với ${esc(ch.name)} (Lv.${a.level})</div>` : '';
-    const hurtTxt = p.injured ? `<div style="font-size:0.82rem;font-weight:bold;color:#c53030;">🩹 ${p.name} bị thương — đưa bé đi khám bác sĩ (${money(TUNE.vetCost)}) trước khi đi dạo hay chơi tiếp.</div>` : '';
+    const hurtTxt = p.injured ? `<div style="font-size:0.82rem;font-weight:bold;color:#c53030;">🩹 ${p.name} bị thương — đưa bé đi khám bác sĩ (${money(TUNE.vetCost)}) trước khi ${home ? 'mời bạn tiếp' : 'đi dạo hay chơi tiếp'}.</div>` : '';
     const memTxt = ch ? `<div style="font-size:0.75rem;color:#718096;">${esc(ch.name)} sẽ nhớ chuyện này khi trò chuyện với bạn.</div>` : '';
-    openModal2('Kết quả chuyến đi', `
+    const chatBtn = ch ? `<button class="btn btn-pink" onclick="PET.chatAbout()">💬 Kể cho ${esc(ch.name)} nghe</button>` : '';
+    const title = home ? 'Kết quả buổi mời về nhà' : cafe ? 'Kết quả buổi ra quán' : 'Kết quả chuyến đi';
+    openModal2(title, `
       <div style="font-size:0.9rem;line-height:1.5;color:#2d3748">${esc(text)}</div>${hurtTxt}${affTxt}
       <div style="font-size:0.78rem;color:#718096">${p.name}: ${p.stats.mood >= 80 ? 'rất vui 😊' : p.stats.mood >= 50 ? 'khá ổn' : 'hơi buồn 😞'} · còn ${TUNE.walksPerDay - p.daily.walks} lượt hôm nay</div>
       ${memTxt}
+      ${chatBtn}
       <button class="btn btn-outline" onclick="PET.closeModal()">Đóng</button>`);
   }
 
@@ -1231,8 +1536,8 @@
     fishImgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = 'block'; },
     closeModal: closeModal2,
     adopt, confirmAdopt, sellInv, openFeed, feed, bathe, vet, play, rename, renameNow, tap, sellPet, sellFish,
-    buy, openEquip, equip, unequip, openAddFish, addFish, buyFish, openWalk, walk,
-    openBreed, breed, gameLane: (i) => { if (game && game.setLane) game.setLane(i); }
+    buy, openEquip, equip, unequip, openPutFish, putFishInTank, sellFishInv, hasTank, openWalk, walk,
+    openBreed, breed, echoTap, chatAbout, gameLane: (i) => { if (game && game.setLane) game.setLane(i); }
   };
   window.renderPetTab = render;
   window.petInvButtons = invButtons;

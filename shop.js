@@ -119,6 +119,8 @@
       ['book', '📚', 'Sách & Bút'], ['beauty', '💄', 'Làm đẹp'], ['toy', '🧸', 'Đồ chơi'], ['travel', '✈️', 'Du lịch'], ['music', '🎸', 'Nhạc cụ']
     ];
     let shopCat = 'all', shopQ = '', shopMode = 'gen';
+    const FISH_ITEM_ID = 'item-1097';
+    const hasAdoptedTank = () => !!(window.PET && typeof window.PET.hasTank === 'function' && window.PET.hasTank());
     const estateLoc = (id) => REAL_ESTATE_MAPS.find(m => m.id === id) || REAL_ESTATE_MAPS[0];
     const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => [String(a + i), 1]);
     const VG = {
@@ -137,6 +139,7 @@
       carVer: { label: '⚙️ Phiên bản', opts: [['Tiêu chuẩn', 1], ['Cao cấp', 1.2], ['Đặc biệt', 1.45]] },
       gender: { label: '🐾 Giới tính', opts: [['Đực', 1], ['Cái', 1]] },
       fur: { label: '🎨 Màu lông', opts: [['Trắng', 1], ['Vàng', 1], ['Xám', 1], ['Đen', 1], ['Nâu', 1]] },
+      fishColor: { label: '🎨 Màu cá', opts: [['Trắng', 1], ['Xám', 1.125], ['Nâu', 1.875], ['Đen', 3], ['Vàng', 4.75]] },
       cover: { label: '📖 Loại bìa', opts: [['Bìa mềm', 1], ['Bìa cứng', 1.3]] },
       people: { label: '👥 Số người', opts: [['1 người', 1], ['2 người', 2], ['4 người', 4]] },
       wood: { label: '🎨 Màu / chất liệu', opts: [['Gỗ sáng', 1], ['Gỗ nâu', 1], ['Đen nhám', 1], ['Trắng ngà', 1]] },
@@ -154,7 +157,7 @@
         case 'food': return ['portion'];
         case 'decor': return /Nến/.test(n) ? ['scent'] : ['wood'];
         case 'vehicle': return ['color', 'carVer'];
-        case 'pet': return /Bể Cá/.test(n) ? ['wood'] : ['gender', 'fur'];
+        case 'pet': return /Bể Cá/.test(n) ? ['wood'] : (/Cá Cảnh/.test(n) ? ['fishColor', 'gender'] : ['gender', 'fur']);
         case 'book': return /Bút|Màu Vẽ/.test(n) ? ['color'] : ['cover'];
         case 'beauty': return /Son/.test(n) ? ['lip'] : (/Nail/.test(n) ? ['color'] : ['scent']);
         case 'toy': return ['color'];
@@ -165,9 +168,10 @@
       return [];
     }
     // Ảnh thú bày trong shop: pets/<loài>_<giới>_<màu>_idle.png (mỗi bé một màu cố định)
-    const PET_SHOP_SPECIES = { 'item-1046': 'cat', 'item-1047': 'dog', 'item-1048': 'rabbit', 'item-1049': 'parrot', 'item-1050': 'hamster', 'item-1051': 'fish', 'item-1052': 'golden' };
-    const PET_SHOP_LOOK = { 'item-1046': 'male_vang', 'item-1047': 'male_vang', 'item-1048': 'female_trang', 'item-1049': 'male_vang', 'item-1050': 'male_nau', 'item-1051': 'male_vang', 'item-1052': 'male_vang' };
+    const PET_SHOP_SPECIES = { 'item-1046': 'cat', 'item-1047': 'dog', 'item-1048': 'rabbit', 'item-1049': 'parrot', 'item-1050': 'hamster', 'item-1052': 'golden', 'item-1097': 'fish' };
+    const PET_SHOP_LOOK = { 'item-1046': 'male_vang', 'item-1047': 'male_vang', 'item-1048': 'female_trang', 'item-1049': 'male_vang', 'item-1050': 'male_nau', 'item-1052': 'male_vang', 'item-1097': 'male_vang' };
     function petShopIcon(itemId, emoji) {
+      if (itemId === 'item-1051') return `<img src="img/pet/tank.png" alt="" style="height:74px;max-width:100%;object-fit:contain;">`;
       const sp = PET_SHOP_SPECIES[itemId];
       if (!sp) return emoji;
       const src = `pets/${sp}_${PET_SHOP_LOOK[itemId] || 'male_trang'}_idle.png`;
@@ -186,7 +190,7 @@
     function renderVariantChips() {
       const box = document.getElementById('buy-variants');
       if (!box || !selectedBuyItem) return;
-      box.innerHTML = variantKeys(selectedBuyItem).map(k => `<div style="margin-bottom:8px;"><div style="font-size:0.82rem;color:#4a5568;margin-bottom:4px;">${VG[k].label}:</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${VG[k].opts.map((o, i) => `<button onclick="pickVariant('${k}',${i})" style="padding:5px 10px;border-radius:14px;font-size:0.78rem;cursor:pointer;background:${(selectedVars[k] || 0) === i ? '#fff3ef' : '#fff'};border:2px solid ${(selectedVars[k] || 0) === i ? '#ee4d2d' : '#e2e8f0'};color:${(selectedVars[k] || 0) === i ? '#ee4d2d' : '#4a5568'};">${o[0]}${o[1] > 1 && k !== 'people' ? ' (+' + Math.round((o[1] - 1) * 100) + '%)' : ''}</button>`).join('')}</div></div>`).join('');
+      box.innerHTML = variantKeys(selectedBuyItem).map(k => `<div style="margin-bottom:8px;"><div style="font-size:0.82rem;color:#4a5568;margin-bottom:4px;">${VG[k].label}:</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${VG[k].opts.map((o, i) => `<button onclick="pickVariant('${k}',${i})" style="padding:5px 10px;border-radius:14px;font-size:0.78rem;cursor:pointer;background:${(selectedVars[k] || 0) === i ? '#fff3ef' : '#fff'};border:2px solid ${(selectedVars[k] || 0) === i ? '#ee4d2d' : '#e2e8f0'};color:${(selectedVars[k] || 0) === i ? '#ee4d2d' : '#4a5568'};">${o[0]}${o[1] > 1 && k !== 'people' && k !== 'fishColor' ? ' (+' + Math.round((o[1] - 1) * 100) + '%)' : ''}</button>`).join('')}</div></div>`).join('');
     }
     function moneyShort(n) {
       if (n >= 1e12) return (n / 1e12).toFixed(2).replace(/\.?0+$/, '').replace('.', ',') + ' nghìn tỷ';
@@ -196,6 +200,7 @@
     }
     const fold = (t) => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     const itemHash = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 99991; return h; };
+    const houseOut = (id) => (window.HOUSE_ART && window.HOUSE_ART[id]) ? `img/houses/${window.HOUSE_ART[id]}_out.jpg` : '';
     function shopSetCat(c) { shopCat = c; renderShopUI(); }
     function shopSetMode(m) { shopMode = m; shopCat = m === 'pet' ? 'pet' : 'all'; shopQ = ''; renderShopUI(); }
     function shopSearch(v) { shopQ = v; renderShopList(); }
@@ -236,13 +241,14 @@
           <div style="font-size:0.78rem;color:#666;margin-top:6px;line-height:1.4;">${estateLoc(selectedEstateMap).desc}</div>
         </div>` : '';
       const q = fold(shopQ.trim());
-      const items = SHOP_CATALOG.filter(i => (shopMode === 'pet' ? i.cat === 'pet' : (shopCat === 'all' ? i.cat !== 'pet' : i.cat === shopCat)) && (!q || fold(i.name).includes(q) || fold(i.desc).includes(q)));
+      const items = SHOP_CATALOG.filter(i => i.id !== 'item-1051' && (shopMode === 'pet' ? i.cat === 'pet' : (shopCat === 'all' ? i.cat !== 'pet' : i.cat === shopCat)) && (!q || fold(i.name).includes(q) || fold(i.desc).includes(q)));
       if (!items.length) { list.innerHTML = '<div style="text-align:center;color:#888;font-size:0.85rem;padding:20px;">Không tìm thấy sản phẩm nào.</div>'; return; }
       list.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">${items.map(it => {
         const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
         const h = itemHash(it.id), sold = 20 + (h % 4800), rating = (4.5 + (h % 6) / 10).toFixed(1);
+        const estImg = it.cat === 'estate' ? houseOut(it.id) : '';
         return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
-          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);position:relative;">${it.cat === 'pet' ? petShopIcon(it.id, m[1]) : m[1]}${it.tag === 'luxury' ? '<span style="position:absolute;top:0;left:0;background:#ee4d2d;color:#fff;font-size:0.6rem;padding:2px 6px;border-radius:0 0 8px 0;">Yêu thích</span>' : ''}</div>
+          <div style="height:88px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#fff3ef,#ffe4d9);position:relative;overflow:hidden;">${estImg ? `<img src="${estImg}" alt="" style="width:100%;height:100%;object-fit:cover;">` : (it.cat === 'pet' ? petShopIcon(it.id, m[1]) : m[1])}${it.tag === 'luxury' ? '<span style="position:absolute;top:0;left:0;background:#ee4d2d;color:#fff;font-size:0.6rem;padding:2px 6px;border-radius:0 0 8px 0;">Yêu thích</span>' : ''}</div>
           <div style="padding:6px 8px;display:flex;flex-direction:column;gap:3px;flex:1;">
             <div style="font-size:0.78rem;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.5em;">${m[2]}</div>
             <div style="color:#ee4d2d;font-weight:bold;font-size:0.9rem;">${it.cat === 'estate' ? '' : ''}${moneyShort(unitPrice(it, true))}</div>
@@ -253,7 +259,7 @@
     }
 
     window.petAnimalGridHtml = function () {
-      const items = SHOP_CATALOG.filter(i => i.cat === 'pet');
+      const items = SHOP_CATALOG.filter(i => i.cat === 'pet' && i.id !== 'item-1051');
       return items.map(it => {
         const m = it.name.match(/^(\S+)\s+(.*)$/) || ['', '🎁', it.name];
         return `<div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #f1e3dd;display:flex;flex-direction:column;min-width:0;">
@@ -345,7 +351,9 @@
       }
       body.innerHTML = `
         ${locHtml}
+        ${houseOut(selectedBuyItem.id) ? `<img src="${houseOut(selectedBuyItem.id)}" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid #f1e3dd;">` : ''}
         <div style="font-size:0.85rem; color:#666; margin-bottom:8px;">${selectedBuyItem.desc}</div>
+        ${selectedBuyItem.id === FISH_ITEM_ID ? `<div style="font-size:0.78rem;color:${hasAdoptedTank() ? '#2f855a' : '#c53030'};background:${hasAdoptedTank() ? '#f0fff4' : '#fff5f5'};border-radius:8px;padding:6px 8px;">${hasAdoptedTank() ? '🐠 Cá mua về nằm trong Túi → Thú cưng, bấm “Thả vào bể” để thả.' : '⚠️ Bạn chưa có bể cá đã nuôi. Hãy mua bể và nhận nuôi bể trước khi mua cá.'}</div>` : ''}
         <div id="buy-variants"></div>
         ${selectedBuyItem.cat === 'estate' ? '<label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#4a5568;margin-bottom:10px;"><input type="checkbox" id="buy-rent-now" checked> 🏷️ Cho thuê ngay sau khi mua (nhận tiền thuê mỗi ngày)</label>' : ''}
         <div class="form-group" style="margin-bottom: 10px;">
@@ -382,6 +390,14 @@
 
     function confirmBuyItem() {
       if (!selectedBuyItem) return;
+      if (selectedBuyItem.id === FISH_ITEM_ID && !hasAdoptedTank()) {
+        closeModal('modal-buy-detail');
+        if (confirm('Bạn chưa có bể cá nào đã nuôi.\nBể cá nằm ở Shop thú cưng → Chuồng & bể. Mua bể rồi nhận nuôi bể trước mới mua được cá.\n\nMở Shop thú cưng để mua bể ngay?')) {
+          if (window.openMallGear) window.openMallGear();
+          if (window.PET && window.PET.shopCat) window.PET.shopCat('home');
+        }
+        return;
+      }
       const unit = unitPrice(selectedBuyItem);
       const totalCost = unit * selectedBuyQty;
 
@@ -421,6 +437,11 @@
       closeModal('modal-buy-detail');
       renderLifeModeUI();
       const it = selectedBuyItem;
+      if (it.id === 'item-1051' && window.PET && window.PET.adopt) {
+        const objs = (window.state.inventory || []).filter(x => x.id === 'item-1051');
+        const obj = objs[objs.length - 1];
+        if (obj) return window.PET.adopt(obj.uniqueId);
+      }
       const big = totalCost >= 500000000;
       const lux = big && (it.cat === 'estate' || it.cat === 'vehicle');
       if (big) showBigPurchase(it, selectedBuyQty, lux, totalCost);

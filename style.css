@@ -306,10 +306,11 @@
 .pet-bigic { font-size: 3rem; display: flex; align-items: center; justify-content: center; }
 .pet-bigic img { width: 60px; height: 60px; object-fit: contain; }
 
-/* Trang thú cưng: ảnh thú to ở nửa trên, nút chức năng ở nửa dưới */
-#fs-pet .pet-stage { width: min(240px, 62vw); height: min(240px, 62vw); }
-#fs-pet .pet-emoji { font-size: min(130px, 34vw); }
-#fs-pet .pet-tank { height: min(220px, 48vw); }
+/* Trang thú cưng: sân khấu cao gần hết màn hình, thú nhỏ lại để có chỗ trang trí */
+#fs-pet .pet-stage { --stage-h: clamp(300px, 52vh, 470px); width: 100%; height: var(--stage-h); background-image: url('bg/pet_day.jpg?v=2'); background-size: 108% auto; background-position: center bottom; }
+#fs-pet .pet-young { width: min(100%, calc(var(--stage-h) * 1.0833)); }
+#fs-pet .pet-emoji { font-size: min(150px, 40vw); }
+#fs-pet .pet-tank { height: clamp(240px, 52vh, 470px); }
 #fs-pet .pet-card { max-width: 100%; box-sizing: border-box; }
 #fs-pet .pet-btns .btn { flex: 1 1 42%; }
 

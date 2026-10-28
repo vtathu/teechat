@@ -191,12 +191,20 @@
     const loc = estateLoc(h), sc = sceneFor(loc);
     const emoji = ((estateBase(h).match(/^(\S+)/) || [])[1]) || '🏠';
     const who = (h.residents || []).map(charById).filter(Boolean).slice(0, 6);
+    const slug = window.HOUSE_ART && window.HOUSE_ART[h.id];
+    const whoHtml = who.length ? '<div class="who">' + who.map(c => `<img src="${esc(c.avatar || window.DEFAULT_LOGO)}" alt="" onerror="this.src='${window.DEFAULT_LOGO}'">`).join('') + '</div>' : '';
+    const cap = `<div class="cap">${esc(estateBase(h).replace(/^\S+\s+/, ''))}${loc ? '<br><span style="font-weight:normal;font-size:.72rem;">📍 ' + esc(loc) + '</span>' : ''}${whoHtml}</div>`;
+    if (slug) {
+      art.className = 'scene-art house-in';
+      art.style.background = `linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.5)), url('img/houses/${slug}_in.jpg') center/cover no-repeat`;
+      art.innerHTML = cap;
+      return;
+    }
     art.className = 'scene-art';
     art.style.background = `linear-gradient(${sc[0]}, ${sc[1]})`;
     art.innerHTML = `<div class="deco" style="left:8%;top:30%">${sc[2][0]}</div><div class="deco" style="right:12%;top:24%">${sc[2][1]}</div><div class="deco" style="left:18%;bottom:26%">${sc[2][2]}</div>` +
       '<div class="ground" style="background:rgba(0,0,0,.16)"></div>' +
-      `<div class="house">${esc(emoji)}</div>` +
-      `<div class="cap">${esc(estateBase(h).replace(/^\S+\s+/, ''))}${loc ? '<br><span style="font-weight:normal;font-size:.72rem;">📍 ' + esc(loc) + '</span>' : ''}${who.length ? '<div class="who">' + who.map(c => `<img src="${esc(c.avatar || window.DEFAULT_LOGO)}" alt="" onerror="this.src='${window.DEFAULT_LOGO}'">`).join('') + '</div>' : ''}</div>`;
+      `<div class="house">${esc(emoji)}</div>` + cap;
   }
 
   // ===================== NHÀ: CHO THUÊ / Ở CHUNG =====================
@@ -246,6 +254,8 @@
     const cards = list.map(it => {
       const cap = houseCap(it), res = (it.residents || []).filter(charById), isMain = main && main.uniqueId === it.uniqueId;
       const day = Math.floor(rentBaseOf(it) * RENT_RATE);
+      const slug = window.HOUSE_ART && window.HOUSE_ART[it.id];
+      const thumb = slug ? `<div style="border-radius:12px;overflow:hidden;height:120px;background:#edf2f7;"><img src="img/houses/${slug}_out.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></div>` : '';
       let live;
       if (it.rented) live = '<div style="font-size:.74rem;color:#718096;">🏷️ Đang cho thuê nên chưa ở chung được. Ngừng cho thuê để nhân vật dọn vào.</div>';
       else if (cap === 0) live = '<div style="font-size:.74rem;color:#718096;">🌱 Đất nền chưa xây nhà, chưa ở được.</div>';
@@ -258,6 +268,7 @@
         live = `<div style="font-size:.78rem;font-weight:bold;color:var(--app-dark-green);">👥 Ở chung (${res.length}/${cap}) <span style="font-weight:normal;color:#718096;">· mỗi ngày +1 thân mật</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>`;
       }
       return `<div class="life-card" style="gap:8px;">
+        ${thumb}
         <div style="font-weight:bold;font-size:.92rem;word-break:break-word;">${esc(estateBase(it))}${isMain ? ' ⭐' : ''}</div>
         <div style="font-size:.74rem;color:#718096;">${estateLoc(it) ? '📍 ' + esc(estateLoc(it)) : ''}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">

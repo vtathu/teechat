@@ -17,6 +17,13 @@ function cleanAiTags(t) {
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
+// Tin sự kiện cũ lưu dạng "📢 sự kiện / 👉 ... lựa chọn: ..." — đọc lại thành một câu kể tự nhiên
+function naturalizeEventText(t) {
+  const m = /^\s*📢\s*([\s\S]*?)\r?\n\s*👉\s*([\s\S]*)$/.exec(t || '');
+  if (!m) return t;
+  const choice = m[2].replace(/^[^\n]{0,40}?lựa chọn\s*:\s*"?/i, '').replace(/"\s*$/, '').trim();
+  return `${m[1].trim()} ${choice}`.replace(/\s+/g, ' ').trim();
+}
 // Lọc bằng code: nếu AI lỡ viết thay người chơi thì cắt từ dòng đó trở đi, và xóa các câu "Tên nói: ..." nằm lẫn trong dòng
 function stripUserVoice(text, name) {
   name = (name || '').trim();
@@ -275,8 +282,8 @@ Trả về ĐÚNG JSON thuần, không markdown:
           const dynamicEvent = {
             desc: eventData.desc,
             choices: [
-              { text: c1.text, action: () => executeEventChoice(charId, charName, userName, eventData.desc, c1, randomRewardItem) },
-              { text: c2.text, action: () => executeEventChoice(charId, charName, userName, eventData.desc, c2, null) }
+              { text: c1.text, action: () => executeEventChoice(charId, charName, eventData.desc, c1, randomRewardItem) },
+              { text: c2.text, action: () => executeEventChoice(charId, charName, eventData.desc, c2, null) }
             ]
           };
           triggerEventModal(dynamicEvent);
@@ -286,7 +293,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       }
     }
 
-    function executeEventChoice(charId, charName, userName, eventDesc, choiceObj, rewardItem) {
+    function executeEventChoice(charId, charName, eventDesc, choiceObj, rewardItem) {
       if (choiceObj.moneyChange) {
         window.state.walletBalance = Math.max(0, (window.state.walletBalance || 0) + choiceObj.moneyChange);
       }
@@ -295,7 +302,6 @@ Trả về ĐÚNG JSON thuần, không markdown:
         addAffectionPoints(charId, choiceObj.affectionChange);
       }
 
-      let itemReceivedText = '';
       if (choiceObj.getItem && rewardItem) {
         if (!window.state.inventory) window.state.inventory = [];
         window.state.inventory.push({
@@ -307,7 +313,6 @@ Trả về ĐÚNG JSON thuần, không markdown:
           desc: rewardItem.desc,
           uniqueId: 'inv-' + Date.now() + Math.random()
         });
-        itemReceivedText = ` | 🎁 Nhận vật phẩm: ${rewardItem.name}`;
       }
 
       // Ghi nhớ sự kiện vào truyện để lần sau không lặp và nối tiếp hậu quả
@@ -318,29 +323,28 @@ Trả về ĐÚNG JSON thuần, không markdown:
       saveStorage();
       if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
 
-      const affData = window.state.affectionLevels[charId] || { level: 1, points: 0 };
-      const moneySign = choiceObj.moneyChange >= 0 ? '+' : '';
-      const affSign = choiceObj.affectionChange >= 0 ? '+' : '';
-      const moneyTxt = choiceObj.moneyChange ? ` | 💵 Ví: ${moneySign}${choiceObj.moneyChange.toLocaleString('vi-VN')} VNĐ` : '';
-      const affTxt = choiceObj.affectionChange ? ` | ❤️ Thân mật: ${affSign}${choiceObj.affectionChange} pts (Lv.${affData.level})` : '';
-      
-      alert(`📢 ${choiceObj.log || 'Kết quả xử lý'}\n(${moneyTxt}${itemReceivedText})`);
+      const statBits = [];
+      if (choiceObj.moneyChange) statBits.push(`💵 ${choiceObj.moneyChange >= 0 ? '+' : ''}${choiceObj.moneyChange.toLocaleString('vi-VN')}đ`);
+      if (choiceObj.affectionChange) statBits.push(`❤️ ${choiceObj.affectionChange >= 0 ? '+' : ''}${choiceObj.affectionChange} thân mật`);
+      if (choiceObj.getItem && rewardItem) statBits.push(`🎁 ${rewardItem.name}`);
 
-      handleEventAndChat(
-        charId, 
-        charName, 
-        eventDesc, 
-        `${userName} lựa chọn: "${choiceObj.text}". ${choiceObj.log || ''}`
-      );
+      handleEventAndChat(charName, eventDesc, choiceObj.text, choiceObj.log, statBits);
     }
 
-    function handleEventAndChat(charId, charName, eventContext, playerChoice) {
+    function handleEventAndChat(charName, eventContext, playerChoice, playerResult, statBits) {
       if (typeof switchStoryTab === 'function') {
         switchStoryTab('chat');
       }
 
-      // Chỉ hiện nội dung sự kiện và hành động (không còn thẻ [SỰ KIỆN] / [HÀNH ĐỘNG])
-      const chatNarrativeText = `📢 ${eventContext}\n👉 ${playerChoice}`;
+      // Kể lại sự kiện như một đoạn truyện liền mạch, không nhãn [SỰ KIỆN] / "lựa chọn:"
+      const prose = cleanAiTags([eventContext, playerChoice, playerResult]
+        .map(t => String(t || '').trim())
+        .filter(Boolean)
+        .reduce((acc, t) => !acc ? t : acc + (/[.!?…"”’]$/.test(acc) ? ' ' : '. ') + t, '')
+        .replace(/\s+([.,!?…])/g, '$1'));
+      const statLine = (statBits || []).filter(Boolean).join(' · ');
+      // noClean: phần truyện đã lọc sẵn, chỉ phần thưởng được giữ nguyên (+N thân mật...)
+      const chatNarrativeText = statLine ? `${prose} (${statLine})` : prose;
       
       const storyId = window.state.activeStoryId;
       if (!window.state.chatHistories[storyId]) {
@@ -348,7 +352,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       }
 
       // event:true => tin hệ thống này được gửi cho AI đọc
-      window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText, event: true, ts: Date.now() });
+      window.state.chatHistories[storyId].push({ sender: 'system', text: chatNarrativeText, event: true, noClean: !!statLine, ts: Date.now() });
       saveStorage();
       renderChatHistory();
 
@@ -833,7 +837,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
         if (msg.sender === 'system') {
           const div = document.createElement('div'); 
           div.className = 'narrative-block system-action'; 
-          div.innerText = cleanAiTags(msg.text).replace(/[\[\]\*\"]/g, '').trim(); 
+          div.innerText = naturalizeEventText(msg.noClean ? String(msg.text || '') : cleanAiTags(msg.text)).replace(/[\[\]\*\"]/g, '').trim(); 
           container.appendChild(div);
         } else if (msg.sender === 'user') {
           renderUserFormattedMessage(msg.text, msg.img, container, idx, msg.ts);
