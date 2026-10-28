@@ -876,11 +876,25 @@ Trả về ĐÚNG JSON thuần, không markdown:
         </div>`;
     }
 
-    // Thống nhất ngoặc: lời thoại dùng "..." ; trích dẫn/từ lóng bên trong dùng ‘...’. Nếu đã có "..." thì “ ” lọt vào bên trong được đổi thành ‘ ’
+    // Thống nhất ngoặc: lời thoại dùng "..." ; từ đặc biệt/trích dẫn bên trong dùng '...' để không bị tách thành hai lời thoại
     function normQuotes(t) {
       t = t || '';
-      if ((t.match(/"/g) || []).length >= 2) return t.replace(/“/g, '‘').replace(/”/g, '’');
-      return t.replace(/[“”]/g, '"');
+      if ((t.match(/"/g) || []).length >= 2) return t.replace(/[“”‘’]/g, "'");
+      return t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+    }
+    // Trong lời thoại, **...** là in đậm/nhấn mạnh -> đổi sang '...' (không đụng tới từ che kiểu đ**)
+    function tidyDialogue(t) {
+      return (t || '').replace(/\*\*(?!\s)([^*]+?)(?<!\s)\*\*/g, "'$1'");
+    }
+    // AI lỡ lồng "..." bên trong lời thoại ("Cậu là "thần tượng" của tớ.") -> đổi cặp bên trong thành '...' để không tách đôi câu
+    function repairNestedQuotes(t) {
+      const q = [];
+      for (let i = 0; i < t.length; i++) if (t[i] === '"') q.push(i);
+      if (q.length !== 4) return t;
+      const inner = t.slice(q[1] + 1, q[2]);
+      const words = inner.trim().split(/\s+/).filter(Boolean).length;
+      if (!words || words > 6 || /["*]/.test(inner) || /[.!?…]/.test(inner)) return t;
+      return t.slice(0, q[1]) + "'" + inner + "'" + t.slice(q[2] + 1);
     }
     // Lời thoại bị lồng trong đoạn mô tả hành động: tách thành bong bóng lời thoại riêng
     function isSpeechQuote(t) { const w = t.trim().split(/\s+/).length; return (w >= 4 && /[.,!?…]/.test(t)) || w >= 9; }
@@ -963,7 +977,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
           else segs.push({ type: 'dialogue', text: m[2].replace(/"/g, '').trim() });
         }
       }
-      segs.forEach(sg => { sg.text = restoreStars(sg.text); });
+      segs.forEach(sg => { sg.text = restoreStars(sg.text); if (sg.type === 'dialogue') sg.text = tidyDialogue(sg.text); });
       expandSpeech(segs);
       const filled = segs.filter(sg => sg.text);
       let lastDialogueIdx = -1; filled.forEach((sg, k) => { if (sg.type === 'dialogue') lastDialogueIdx = k; });
@@ -1169,7 +1183,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
             return;
           }
 
-          restText = protectStars(normQuotes(restText));
+          restText = repairNestedQuotes(protectStars(normQuotes(restText)));
           const hasQuote = (restText.match(/"/g) || []).length >= 2;
           const segs = [];
           if (hasQuote) {
@@ -1191,7 +1205,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
-          segs.forEach(sg => { sg.text = restoreStars(sg.text); });
+          segs.forEach(sg => { sg.text = restoreStars(sg.text); if (sg.type === 'dialogue') sg.text = tidyDialogue(sg.text); });
           expandSpeech(segs);
           speakers.forEach((sp, spIdx) => {
           matchedAvatar = sp.avatar; speakerName = sp.name;
@@ -1403,10 +1417,12 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 - Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
 
 [QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
-- Lời thoại luôn đặt trong dấu ngoặc kép thẳng "..." (một cặp duy nhất cho mỗi câu nói).
-- Muốn nhấn mạnh, trích dẫn hoặc dùng từ lóng/biệt danh BÊN TRONG lời thoại thì dùng dấu nháy đơn ‘...’ (ví dụ: "Nó đúng là đồ ‘ba hoa’ thật."). Tuyệt đối không dùng “...” hay "..." lồng bên trong lời thoại.
+- Lời thoại luôn đặt trong một cặp ngoặc kép thẳng "..." duy nhất cho mỗi câu nói.
+- Từ đặc biệt nằm BÊN TRONG lời thoại (nhấn mạnh, trích dẫn, từ lóng, biệt danh) PHẢI đặt trong nháy đơn '...' (ví dụ: "Nó đúng là 'ba hoa' thật.").
+- TUYỆT ĐỐI KHÔNG dùng **...** (in đậm) trong lời thoại. Bộ đọc chat hiểu ** là dấu mở đoạn hành động nên câu sẽ bị cắt đôi.
+- TUYỆT ĐỐI KHÔNG lồng thêm "..." hay “...” bên trong lời thoại, kể cả để nhấn mạnh hay trích dẫn: sẽ bị hiểu nhầm thành hai lời thoại rời rạc. Phần bên trong chỉ dùng '...'.
 - Lời nói của nhân vật LUÔN đặt riêng trong "...", tuyệt đối không nhét lời nói vào giữa đoạn mô tả hành động/cảm xúc (không viết kiểu *Anh nhìn cô, nói "..."*): hãy viết đoạn hành động riêng rồi lời thoại riêng.
-- KHÔNG dùng dấu * để che chữ trong lời thoại (không viết kiểu đ**, c*c); dấu * chỉ dùng để bao quanh đoạn hành động.
+- Dấu * chỉ dùng để bao quanh đoạn hành động/cử chỉ. KHÔNG dùng * hay ** để nhấn mạnh, in đậm hay che chữ trong lời thoại (không viết kiểu đ**, c*c).
 
 [ĐỊNH DẠNG ĐẦU RA - BẮT BUỘC]
 - Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
