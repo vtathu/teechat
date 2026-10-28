@@ -278,6 +278,7 @@ const REAL_ESTATE_MAPS = [
       loadStorage();
       renderStoryList();
       checkDailyReset();
+      try { if (typeof window.hideBootSplash === 'function') window.hideBootSplash(); } catch (e) {}
     };
 
     let selectedBuyItem = null;

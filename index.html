@@ -21,10 +21,44 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
   <script src="theme.js?v=2"></script>
 <body>
+
+  <!-- Màn hình chờ: che trang chủ cho tới khi nạp xong dữ liệu trong máy -->
+  <div id="boot-splash" role="status" aria-label="Đang tải Teechat">
+    <div class="bs-rip">
+      <i></i><i></i><i></i><i></i>
+      <div class="bs-center">
+        <svg class="bs-paw" viewBox="0 0 100 100" aria-hidden="true">
+          <ellipse cx="24" cy="34" rx="9" ry="11"/><ellipse cx="41" cy="24" rx="9" ry="11"/>
+          <ellipse cx="59" cy="24" rx="9" ry="11"/><ellipse cx="76" cy="34" rx="9" ry="11"/>
+          <path d="M50 44c13 0 24 11 24 22 0 10-9 15-24 15s-24-5-24-15c0-11 11-22 24-22z"/>
+        </svg>
+        <div class="bs-name">Teechat</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.__bootT0 = Date.now();
+    window.hideBootSplash = function () {
+      var el = document.getElementById('boot-splash');
+      if (!el || el.dataset.done) return;
+      el.dataset.done = '1';
+      // Giữ tối thiểu 450ms để không bị nháy khi máy mở nhanh
+      var wait = Math.max(0, 450 - (Date.now() - window.__bootT0));
+      setTimeout(function () {
+        el.classList.add('hide');
+        setTimeout(function () { if (el.parentNode) el.remove(); }, 400);
+      }, wait);
+    };
+    // Chốt an toàn: nếu nạp dữ liệu trục trặc thì vẫn phải vào được app
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.hideBootSplash(); }, 6000);
+    });
+    setTimeout(function () { window.hideBootSplash(); }, 15000);
+  </script>
 
   <!-- PAGE 1: TRANG CHỦ -->
   <div id="page-home" class="page active">
@@ -707,7 +741,7 @@
 
   <script type="module" src="firebase.js?v=3"></script>
   <script src="core.js?v=1"></script>
-  <script src="data-shop.js?v=5"></script>
+  <script src="data-shop.js?v=6"></script>
   <script src="shop.js?v=10"></script>
   <script src="jobs.js?v=2"></script>
   <script src="craft.js?v=2"></script>
