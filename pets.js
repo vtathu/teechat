@@ -5,6 +5,7 @@
 (function () {
   'use strict';
 
+  
   // ---------- CẤU HÌNH ĐỒ HỌA ----------
   // Ảnh thú: pets/<loài>_<giới>_<màu>_<dáng>.png  ví dụ pets/cat_male_trang_idle.png
   //   loài : cat, dog, golden, rabbit, parrot, hamster, fish
