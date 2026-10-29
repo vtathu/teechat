@@ -823,6 +823,15 @@
           <span style="font-size:0.82rem;color:#4a5568;white-space:nowrap;">Âm lượng</span>
           <input type="range" id="cfg-volume" min="0" max="100" step="5" style="flex:1;min-width:0;">
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:10px;background:#f7fafc;">
+          <span style="font-size:0.82rem;color:#4a5568;">♫</span>
+          <span id="music-now-name" style="flex:1;min-width:0;font-size:0.8rem;color:#2d3748;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Đang tắt</span>
+          <button type="button" class="btn btn-outline" onclick="Sound.nextSong()" style="padding:0;width:34px;height:30px;line-height:1;font-size:0.9rem;" title="Chuyển bài khác">⏭</button>
+        </div>
+        <details id="music-picker" style="margin:2px 0 4px;">
+          <summary style="font-size:0.78rem;color:#2b6cb0;cursor:pointer;padding:2px 0;">Nghe thử 25 bài</summary>
+          <div id="music-list-body" style="max-height:210px;overflow:auto;margin-top:4px;border:1px solid #e2e8f0;border-radius:10px;"></div>
+        </details>
       </div>
       <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
     </div>
@@ -908,7 +917,7 @@
   <script src="pets.js?v=22"></script>
   <script src="chat.js?v=16"></script>
   <script src="ui.js?v=5"></script>
-  <script src="audio.js?v=2"></script>
+  <script src="audio.js?v=4"></script>
   <script src="play.js?v=4"></script>
   <script src="biz.js?v=8"></script>
   <script src="push.js?v=1"></script>

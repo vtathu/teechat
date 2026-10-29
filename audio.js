@@ -149,7 +149,7 @@
     if (!window.Audio) return null;
     musicEl = new Audio();
     musicEl.preload = 'auto';
-    musicEl.addEventListener('playing', () => { musicFails = 0; fadingOut = false; musicEl.volume = 0; fadeTo(musicVolume(), 1500); });
+    musicEl.addEventListener('playing', () => { musicFails = 0; fadingOut = false; musicEl.volume = 0; fadeTo(musicVolume(), 1500); paintMusic(); });
     musicEl.addEventListener('timeupdate', () => {
       const left = (musicEl.duration || 0) - musicEl.currentTime;
       if (!fadingOut && left > 0 && left < 2.2) { fadingOut = true; fadeTo(0, Math.max(300, left * 850)); }
@@ -244,6 +244,79 @@
     try { musicEl.pause(); } catch (e) {}
   }
 
+  // ---------- Bảng nhạc trong Cài đặt ----------
+  const TRACK_NAMES = {
+    d1: 'Mặt hồ phẳng lặng', d2: 'Giai điệu dịu êm', d3: 'Quán cà phê sân vườn', d4: 'Piano trong gió', d5: 'Buổi sáng bình yên',
+    d6: 'Rời xa phố thị', d7: 'Cánh đồng lúa Việt Nam', d8: 'Cải lương Nam Bộ', d9: 'Auld Lang Syne', d10: 'Nơi tôi sinh ra',
+    t1: 'Xuân về', t2: 'Mùa xuân ơi', t3: 'Hoa mùa xuân', t4: 'Tết Nguyên Đán (EDM)', t5: 'Nhạc Tết không lời', t6: 'Xuân ca',
+    m1: 'Chú Cuội chị Hằng', m2: 'Trăng tròn giữa trời cao', m3: 'Rước đèn ông sao',
+    n1: 'Jingle Bells (Swing)', n2: 'We Wish You a Merry Christmas', n3: 'Giáng sinh vui vẻ',
+    n4: 'Merry Christmas With You', n5: 'Noel ấm áp', n6: 'Giáng sinh an lành'
+  };
+  const TRACK_GROUPS = [
+    ['Nghe hằng ngày', ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10']],
+    ['Tết Nguyên Đán', ['t1', 't2', 't3', 't4', 't5', 't6']],
+    ['Trung Thu', ['m1', 'm2', 'm3']],
+    ['Giáng sinh', ['n1', 'n2', 'n3', 'n4', 'n5', 'n6']]
+  ];
+  function trackKey(src) {
+    return String(src || '').split('?')[0].replace(/^.*\//, '').replace(/\.mp3$/i, '');
+  }
+  function currentKey() { return musicEl ? trackKey(musicEl.currentSrc || musicEl.src) : ''; }
+  function buildList(box) {
+    let html = '';
+    TRACK_GROUPS.forEach(([label, keys]) => {
+      html += '<div style="padding:6px 10px;font-size:0.7rem;letter-spacing:0.05em;text-transform:uppercase;color:#a0aec0;background:#f7fafc;">' + label + '</div>';
+      keys.forEach(k => {
+        html += '<div data-track="' + k + '" onclick="Sound.playSong(\'' + k + '\')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #edf2f7;font-size:0.82rem;color:#2d3748;cursor:pointer;">'
+          + '<span class="music-eq" style="width:14px;flex:0 0 14px;text-align:center;color:#38a169;">♪</span>'
+          + '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (TRACK_NAMES[k] || k) + '</span>'
+          + '</div>';
+      });
+    });
+    box.innerHTML = html;
+  }
+  function paintMusic() {
+    const now = document.getElementById('music-now-name');
+    const list = document.getElementById('music-list-body');
+    if (!now && !list) return;
+    const cur = currentKey();
+    if (now) now.textContent = !cfg().music ? 'Đang tắt'
+      : cur ? (TRACK_NAMES[cur] || cur)
+      : musicTimer ? 'Nhạc tổng hợp' : 'Đang chọn bài…';
+    if (list) {
+      if (!list.dataset.built && list.children.length === 0) { buildList(list); list.dataset.built = '1'; }
+      let onRow = null;
+      Array.prototype.forEach.call(list.querySelectorAll('[data-track]'), row => {
+        const on = row.dataset.track === cur;
+        row.style.background = on ? '#e6fffa' : '';
+        row.style.fontWeight = on ? '600' : '';
+        row.style.color = on ? '#2c7a7b' : '#2d3748';
+        const eq = row.querySelector('.music-eq');
+        if (eq) eq.textContent = on ? '▶' : '♪';
+        if (on) onRow = row;
+      });
+      const det = document.getElementById('music-picker');
+      if (det && det.open && onRow) {   // bài đang phát mà nằm ngoài khung nhìn thì cuộn tới
+        const rr = onRow.getBoundingClientRect(), lr = list.getBoundingClientRect();
+        if (rr.top < lr.top || rr.bottom > lr.bottom) list.scrollTop += rr.top - lr.top - 8;
+      }
+    }
+  }
+  function playSong(key) {
+    const k = trackKey(key);
+    if (!k) return;
+    if (!cfg().music) { cfg().music = true; save(); }
+    playTrack('music/' + k + '.mp3');
+    musicList = null;   // bài chọn tay: hết bài thì quay lại chọn theo mùa
+    paintMusic();
+  }
+  function nextSong() {
+    if (!cfg().music) { cfg().music = true; save(); }
+    playTrack(pickNext());
+    paintMusic();
+  }
+
   function apply() {
     const a = cfg();
     if (master) master.gain.setTargetAtTime(a.volume, ctx.currentTime, 0.05);
@@ -260,6 +333,7 @@
     if (s) s.checked = !!a.sfx;
     if (m) m.checked = !!a.music;
     if (v) v.value = String(Math.round(a.volume * 100));
+    paintMusic();
   }
 
   function bind() {
@@ -275,6 +349,8 @@
       const b = e.target && e.target.closest && e.target.closest('button, .play-tab');
       if (b && !b.disabled) play('click');
     }, true);
+    const picker = document.getElementById('music-picker');
+    if (picker) picker.addEventListener('toggle', () => { if (picker.open) paintMusic(); });
     const modal = document.getElementById('modal-settings');
     if (modal && window.MutationObserver) {
       new MutationObserver(() => { if (modal.classList.contains('active')) syncControls(); })
@@ -289,6 +365,8 @@
 
   window.Sound = {
     play, init: unlock,
+    playSong, nextSong,
+    current: currentKey,
     setMusic(on) { cfg().music = !!on; save(); apply(); },
     setSfx(on) { cfg().sfx = !!on; save(); apply(); },
     setVolume(v) { cfg().volume = Math.max(0, Math.min(1, +v || 0)); apply(); },
