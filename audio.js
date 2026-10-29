@@ -97,7 +97,7 @@
   // ---------- Nhạc nền: nhạc thật (Pixabay) phát xáo trộn, theo mùa lễ hội ----------
   const TRACK = (list) => list.map(n => 'music/' + n + '.mp3');
   const PLAYLISTS = {
-    daily: TRACK(['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10']),
+    daily: TRACK(['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd9', 'd10']),
     tet: TRACK(['t1', 't2', 't3', 't4', 't5', 't6']),
     trungthu: TRACK(['m1', 'm2', 'm3']),
     noel: TRACK(['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
@@ -247,7 +247,7 @@
   // ---------- Bài đang phát trong Cài đặt ----------
   const TRACK_NAMES = {
     d1: 'Mặt hồ phẳng lặng', d2: 'Giai điệu dịu êm', d3: 'Quán cà phê sân vườn', d4: 'Piano trong gió', d5: 'Buổi sáng bình yên',
-    d6: 'Rời xa phố thị', d7: 'Cánh đồng lúa Việt Nam', d8: 'Cải lương Nam Bộ', d9: 'Auld Lang Syne', d10: 'Nơi tôi sinh ra',
+    d6: 'Rời xa phố thị', d7: 'Cánh đồng lúa Việt Nam', d9: 'Auld Lang Syne', d10: 'Nơi tôi sinh ra',
     t1: 'Xuân về', t2: 'Mùa xuân ơi', t3: 'Hoa mùa xuân', t4: 'Tết Nguyên Đán (EDM)', t5: 'Nhạc Tết không lời', t6: 'Xuân ca',
     m1: 'Chú Cuội chị Hằng', m2: 'Trăng tròn giữa trời cao', m3: 'Rước đèn ông sao',
     n1: 'Jingle Bells (Swing)', n2: 'We Wish You a Merry Christmas', n3: 'Giáng sinh vui vẻ',
