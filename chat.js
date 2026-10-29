@@ -1668,7 +1668,12 @@ ${out}`;
             if (seg.type === 'action') {
               const actDiv = document.createElement('div');
               actDiv.className = 'narrative-block ai-action';
-              actDiv.innerText = seg.text;
+              let actText = seg.text;
+if (!actionHasName(actText, sp.name)) {
+  actText = sp.name + ' ' + actText.charAt(0).toLowerCase() + actText.slice(1);
+}
+actDiv.innerText = actText;
+
 
               if (isLastSeg) {
                 const wrapDiv = document.createElement('div');
