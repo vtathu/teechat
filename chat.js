@@ -1557,6 +1557,15 @@ ${out}`;
       }
       openModal('modal-affection');
     }
+    // Tên gọi trong đoạn hành động: 2 chữ -> giữ nguyên; từ 3 chữ trở lên -> 2 chữ cuối hoặc tên đầy đủ (ngẫu nhiên nhưng cố định theo từng đoạn)
+      function actionCallName(name, seed) {
+        const p = charNameParts(name);
+        if (p.length <= 2) return p.join(' ');
+          let h = 0;
+          const s = name + '|' + seed;
+          for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+            return h % 2 ? p.join(' ') : p.slice(-2).join(' ');
+    }
 // Đoạn hành động đã mở đầu bằng tên nhân vật (đủ tên hoặc tên gọi tắt) chưa?
     function actionHasName(t, name) {
       const f = foldVi(t).replace(/^[\s*_\[]+/, '');
@@ -1676,7 +1685,7 @@ ${out}`;
               actDiv.innerText = seg.text;
               let actText = seg.text;
         if (!actionHasName(actText, sp.name)) {
-  actText = sp.name + ' ' + actText.charAt(0).toLowerCase() + actText.slice(1);
+  actText = actionCallName(sp.name, msgIndex + '-' + lineIdx + '-' + segIdx) + ' ' + actText.charAt(0).toLowerCase() + actText.slice(1);
 }
 actDiv.innerText = actText;
 
