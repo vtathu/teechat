@@ -779,25 +779,13 @@
       }
       return sv;
     }
-    function sdkResumeBtn(sv, extra) {
+    function sdkResumeBtn(sv) {
       const filled = sdkFilled(sv);
       const tail = filled ? 'đã điền ' + filled + ' ô' : 'bàn còn trống';
       return `<button class="btn btn-pink" style="width:100%;white-space:normal;line-height:1.3;height:auto;min-height:44px;padding:8px 10px;" onclick="resumeSudoku()">▶ Tiếp tục ván đang chơi · ${SDK_LABEL[sv.level] || ''} · màn ${sv.stage || 1} · ${tail}</button>`
-        + (extra || '')
-        + '<div style="font-size:0.75rem;color:#718096;margin-top:6px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>';
+        + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>';
     }
-    function sdkTimeAgo(t) {
-      if (!t) return '';
-      const m = Math.floor((Date.now() - t) / 60000);
-      if (m < 1) return 'vừa xong';
-      if (m < 60) return m + ' phút trước';
-      const h = Math.floor(m / 60);
-      if (h < 24) return h + ' giờ trước';
-      return Math.floor(h / 24) + ' ngày trước';
-    }
-    // Tự khôi phục ván đi xa nhất trong chuỗi bản lưu trên máy — không bắt người chơi chọn
-    let sdkNewerSave = null;    // ván đang có trên máy (màn thấp hơn) để còn đường quay lại
-    let sdkBackupBest = null;   // ván xa nhất bị giữ lại vì người chơi vừa cố ý mở ván mới
+    // Tự khôi phục ván đi xa nhất trong chuỗi bản lưu trên máy: chỉ đổi nút Tiếp tục, không thêm dòng nào
     function sdkNewGameAt() { return Number(localStorage.getItem('sdk_new_game_at') || 0) || 0; }
     async function sdkAutoRestoreBackup(box) {
       if (typeof window.readBackupStates !== 'function') return;
@@ -805,48 +793,22 @@
       try { list = await window.readBackupStates(); } catch (e) { return; }
       if (document.getElementById('sdk-menu').style.display === 'none') return;   // người chơi đã vào ván khác
       const cur = sdkMenuSave ? sdkNormalizeSave(sdkMenuSave) : null;
-      const curAlive = !!cur && sdkHasGivens(cur);
       const since = sdkNewGameAt();
       // Ván trong máy được tạo sau mốc "bắt đầu ván mới" -> người chơi cố ý chơi ván này, không đè
-      const keepNew = curAlive && (cur.savedAt || 0) >= since;
-      let best = cur, blocked = null;
+      const keepNew = !!cur && sdkHasGivens(cur) && (cur.savedAt || 0) >= since;
+      let best = cur;
       list.forEach(x => {
         const sv = sdkNormalizeSave(x.sudokuSave);
         if (!sv || !sdkHasGivens(sv)) return;
-        if (pickSudokuSave(best, sv) !== sv) return;   // bản này không xa hơn
-        if (since && keepNew && (x.updatedAt || 0) < since) { blocked = pickSudokuSave(blocked, sv); return; }
-        best = sv;
+        if (since && keepNew && (x.updatedAt || 0) < since) return;
+        best = pickSudokuSave(best, sv);
       });
-      if (best === cur || sdkScore(best) <= sdkScore(cur)) best = null;
-      sdkNewerSave = best && curAlive ? cur : null;
-      sdkBackupBest = blocked && sdkScore(blocked) > sdkScore(cur) ? blocked : null;
-      if (best) {
-        window.state.sudokuSave = best;
-        sdkMenuSave = best;
-        saveStorage();
-      }
-      if (!best && !sdkBackupBest) return;
-      const extra = (best ? `<div style="font-size:0.74rem;color:#4a5568;margin-top:6px;">↺ Đã tự khôi phục ván xa nhất trong bản lưu trên máy${best.savedAt ? ' (' + sdkTimeAgo(best.savedAt) + ')' : ''}.</div>` : '')
-        + (sdkNewerSave ? `<div style="margin-top:4px;"><a href="javascript:void(0)" style="font-size:0.74rem;color:#2b6cb0;" onclick="sdkUseNewerSave()">Ván trên máy lúc này: ${SDK_LABEL[cur.level] || ''} · màn ${cur.stage || 1} — dùng ván này</a></div>` : '')
-        + (sdkBackupBest ? `<div style="margin-top:4px;"><a href="javascript:void(0)" style="font-size:0.74rem;color:#2b6cb0;" onclick="sdkUseBackupBest()">↺ Còn ván xa hơn trong bản lưu: màn ${sdkBackupBest.stage || 1} — lấy lại</a></div>` : '');
-      box.innerHTML = sdkResumeBtn(sdkMenuSave || best, extra);
-    }
-    function sdkAdoptSave(sv) {
-      sdkNewerSave = null; sdkBackupBest = null;
-      window.state.sudokuSave = sv;
-      sdkMenuSave = sv;
+      if (!best || best === cur || sdkScore(best) <= sdkScore(cur)) return;
+      window.state.sudokuSave = best;
+      sdkMenuSave = best;
       saveStorage();
-      document.getElementById('sdk-resume').innerHTML = sdkResumeBtn(sv);
+      box.innerHTML = sdkResumeBtn(best);
     }
-    window.sdkUseNewerSave = function () {
-      if (!sdkNewerSave) return;
-      localStorage.setItem('sdk_new_game_at', String(Date.now()));   // đã chọn ván mới -> lần sau đừng đè nữa
-      sdkAdoptSave(sdkNewerSave);
-    };
-    window.sdkUseBackupBest = function () {
-      if (!sdkBackupBest) return;
-      sdkAdoptSave(sdkBackupBest);
-    };
 
     function openSudoku9Minigame() {
       // Sudoku không giới hạn lượt chơi mỗi ngày
@@ -854,7 +816,6 @@
       const sv = sdkNormalizeSave(raw);
       if (sv && sv !== raw) window.state.sudokuSave = sv;   // bản cũ (chuỗi JSON / mảng phẳng) -> dùng luôn dạng chuẩn
       sdkMenuSave = (sv && sdkHasGivens(sv)) ? sv : null;
-      sdkNewerSave = null; sdkBackupBest = null;
       const box = document.getElementById('sdk-resume');
       box.innerHTML = sdkMenuSave ? sdkResumeBtn(sdkMenuSave) : '';
       document.getElementById('sdk-menu').style.display = 'flex';
@@ -949,7 +910,6 @@
       if (window.state.sudokuSave && !confirm('Ván đang lưu sẽ bị xóa. Bắt đầu ván mới?')) return;
       // Đánh dấu mốc để bản lưu cũ hơn không tự khôi phục đè lên ván mới người chơi vừa mở
       localStorage.setItem('sdk_new_game_at', String(Date.now()));
-      sdkNewerSave = null;
       window.state.sudokuSave = null;
       sdkMenuSave = null;
       sdk = { level, stage: 0, earned: 0, noteMode: false };
