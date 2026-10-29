@@ -786,18 +786,30 @@
       return `<button class="btn btn-pink" style="width:100%;" onclick="resumeSudoku()">▶ Tiếp tục ván đang chơi (${SDK_LABEL[sv.level] || ''}, màn ${sv.stage || 1}${tail})</button>`
         + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>';
     }
-    // Không có ván đang lưu: tìm lại ván trong các bản sao lưu trên máy để người chơi đi tiếp
+    // Tìm lại ván trong bản sao lưu trên máy: mời khi máy không còn ván, hoặc bản lưu tiến xa hơn ván đang có
     async function sdkOfferBackupSave(box) {
       if (typeof window.readBackupStates !== 'function') return;
       let list = [];
       try { list = await window.readBackupStates(); } catch (e) { return; }
       let best = null;
       list.forEach(x => { best = pickSudokuSave(best, sdkNormalizeSave(x.sudokuSave)); });
-      if (!best || box.innerHTML) return;
-      if (sdkMenuSave) return;   // người chơi vừa có ván dùng được trong lúc đọc bản lưu
+      if (!best) return;
+      if (sdkMenuSave && sdkScore(best) <= sdkScore(sdkMenuSave)) return;
+      if (document.getElementById('sdk-menu').style.display === 'none') return;   // người chơi đã vào ván khác
       sdkBackupPick = best;
-      box.innerHTML = `<button class="btn" style="width:100%;background:#edf2f7;color:#2d3748;" onclick="sdkRestoreBackupSave()">↺ Lấy lại ván từ bản lưu (${SDK_LABEL[best.level] || ''}, màn ${best.stage || 1}${sdkFilled(best) ? ', đã điền ' + sdkFilled(best) + ' ô' : ''})</button>`
-        + '<div style="font-size:0.72rem;color:#718096;margin-top:4px;">Bản lưu cũ vẫn còn ván chơi dở — bấm để chơi tiếp.</div>';
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.style.cssText = 'width:100%;background:#edf2f7;color:#2d3748;' + (sdkMenuSave ? 'margin-top:10px;font-size:.86rem;' : '');
+      btn.innerText = `↺ Lấy lại ván từ bản lưu (${SDK_LABEL[best.level] || ''}, màn ${best.stage || 1}${sdkFilled(best) ? ', đã điền ' + sdkFilled(best) + ' ô' : ''})`;
+      btn.onclick = () => window.sdkRestoreBackupSave();
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:0.72rem;color:#718096;margin-top:4px;';
+      hint.innerText = sdkMenuSave
+        ? 'Bản sao lưu trên máy có ván xa hơn — bấm để chuyển sang ván đó.'
+        : 'Bản lưu cũ vẫn còn ván chơi dở — bấm để chơi tiếp.';
+      const wrap = document.createElement('div');
+      wrap.appendChild(btn); wrap.appendChild(hint);
+      box.appendChild(wrap);
     }
     window.sdkRestoreBackupSave = function () {
       if (!sdkBackupPick) return;
@@ -805,6 +817,7 @@
       sdkBackupPick = null;
       saveStorage();
       sdkMenuSave = window.state.sudokuSave;
+      document.getElementById('sdk-resume').innerHTML = '';
       resumeSudoku();
     };
 
@@ -819,7 +832,7 @@
       document.getElementById('sdk-menu').style.display = 'flex';
       document.getElementById('sdk-play').style.display = 'none';
       openModal('modal-sudoku');
-      if (!box.innerHTML) sdkOfferBackupSave(box);
+      sdkOfferBackupSave(box);
     }
 
     // Giải đề (trả về lưới đầy đủ) — dùng khi ván lưu cũ không có sẵn đáp án
@@ -853,11 +866,12 @@
       return solve() ? g : null;
     }
 
+    // Chỉ cần một ô đề là mở được. Hàng trống bị Firebase bỏ hẳn (đề địa ngục có hàng không có số) vẫn hợp lệ
     function sdkHasGivens(sv) {
       if (!sv || !sv.puzzle || typeof sv.puzzle !== 'object') return false;
       for (let r = 0; r < 9; r++) {
         const row = sv.puzzle[r];
-        if (!row || typeof row !== 'object') return false;
+        if (!row || typeof row !== 'object') continue;
         for (let c = 0; c < 9; c++) if (sdkCellOf(row, c)) return true;
       }
       return false;
