@@ -1557,6 +1557,11 @@ ${out}`;
       }
       openModal('modal-affection');
     }
+// Đoạn hành động đã mở đầu bằng tên nhân vật (đủ tên hoặc tên gọi tắt) chưa?
+    function actionHasName(t, name) {
+      const f = foldVi(t).replace(/^[\s*_\[]+/, '');
+      return charAliases(name).some(a => f === a || f.startsWith(a + ' '));
+    }
 
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
       const barsBefore = container.querySelectorAll('.msg-action-bar').length;
@@ -1669,6 +1674,11 @@ ${out}`;
               const actDiv = document.createElement('div');
               actDiv.className = 'narrative-block ai-action';
               actDiv.innerText = seg.text;
+              let actText = seg.text;
+        if (!actionHasName(actText, sp.name)) {
+  actText = sp.name + ' ' + actText.charAt(0).toLowerCase() + actText.slice(1);
+}
+actDiv.innerText = actText;
 
               if (isLastSeg) {
                 const wrapDiv = document.createElement('div');
