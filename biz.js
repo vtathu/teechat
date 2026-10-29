@@ -36,16 +36,31 @@
     if (life) life.innerText = w.toLocaleString('vi-VN') + ' VNĐ';
   }
 
+  // Lãi để trong quán, người chơi tự bấm rút về ví (không tự chuyển)
+  const pendingOf = (s) => Math.round(Number(s && s.bizPending) || 0);
+  function paintPending() {
+    const amt = pendingOf(window.state);
+    const bar = document.getElementById('biz-pending-bar');
+    if (bar) bar.style.display = amt > 0 ? 'flex' : 'none';
+    const a = document.getElementById('biz-pending-amount');
+    if (a) a.innerText = cash(amt);
+    const mini = document.getElementById('work-biz-pending');
+    if (mini) {
+      if (amt > 0) { mini.style.display = ''; mini.innerText = `💵 Lãi chưa rút trong quán: ${cash(amt)} — vào quán bấm Rút về ví.`; }
+      else mini.style.display = 'none';
+    }
+  }
+
   function showCredit(profit, day) {
     const el = document.getElementById('biz-credit');
     if (!el) return;
     el.className = 'biz-credit show ' + (profit > 0 ? '' : profit < 0 ? 'down' : 'flat');
     el.textContent =
       profit === 0
-        ? `Ngày ${day}: quán huề vốn, ví chưa đổi.`
+        ? `Ngày ${day}: quán huề vốn, không có gì để rút.`
         : profit > 0
-          ? `Ngày ${day}: lãi +${cash(profit)} đã chuyển vào ví.`
-          : `Ngày ${day}: lỗ ${cash(-profit)}, trừ vào ví.`;
+          ? `Ngày ${day}: lãi +${cash(profit)} để trong quán, bấm Rút về ví khi muốn.`
+          : `Ngày ${day}: lỗ ${cash(-profit)}, trừ vào phần lãi đang giữ trong quán.`;
     clearTimeout(creditTimer);
     creditTimer = setTimeout(() => el.classList.remove('show'), 6000);
   }
@@ -54,12 +69,32 @@
     const profit = Math.round(Number(data.profit) || 0);
     const s = window.state;
     if (s && profit) {
-      s.walletBalance = Math.max(0, (Number(s.walletBalance) || 0) + profit);
-      try { if (typeof saveStorage === 'function') saveStorage(); } catch (e) { console.warn('Chưa lưu được ví', e); }
+      s.bizPending = (Number(s.bizPending) || 0) + profit;
+      try { if (typeof saveStorage === 'function') saveStorage(); } catch (e) { console.warn('Chưa lưu được quỹ quán', e); }
     }
     paintWallet();
+    paintPending();
     try { if (typeof window.renderLifeModeUI === 'function') window.renderLifeModeUI(); } catch (e) { console.warn(e); }
     showCredit(profit, data.day);
+  }
+
+  function withdraw() {
+    const s = window.state;
+    const amt = pendingOf(s);
+    if (!s || amt <= 0) return;
+    s.walletBalance = (Number(s.walletBalance) || 0) + amt;
+    s.bizPending = 0;
+    try { if (typeof saveStorage === 'function') saveStorage(); } catch (e) { console.warn(e); }
+    paintWallet();
+    paintPending();
+    try { if (typeof window.renderLifeModeUI === 'function') window.renderLifeModeUI(); } catch (e) { console.warn(e); }
+    const el = document.getElementById('biz-credit');
+    if (el) {
+      el.className = 'biz-credit show';
+      el.textContent = `Đã rút ${cash(amt)} về ví Teechat.`;
+      clearTimeout(creditTimer);
+      creditTimer = setTimeout(() => el.classList.remove('show'), 4000);
+    }
   }
 
   window.addEventListener('message', (e) => {
@@ -73,7 +108,7 @@
   const host = document.getElementById('fs-biz');
   if (host) {
     new MutationObserver(() => {
-      if (host.classList.contains('active')) return;
+      if (host.classList.contains('active')) { paintPending(); return; }
       const frame = document.getElementById('biz-frame');
       if (!frame || frame.dataset.booted !== '1') return;
       try { frame.contentWindow.postMessage({ type: 'teechat:biz-hidden' }, ORIGIN); } catch (e) { console.warn(e); }
@@ -82,5 +117,5 @@
     }).observe(host, { attributes: true, attributeFilter: ['class'] });
   }
 
-  window.Biz = { render: boot, creditDay, reload };
+  window.Biz = { render: boot, creditDay, reload, withdraw, paintPending };
 })();

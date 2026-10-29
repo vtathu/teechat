@@ -269,7 +269,7 @@
     .craft-chips { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px 10px; font-size: 0.74rem; justify-content: center; }
     .craft-bottom { display: flex; flex-wrap: nowrap; overflow: hidden; gap: 4px; padding: 8px 6px; border-top: 2px solid var(--app-green); background: var(--glass); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
     .craft-bottom .btn { flex: 1 1 0; min-width: 0; padding: 9px 2px; font-size: clamp(0.58rem, 2.8vw, 0.8rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-    .craft-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 62%; overflow-y: auto; background: var(--surface); border-top: 3px solid var(--app-green); border-radius: 16px 16px 0 0; padding: 12px; z-index: 5; display: none; box-shadow: 0 -4px 14px rgba(0,0,0,0.18); }
+    .craft-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 72%; overflow-y: auto; background: var(--surface); border-top: 3px solid var(--app-green); border-radius: 16px 16px 0 0; padding: 12px; z-index: 5; display: none; box-shadow: 0 -4px 14px rgba(0,0,0,0.18); }
     .craft-sheet.active { display: block; }
     .craft-toast { position: absolute; top: 62px; left: 50%; transform: translateX(-50%); background: #2d3748; color: #fff; padding: 6px 14px; border-radius: 14px; font-size: 0.8rem; z-index: 6; display: none; max-width: 90%; text-align: center; }
     .craft-grid { display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(12, 1fr); gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }

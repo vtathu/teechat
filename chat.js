@@ -150,7 +150,7 @@ function stripUserVoice(text, name) {
 
     async function maybeTriggerRandomEvent() {
       if (eventBusy) return;
-      if (Math.random() > 0.3) return;
+      if (Math.random() > 0.2) return;
       if (!(window.state.apiKeys || []).length) return;
 
       const storyId = window.state.activeStoryId;
@@ -221,7 +221,7 @@ ${pastEvents || '(chưa có)'}
 ${recentHistory}
 
 [QUY TẮC BẮT BUỘC]
-1. Sự kiện phải tiếp nối ĐÚNG địa điểm, thời điểm, tâm trạng và chủ đề của đoạn chat cuối cùng; nảy ra từ chi tiết đã có trong hồ sơ hoặc lịch sử chat, không đột ngột sang bối cảnh khác.
+1. Sự kiện phải tiếp nối ĐÚNG địa điểm, thời điểm, tâm trạng và chủ đề của đoạn chat cuối cùng; nảy ra từ chi tiết đã có trong hồ sơ hoặc lịch sử chat, không đột ngột sang bối cảnh khác. Nếu diễn biến chat đã đi khác thiết lập ban đầu thì đi theo diễn biến chat, không kéo ngược về cốt truyện cũ.
 2. Hành động, nghề nghiệp, khả năng, địa vị, xưng hô của ${charName} phải khớp thân phận và tính cách đã mô tả; không làm điều trái thân phận (người túng thiếu không thể tặng món quá đắt, người lạnh lùng không đột nhiên sến súa...).
 3. Chỉ dùng nhân vật đã có trong truyện, hoặc người qua đường thoáng qua (người bán hàng, hàng xóm, shipper...). Không bịa quan hệ/quá khứ chưa từng xuất hiện.
 4. Tuyệt đối KHÔNG tạo biến cố lớn không thể đảo ngược (mang thai, có con, kết hôn, qua đời, mất trí nhớ, chia tay hẳn, tai nạn nặng, tiết lộ bí mật lớn của cốt truyện).
@@ -264,25 +264,26 @@ Trả về ĐÚNG JSON thuần, không markdown:
         if (eventData && eventData.desc && eventData.choice1 && eventData.choice2) {
           // ÉP GIỚI HẠN số liệu do AI sinh ra
           const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.abs(parseInt(v, 10) || 0)));
+          const clean = (v) => scrubAiText(v).text;
           const c1 = {
-            text: eventData.choice1.text,
-            log: eventData.choice1.log,
+            text: clean(eventData.choice1.text),
+            log: clean(eventData.choice1.log),
             moneyChange: clampN(eventData.choice1.moneyChange, 0, 60000000),
             affectionChange: clampN(eventData.choice1.affectionChange || 1, 1, 10),
             getItem: !!eventData.choice1.getItem
           };
           const c2 = {
-            text: eventData.choice2.text,
-            log: eventData.choice2.log,
+            text: clean(eventData.choice2.text),
+            log: clean(eventData.choice2.log),
             moneyChange: -clampN(eventData.choice2.moneyChange, 0, 20000000),
             affectionChange: -clampN(eventData.choice2.affectionChange || 1, 1, 10),
             getItem: false
           };
 
           const dynamicEvent = {
-            desc: eventData.desc,
+            desc: clean(eventData.desc),
             choices: [
-              { text: c1.text, action: () => executeEventChoice(charId, charName, eventData.desc, c1, randomRewardItem) },
+              { text: c1.text, action: () => executeEventChoice(charId, charName, clean(eventData.desc), c1, randomRewardItem) },
               { text: c2.text, action: () => executeEventChoice(charId, charName, eventData.desc, c2, null) }
             ]
           };
@@ -608,13 +609,12 @@ Trả về ĐÚNG JSON thuần, không markdown:
           chatBgColor: '#e7f5ee', chatBgImg: ''
         }
       };
-      // Tạo truyện mới: dò sẵn nhân vật từ cốt truyện để người chơi chỉ việc thêm tính cách/avatar
-      const scannedNames = scanStoryCharNames(setting + '\n' + openingScene, []);
-      scannedNames.forEach((n, idx) => newStory.characters.push(makeScannedChar(n, idx)));
       if (!window.state.stories) window.state.stories = [];
       window.state.stories.push(newStory);
       saveStorage(); renderStoryList(); closeModal('modal-story');
       openStoryDetail(newStory.id);
+      // Truyện mới: cho AI đọc cốt truyện rồi mở bảng tick chọn nhân vật, không tự thêm bừa
+      startCharScan({ story: newStory, text: setting + '\n' + openingScene });
     }
 
     function deleteStory(id) {
@@ -729,18 +729,11 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme.chatBgImg = document.getElementById('cfg-chat-bg-img').value.trim();
         story.updatedAt = Date.now(); // để lúc gộp máy ↔ cloud biết bản truyện nào mới hơn
 
-        // Sửa cốt truyện có tên mới -> hỏi trước khi thêm, không tự ý đụng vào danh sách nhân vật
-        let added = [];
-        const newNames = scanStoryCharNames(story.setting + '\n' + story.openingScene, (story.characters || []).map(c => c.name));
-        if (newNames.length && confirm(`Cốt truyện có nhân vật mới: ${newNames.join(', ')}.\nThêm vào danh sách nhân vật?`)) {
-          added = addScannedChars(story, newNames);
-          story.updatedAt = Date.now();
-        }
-
         saveStorage(); renderCharacterList();
         applyActiveStoryTheme();
         closeModal('modal-story-config');
-        alert(added.length ? `Đã lưu! Thêm nhân vật mới: ${added.join(', ')}.` : 'Đã lưu cài đặt truyện thành công!');
+        // Sửa cốt truyện: AI đọc lại, chỉ mở bảng tick nếu tìm ra người mới
+        startCharScan({ story, text: story.setting + '\n' + story.openingScene });
       }
     }
 
@@ -966,22 +959,154 @@ Trả về ĐÚNG JSON thuần, không markdown:
 
     function scanStoryNow() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
-      const status = document.getElementById('scan-char-status');
       if (!story) return;
       const text = (document.getElementById('story-setting-input').value || '') + '\n' + (document.getElementById('story-opening-input').value || '');
-      const names = scanStoryCharNames(text, (story.characters || []).map(c => c.name));
-      if (!names.length) {
-        if (status) status.innerText = 'Không tìm thấy nhân vật mới nào trong cốt truyện.';
+      startCharScan({ story, text, statusEl: document.getElementById('scan-char-status') });
+    }
+
+    // ---------- Đọc cốt truyện: chỉ lọc ra NGƯỜI rồi cho tick chọn ----------
+    const SCAN_FACTION_PREFIX = ['bang ', 'hoi ', 'gia toc ', 'mon phai ', 'to chuc ', 'cong ty ', 'tap doan ', 'quan an ', 'tiem an '];
+    const SCAN_PLACE_PREFIX = ['thanh pho ', 'thi tran ', 'tinh ', 'huyen ', 'lang ', 'nui ', 'song ', 'bien ', 'dao ', 'chau '];
+    function scanKeyName(s) { return foldVi(String(s || '')).replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim(); }
+    function scanGuessKind(text, name) {
+      const key = scanKeyName(name);
+      if (!key) return { person: false, kind: 'khác', note: '' };
+      const t = ' ' + scanKeyName(text) + ' ';
+      const hit = (arr, kind) => arr.some(p => key.indexOf(p) === 0);
+      if (hit(SCAN_FACTION_PREFIX, 'bang hội')) return { person: false, kind: 'bang hội', note: 'Tên bắt đầu bằng từ chỉ bang hội/tổ chức' };
+      if (hit(SCAN_PLACE_PREFIX, 'địa danh')) return { person: false, kind: 'địa danh', note: 'Tên bắt đầu bằng từ chỉ địa danh' };
+      if (SCAN_FACTION_PREFIX.some(p => t.indexOf(' ' + p + key) >= 0)) return { person: false, kind: 'bang hội', note: 'Đứng sau từ chỉ bang hội/tổ chức' };
+      if (SCAN_PLACE_PREFIX.some(p => t.indexOf(' ' + p + key) >= 0)) return { person: false, kind: 'địa danh', note: 'Đứng sau từ chỉ địa danh' };
+      return { person: true, kind: 'người', note: '' };
+    }
+    async function aiScanNames(text, names) {
+      const fallback = () => names.map(n => Object.assign({ name: n }, scanGuessKind(text, n)));
+      const keys = (window.state.apiKeys || []).map(k => String(k).trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      if (!keys.length) return { items: fallback(), ai: false };
+      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+      const prompt = `Bạn là trợ lý đọc truyện, giúp lọc ra NHÂN VẬT (con người) trong cốt truyện.
+[CỐT TRUYỆN]
+${String(text).slice(0, 6000)}
+
+[TÊN MÁY DÒ ĐƯỢC - CẦN LỌC]
+${names.length ? names.map(n => '- ' + n).join('\n') : '(không có)'}
+
+[QUY TẮC]
+1. CHỈ trả về những tên là MỘT NGƯỜI cụ thể trong truyện: biết nói, hành động, xuất hiện, có vai trò.
+2. TUYỆT ĐỐI không trả về tên bang hội, hội, môn phái, gia tộc, tổ chức, công ty, nhóm giang hồ (ví dụ "bang Hồng Hưng", "Đông Tinh" nếu trong truyện là tên bang), địa danh, con đường, toà nhà, món đồ, hay chức danh chung (bác sĩ, cảnh sát, phục vụ... nếu không phải một nhân vật có tên riêng).
+3. Đọc cả cốt truyện và bổ sung những NGƯỜI có trong truyện mà máy dò còn thiếu.
+4. Không bịa tên ngoài cốt truyện; gộp tên trùng; tối đa 15 người.
+5. note: một câu ngắn dưới 12 từ nói người này là ai trong truyện.
+6. isPerson luôn là true (chỉ trả về người).
+
+Trả về ĐÚNG JSON thuần:
+{"items":[{"name":"Nguyễn Văn An","isPerson":true,"kind":"người","note":"kiếm khách trẻ đi tìm sư phụ"}]}`;
+      for (const key of keys) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) continue;
+          let raw = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').replace(/```json/g, '').replace(/```/g, '').trim();
+          const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+          if (a < 0 || b < 0) continue;
+          const items = (JSON.parse(raw.slice(a, b + 1)).items || [])
+            .filter(it => it && typeof it.name === 'string' && it.name.trim())
+            .filter(it => it.isPerson !== false)
+            .map(it => ({
+              name: String(it.name).trim().slice(0, 40),
+              person: true,
+              kind: 'người',
+              note: String(it.note || '').trim().slice(0, 140)
+            })).slice(0, 15);
+          if (items.length) return { items, ai: true };
+        } catch (err) {}
+      }
+      return { items: fallback(), ai: false };
+    }
+    function scanMergeItems(text, aiItems, names, existingNames) {
+      const out = [], seen = new Set();
+      const exists = (existingNames || []).map(scanKeyName);
+      const push = (it) => {
+        const k = scanKeyName(it.name);
+        if (!k || seen.has(k)) return;
+        seen.add(k);
+        out.push({
+          name: String(it.name).trim(), person: !!it.person,
+          kind: it.person ? 'người' : (it.kind || 'khác'), note: it.note || '',
+          already: exists.includes(k)
+        });
+      };
+      (aiItems || []).forEach(it => {
+        // AI lỡ gán "người" cho tên rõ ràng là bang hội/địa danh thì vẫn loại
+        const guess = scanGuessKind(text, it.name);
+        push(guess.person ? it : Object.assign({}, it, { person: false, kind: guess.kind }));
+      });
+      (names || []).forEach(n => push(Object.assign({ name: n }, scanGuessKind(text, n))));
+      return out.slice(0, 18);
+    }
+    let scanPickCtx = null;
+    function openScanPicker(items, ctx) {
+      const box = document.getElementById('scan-pick-list');
+      if (!box) return;
+      const people = items.filter(it => it.person);
+      scanPickCtx = { items: people, story: ctx.story, statusEl: ctx.statusEl || null };
+      box.innerHTML = people.map((it, i) => {
+        const checked = !it.already;
+        return `<label style="display:flex;gap:8px;align-items:flex-start;padding:8px 9px;border:1px solid ${it.already ? '#e2e8f0' : '#cbd5e0'};border-radius:10px;margin-bottom:6px;background:${it.already ? '#f7fafc' : '#fff'};${it.already ? 'opacity:.62;' : ''}">
+          <input type="checkbox" data-i="${i}" ${checked ? 'checked' : ''} ${it.already ? 'disabled' : ''} style="margin-top:2px;width:17px;height:17px;flex:none;">
+          <span style="min-width:0;flex:1;">
+            <span style="font-weight:bold;font-size:0.88rem;">${escapeHtml(it.name)}</span>
+            <span style="font-size:0.7rem;color:#718096;">${it.already ? ' · đã có' : ''}</span>
+            ${it.note ? `<span style="display:block;font-size:0.72rem;color:#4a5568;line-height:1.35;">${escapeHtml(it.note)}</span>` : ''}
+          </span></label>`;
+      }).join('');
+      openModal('modal-scan-pick');
+    }
+    function confirmScanPick() {
+      const ctx = scanPickCtx;
+      const picked = [];
+      document.querySelectorAll('#scan-pick-list input[type=checkbox]').forEach(el => {
+        if (!el.checked || el.disabled) return;
+        const it = ctx && ctx.items[+el.dataset.i];
+        if (it) picked.push(it.name);
+      });
+      scanPickCtx = null;
+      closeModal('modal-scan-pick');
+      if (!ctx) return;
+      const added = picked.length ? addScannedChars(ctx.story, picked) : [];
+      if (ctx.story) ctx.story.updatedAt = Date.now();
+      saveStorage();
+      renderCharacterList();
+      if (ctx.statusEl) {
+        ctx.statusEl.innerText = added.length
+          ? 'Đã thêm: ' + added.join(', ') + '. Bấm vào nhân vật để thêm tính cách/avatar.'
+          : (picked.length ? 'Các nhân vật này đã có trong danh sách.' : 'Không thêm nhân vật nào.');
+      }
+    }
+    async function startCharScan(opts) {
+      const story = opts && opts.story;
+      if (!story) return;
+      const status = opts.statusEl || null;
+      const text = String(opts.text || '');
+      if (!text.trim()) { if (status) status.innerText = 'Chưa có cốt truyện để quét.'; return; }
+      const existing = (story.characters || []).map(c => c.name);
+      const names = scanStoryCharNames(text, existing);
+      if (status) status.innerText = 'Đang đọc cốt truyện...';
+      let res;
+      try { res = await aiScanNames(text, names); }
+      catch (e) { res = { items: names.map(n => Object.assign({ name: n }, scanGuessKind(text, n))) }; }
+      const items = scanMergeItems(text, res.items, names, existing).filter(it => it.person);
+      const fresh = items.filter(it => !it.already);
+      if (!fresh.length) {
+        if (status) status.innerText = 'Không tìm thấy người mới nào trong cốt truyện.';
         return;
       }
-      if (!confirm(`Tìm thấy nhân vật mới: ${names.join(', ')}.\nThêm vào danh sách nhân vật?`)) {
-        if (status) status.innerText = 'Đã bỏ qua: ' + names.join(', ');
-        return;
-      }
-      const added = addScannedChars(story, names);
-      story.updatedAt = Date.now();
-      saveStorage(); renderCharacterList();
-      if (status) status.innerText = added.length ? 'Đã thêm: ' + added.join(', ') + '. Bấm vào nhân vật để thêm tính cách/avatar.' : 'Các nhân vật này đã có trong danh sách.';
+      if (status) status.innerText = '';
+      openScanPicker(items, { story, statusEl: status });
     }
 
     function openAddCharModal() {
@@ -1104,6 +1229,62 @@ Trả về ĐÚNG JSON thuần, không markdown:
     // Trong lời thoại, **...** là in đậm/nhấn mạnh -> đổi sang '...' (không đụng tới từ che kiểu đ**)
     function tidyDialogue(t) {
       return (t || '').replace(/\*\*(?!\s)([^*]+?)(?<!\s)\*\*/g, "'$1'");
+    }
+    // ===== Chặn ký tự lạ / tiếng nước ngoài lọt vào lời AI =====
+    const AI_FULLWIDTH_MAP = { '　': ' ', '！': '!', '＂': '"', '＇': "'", '（': '(', '）': ')', '，': ',', '．': '.', '：': ':', '；': ';', '？': '?', '、': ',', '。': '.', '【': '[', '】': ']', '［': '[', '］': ']' };
+    function scrubAiText(t) {
+      let s = String(t || ''), bad = 0;
+      s = s.replace(/[\u3000\uFF01\uFF02\uFF07\uFF08\uFF09\uFF0C\uFF0E\uFF1A\uFF1B\uFF1F\u3001\u3002\u3010\u3011\uFF3B\uFF3D]/g, ch => { const m = AI_FULLWIDTH_MAP[ch]; if (m === undefined) bad++; return m || ''; });
+      s = s.replace(/[\u0370-\u03FF\u0400-\u052F\u0530-\u058F\u0590-\u05FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u10A0-\u10FF\u1100-\u11FF\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF\uFFE0-\uFFEE\uFFFD]/g, () => { bad++; return ''; });
+      s = s.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD\uE000-\uF8FF\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+      s = s.replace(/\s+([,.;:!?%…])/g, '$1');
+      s = s.replace(/([,;:])(?=\p{L})/gu, '$1 ').replace(/([.!?])(?=\p{L})/gu, '$1 ');
+      s = s.replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      return { text: s, bad };
+    }
+    const AI_UNACCENTED = /\b(khong|nguoi|nhung|duoc|trong|phai|cung|voi|minh|toi|nay|roi|sao|lam|noi|den|vao|len|xuong|nhieu|khac|chi|anh|em|ban)\b/gi;
+    function aiTextNeedsFix(scrub) {
+      if (scrub.bad > 0) return true;
+      const body = scrub.text.replace(/\[[^\]]*\]/g, ' ');
+      return (body.match(AI_UNACCENTED) || []).length >= 2;
+    }
+    // Nhờ AI soát lại chính tả/ngữ pháp khi phát hiện dấu hiệu lỗi (chỉ sửa câu chữ, giữ nguyên nội dung)
+    async function fixAiVietnamese(text) {
+      const first = scrubAiText(text);
+      let out = first.text;
+      if (!out || !aiTextNeedsFix(first)) return out;
+      const keys = (window.state.apiKeys || []).map(k => String(k).trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      if (!keys.length) return out;
+      const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+      const prompt = `Bạn là biên tập viên tiếng Việt. Sửa lỗi chính tả, dấu thanh, ngữ pháp, từ dùng sai và thay mọi ký tự lạ/tiếng nước ngoài lọt vào bằng tiếng Việt đúng nghĩa trong đoạn văn dưới đây.
+
+[QUY TẮC]
+- Giữ nguyên nội dung, cảm xúc, tên riêng và thứ tự các dòng; không thêm lời bình, không giải thích.
+- Giữ nguyên định dạng: dòng [Tên Nhân Vật]:, đoạn *hành động*, lời thoại "...", các thẻ [SYSTEM_TRANSFER: ...] và [AFFECTION: ...] nếu có.
+- Chỉ dùng tiếng Việt có dấu, câu đủ chủ ngữ - vị ngữ, đúng chính tả và đúng ngữ cảnh.
+- Chỉ trả về đoạn văn đã sửa, không kèm gì khác.
+
+[ĐOẠN VĂN]
+${out}`;
+      for (const key of keys) {
+        const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 45000);
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.15 } }),
+            signal: ctl.signal
+          });
+          const data = await res.json().catch(() => ({}));
+          clearTimeout(tm);
+          if (!res.ok) continue;
+          const raw = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').replace(/```[a-z]*/gi, '').replace(/```/g, '').trim();
+          const fixed = scrubAiText(raw).text;
+          if (!fixed || fixed.length < out.length * 0.55 || fixed.length > out.length * 1.8) continue;
+          if (['[SYSTEM_TRANSFER', '[AFFECTION'].some(tg => out.indexOf(tg) >= 0 && fixed.indexOf(tg) < 0)) continue;
+          return fixed;
+        } catch (e) { clearTimeout(tm); }
+      }
+      return out;
     }
     // Dọn lỗi chính tả nhỏ khi hiển thị (không đụng vào dữ liệu đã lưu)
     function polishVi(t) {
@@ -1276,17 +1457,47 @@ Trả về ĐÚNG JSON thuần, không markdown:
     }
 
     // Xác định người nói: nhân vật trong truyện, nhiều người ("A&B"), hoặc nhân vật phụ có thoại
+    // "Nguyễn Văn An" còn được gọi "Văn An", "An" — mọi cách gọi đều là cùng một nhân vật
+    const NAME_PRONOUNS = new Set('anh em chi co chu bac ong ba no han ta minh ban thay cau mo'.split(' '));
+    function charNameParts(name) {
+      return String(name || '').replace(/[\[\]]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    }
+    function charAliasLabels(name) {
+      const p = charNameParts(name);
+      if (!p.length) return [];
+      const out = [];
+      if (p.length >= 2) out.push(p.slice(1).join(' '));
+      if (p.length >= 3) out.push(p.slice(2).join(' '));
+      out.push(p[p.length - 1]);
+      if (p.length >= 3) out.push(p[0] + ' ' + p[p.length - 1]);
+      return [...new Set(out)].filter(x => x && !NAME_PRONOUNS.has(foldVi(x)));
+    }
+    function charAliases(name) {
+      const full = foldVi(charNameParts(name).join(' '));
+      return [...new Set([full, ...charAliasLabels(name).map(foldVi)])].filter(Boolean);
+    }
+
     function resolveSpeakers(speakerRaw, restText, story) {
       if (!speakerRaw) return [];
       const chars = (story && story.characters) || [];
-      const find = (n) => chars.find(c => (c.name || '').trim().toLowerCase() === n.trim().toLowerCase());
       const mk = (c) => ({ id: c.id, name: c.name, avatar: c.avatar || DEFAULT_LOGO });
+      const norm = (s) => foldVi(String(s || '').replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim());
 
-      const whole = find(speakerRaw);
+      // Khớp họ tên đầy đủ hoặc bí danh; bí danh phải trỏ đúng 1 nhân vật để tránh nhầm người
+      const matchChar = (label) => {
+        const key = norm(label);
+        if (!key) return null;
+        const exact = chars.find(c => norm(c.name) === key);
+        if (exact) return exact;
+        const hits = chars.filter(c => charAliases(c.name).includes(key));
+        return hits.length === 1 ? hits[0] : null;
+      };
+
+      const whole = matchChar(speakerRaw);
       if (whole) return [mk(whole)];
 
-      const userName = ((window.state.persona && window.state.persona.name) || '').trim().toLowerCase();
-      if (speakerRaw.trim().toLowerCase() === userName) return [];
+      const userName = norm((window.state.persona && window.state.persona.name) || '');
+      if (userName && norm(speakerRaw) === userName) return [];
 
       const q = normQuotes(restText);
       const hasDlg = (q.match(/"/g) || []).length >= 2;
@@ -1296,7 +1507,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       if (parts.length > 1) {
         const out = [];
         parts.forEach(p => {
-          const f = find(p);
+          const f = matchChar(p);
           if (f) { if (!out.some(o => o.name === f.name)) out.push(mk(f)); }
           else if (hasDlg && okNpcName(p)) out.push({ name: p, avatar: npcAvatar(p) });
         });
@@ -1585,7 +1796,11 @@ Trả về ĐÚNG JSON thuần, không markdown:
         });
       }
 
-      let charsPrompt = ((story && story.characters) || []).map(c => `- ${c.name}: ${c.personality}`).join('\n');
+      let charsPrompt = ((story && story.characters) || []).map(c => {
+        const al = charAliasLabels(c.name);
+        const aliasNote = al.length ? ` (người chơi có thể gọi: ${al.join(', ')})` : '';
+        return `- ${c.name}${aliasNote}: ${c.personality}`;
+      }).join('\n');
 
       const hintBlock = hintText ? `\n[GHI CHÚ HỆ THỐNG CHO LƯỢT NÀY]\n${hintText}\n` : '';
       const activeModeNow = (window.state.activeMode || {})[storyId];
@@ -1628,6 +1843,12 @@ ${charsPrompt}
 ${charAffectionSummary}${cohabBlock}${petMemBlock}
 5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
 
+[NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
+- Tên đầy đủ, tên riêng, tên gọi tắt và biệt danh của cùng một nhân vật đều là CÙNG MỘT NGƯỜI. Ví dụ nhân vật "Nguyễn Văn An" thì "Văn An", "An", "bạn An" đều là An.
+- Người chơi gọi nhân vật bằng bất kỳ cách nào ở trên → nhân vật đó là người xuất hiện, phản hồi, lên tiếng (dòng thoại ghi ĐÚNG tên đầy đủ trong danh sách, không ghi tên gọi tắt).
+- Người chơi nhắc tới nhân vật (kể cả gián tiếp qua đại từ, biệt danh) → hiểu là đang nói về nhân vật đó, không coi là người mới.
+- TUYỆT ĐỐI không tạo thêm nhân vật trùng hoặc gần giống một nhân vật đã có chỉ vì tên được gọi khác đi.
+
 [QUY TẮC CHIỀU SÂU THÂN MẬT & MỐI QUAN HỆ]
 - Nếu mối quan hệ là NGƯỜI YÊU / LÃNG MẠN và Level thân mật cao (Lv.10, Lv.20, Lv.40, Lv.60 trở lên): Nhân vật sẽ cực kỳ bám người, quấn quýt, thể hiện tình cảm mãnh liệt, nồng cháy. Các phân cảnh thân mật, âu yếm (18+) được miêu tả chi tiết, cảm xúc và sâu sắc hơn.
 - Nếu mối quan hệ là TRI KỶ / ANH EM / BẠN BÈ và Level cao: Nhân vật trở thành chỗ dựa vững chắc, sẵn sàng tâm sự, thấu hiểu, giúp đỡ nhiệt tình hết mình khi người chơi gặp khó khăn.
@@ -1642,7 +1863,11 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
 - QUY TẮC THỜI GIAN: ĐƯỢC PHÉP chuyển/nhảy thời gian (sang buổi sau, hôm sau, vài ngày sau...) khi mạch truyện hợp lý, nhưng phải nói rõ mốc thời gian mới và không bỏ qua phản ứng hay hậu quả của những gì vừa xảy ra.
 - CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ tiến triển một bước nhỏ, hợp lý.
-- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không đổi hướng đột ngột, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có.
+- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có. Không đổi hướng đột ngột, TRỪ KHI người chơi chủ động đổi hướng.
+- ƯU TIÊN DIỄN BIẾN HIỆN TẠI: Cốt truyện là nền tảng phải bám sát để giữ đúng thế giới và nhân vật, nhưng khi người chơi tự biến tấu thêm tình tiết, thay đổi chi tiết nhỏ hay đẩy câu chuyện sang hướng mới thì DIỄN BIẾN HIỆN TẠI do người chơi tạo ra là sự thật mới và được ưu tiên.
+  + Tiếp nhận thay đổi đó một cách tự nhiên, có phản ứng hợp lý, không phủ định, không kéo câu chuyện quay lại đoạn cũ, không nhắc "theo cốt truyện thì..." hay tỏ ra khó chịu.
+  + Khéo léo dung hoà: giữ được tinh thần, bối cảnh và tính cách nhân vật của cốt truyện, đồng thời nối phần người chơi vừa thêm vào cho liền mạch, như thể cốt truyện vốn đã đi theo hướng đó.
+  + Chỉ khi người chơi thêm chi tiết phá vỡ hoàn toàn logic đã thiết lập (mâu thuẫn trực tiếp với sự kiện đã xảy ra) thì mới xử lý nhẹ nhàng bằng phản ứng của nhân vật, không gay gắt sửa sai người chơi.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 
 [TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
@@ -1656,12 +1881,14 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 - Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
 
 [CHÍNH TẢ & CÂU CÚ - BẮT BUỘC]
+- Toàn bộ câu trả lời CHỈ dùng tiếng Việt có dấu. TUYỆT ĐỐI không chèn chữ Hán, chữ Nhật, chữ Hàn, chữ Nga, chữ Thái hay bất kỳ ký tự nước ngoài/ký tự lạ nào; không chen từ tiếng Anh vào câu (trừ tên riêng/thương hiệu bắt buộc phải giữ nguyên).
 - Viết đúng chính tả tiếng Việt, đủ dấu thanh, đúng dấu hỏi/ngã; không viết tắt kiểu "k", "ko", "kh", "j", "dc", "đc", "vs", "ntn", "r", "uk".
+- Dùng từ đúng nghĩa và đúng ngữ cảnh của câu, đúng tính cách/nghề nghiệp/vùng miền của nhân vật; không dùng từ lệch nghĩa, không dịch máy từng chữ, không ghép từ vô nghĩa.
 - Mỗi câu phải đủ chủ ngữ - vị ngữ và kết thúc bằng dấu câu (., ?, ! hoặc …). Không viết câu rời rạc thiếu vị ngữ, không nối nhiều ý bằng dấu phẩy thành một câu dài lê thê.
 - Viết hoa đầu câu, sau dấu chấm/hỏi/than và tên riêng. Không viết hoa giữa câu cho đẹp.
 - Không dùng dấu câu lặp (!!!, ???, ....); không đặt dấu cách trước dấu phẩy/chấm; mỗi dấu phẩy/chấm chỉ một dấu cách phía sau.
 - Xưng hô thống nhất trong toàn bộ câu trả lời và đúng thiết lập nhân vật; không đổi cách gọi giữa các câu.
-- Trước khi trả lời, tự đọc lại từng câu: nếu sai chính tả, thiếu dấu, lặp từ hoặc lủng củng thì viết lại cho đúng rồi mới xuất ra.
+- Trước khi trả lời, tự đọc lại từng câu: nếu sai chính tả, thiếu dấu, lặp từ, lẫn ký tự lạ hoặc lủng củng thì viết lại cho đúng rồi mới xuất ra.
 
 [QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
 - Lời thoại luôn đặt trong một cặp ngoặc kép thẳng "..." duy nhất cho mỗi câu nói.
@@ -1771,6 +1998,9 @@ ${modeBlock}${hintBlock}
         await tryKeys();
         if (!netFail) break;
       }
+
+      // Soát lại chính tả/ngữ pháp trước khi lưu (chỉ khi thấy dấu hiệu lỗi, tránh làm chậm mọi lượt)
+      if (responseText) responseText = await fixAiVietnamese(responseText);
 
       if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
       

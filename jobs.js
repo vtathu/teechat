@@ -29,7 +29,7 @@
         if (!window.state.jobPicked) jobTxt = 'Lần đầu được chọn nghề tự do!';
         else if (cj.ok) jobTxt = 'Đã có thể đổi nghề tự do!';
         else jobTxt = `Cần đợi thêm ${cj.left} phút nữa mới được đổi nghề.`;
-        limitInfo.innerText = `Lượt làm việc: ${window.state.dailyWorkCount}/8 | Lượt thủ công: ${window.state.dailyCraftCount || 0}/4 | ${jobTxt}`;
+        limitInfo.innerText = `Lượt làm việc: ${window.state.dailyWorkCount}/8 | Lượt thủ công: ${window.state.dailyCraftCount || 0}/${(typeof CRAFT_CFG !== 'undefined' && CRAFT_CFG.dailyRuns) || 3} | ${jobTxt}`;
       }
 
       renderShopUI();
@@ -38,6 +38,7 @@
       renderCraftBag();
       updateCraftPreview();
       renderMissionTab();
+      try { if (window.Biz && typeof Biz.paintPending === 'function') Biz.paintPending(); } catch (e) {}
     }
 
     function changeJobSelection() {

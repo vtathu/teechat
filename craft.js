@@ -10,7 +10,7 @@
     const THEME_HUE = { cake: 28, flower: 335, necklace: 200, lego: 130, teddy: 265 };
     const CRAFT_COLS = 9, CRAFT_ROWS = 12, CRAFT_CELLS = 108;
     // Các số cân bằng game: chỉnh ở đây nếu thấy quá dễ / quá khó
-    // Lượt mua nguyên liệu dùng chung mọi ván: tối đa 10, hồi 1 lượt sau mỗi 90 phút
+    // Lượt mua nguyên liệu dùng chung mọi ván: tối đa 8, hồi 1 lượt sau mỗi 90 phút
     const BUY_REGEN_MS = 90 * 60000;
     function buyTokens() {
       const st = window.state, now = nowTs(), MAX = CRAFT_CFG.maxBuys;
@@ -37,8 +37,21 @@
       return `${BOX_TIERS[tier].icon} Box ${BOX_TIERS[tier].label} ${CRAFTS[t].label}`;
     }
     function buyNextMs() { const b = buyTokens(); return b.n >= CRAFT_CFG.maxBuys ? 0 : Math.max(0, b.ts + BUY_REGEN_MS - nowTs()); }
-    const CRAFT_CFG = { startPieces: 60, buyPieces: 24, maxBuys: 10, orderSlots: 3, dailyRuns: 4,
-      growEvery: 5, growCount: 2, stoneChance: 0.3, stoneMax: 6, stoneClean: 60000 };
+    const CRAFT_CFG = { startPieces: 40, buyPieces: 18, maxBuys: 8, orderSlots: 3, dailyRuns: 3,
+      growEvery: 8, growCount: 1, stoneChance: 0.45, stoneMax: 10, stoneClean: 120000 };
+    // Tiền công mỗi lần ghép (tính theo cấp tạo ra) — chơi càng nhiều càng có tiền, không cần đợi bán món Lv10
+    const craftWage = (lv) => Math.round(1000 * Math.pow(1.45, lv - 1) / 100) * 100;
+    // Chuỗi ghép liên tiếp cùng chủ đề trong 10 giây: mỗi nhịp +10% công, tối đa ×1.8
+    const COMBO_WINDOW_MS = 10000, COMBO_MAX = 9;
+    // Việc hôm nay: 3 mục tiêu, mỗi ngày làm lại từ đầu, thưởng tiền + box
+    const CRAFT_DAILY_GOALS = [
+      { id: 'merges', need: 40, money: 300000, tier: 'normal', label: 'Gộp 40 lần' },
+      { id: 'orders', need: 3, money: 500000, tier: 'silver', label: 'Giao 3 đơn hàng' },
+      { id: 'best', need: 8, money: 900000, tier: 'gold', label: 'Tạo 1 món Lv.8 trở lên' }
+    ];
+    // Đơn gấp: chỉ 1 đơn, hết 15 phút thì đổi đơn khác — phải vào game mới bắt được, thưởng ×2.5
+    const RUSH_MS = 15 * 60000;
+
     // Đá rác: ô đặc biệt không ghép được, chỉ dọn bằng tiện ích (viên đầu mỗi ván miễn phí)
     const STONE = 9900, isStone = (c) => c === STONE;
     const stoneCount = (s) => s.board.filter(isStone).length;
@@ -73,6 +86,37 @@
       return Math.round(base * craftMarketMult(type) / 1000) * 1000;
     }
     function craftSellable(it) { return it.level >= CRAFT_SELL_MIN || !it.giftOnly; }
+
+    // ---------- Việc hôm nay & tiến độ trong ngày ----------
+    function craftDayKey() { return new Date(nowTs() + 7 * 3600000).toISOString().slice(0, 10); }
+    function craftDaily() {
+      const st = window.state, d = craftDayKey();
+      let x = st.craftDaily;
+      if (!x || x.d !== d || typeof x.merges !== 'number') x = st.craftDaily = { d, merges: 0, orders: 0, best: 0, claimed: {} };
+      return x;
+    }
+    function craftBump(key, v) {
+      const d = craftDaily();
+      if (key === 'best') d.best = Math.max(d.best || 0, v || 0);
+      else d[key] = (d[key] || 0) + (v || 1);
+    }
+    function claimCraftDaily(id) {
+      const g = CRAFT_DAILY_GOALS.find(x => x.id === id), d = craftDaily();
+      if (!g || (d.claimed || {})[id]) return;
+      const cur = g.id === 'best' ? (d.best || 0) : (d[id] || 0);
+      if (cur < g.need) return craftToast('Chưa đạt mục tiêu này');
+      d.claimed = d.claimed || {};
+      d.claimed[id] = true;
+      window.state.walletBalance = (window.state.walletBalance || 0) + g.money;
+      const t = THEMES[Math.floor(Math.random() * THEMES.length)];
+      addBox(t, g.tier, 1);
+      mtrack('craftDaily', 1);
+      saveStorage();
+      renderCraftBoard();
+      renderCraftSheet('orders');
+      refreshWalletDisplay();
+      craftToast(`✅ Xong việc: +${g.money.toLocaleString('vi-VN')}đ + ${BOX_TIERS[g.tier].icon} Box ${BOX_TIERS[g.tier].label} ${CRAFTS[t].label}`);
+    }
     function refreshWalletDisplay() {
       const el = document.getElementById('life-wallet-display');
       if (el) el.innerText = (window.state.walletBalance || 0).toLocaleString('vi-VN') + ' VNĐ';
@@ -99,7 +143,7 @@
       if (info) {
         info.innerHTML = '<b>Thời giá hôm nay:</b> ' + THEMES.map(k => `${CRAFTS[k].label.split(' ')[0]} ×${craftMarketMult(k).toFixed(2)}`).join(' | ') +
           `<br>Giá bán gốc (chỉ từ Lv10): ` + [10, 11, 12, 13, 14, 15].map(l => `Lv${l} ${(CRAFT_PRICE_HI[l]).toLocaleString('vi-VN')}`).join(' | ') +
-          `<br>Có tối đa ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền), hồi 1 lượt sau mỗi 90 phút. Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Cứ 5 lần ghép bàn mọc thêm 2 miếng và đôi khi có đá 🪨 (dọn trong 🧰 Tiện ích). Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
+          `<br>Có tối đa ${CRAFT_CFG.maxBuys} lượt mua nguyên liệu (tốn tiền), hồi 1 lượt sau mỗi 90 phút. Thêm nguyên liệu bằng box từ tab Nhiệm Vụ. Cứ ${CRAFT_CFG.growEvery} lần ghép bàn mọc thêm ${CRAFT_CFG.growCount} miếng và đôi khi có đá 🪨 (dọn trong 🧰 Tiện ích). Mỗi lần ghép có tiền công, ghép liên tiếp cùng chủ đề trong 10 giây được nhân thưởng 🔥. Tối đa ${CRAFT_CFG.dailyRuns} ván mỗi ngày: đã chơi ${window.state.dailyCraftCount || 0}/${CRAFT_CFG.dailyRuns}.`;
       }
       const btn = document.getElementById('craft-start-btn');
       if (btn) btn.innerText = window.state.craftSession ? '▶ Tiếp tục ván đang làm' : '🛠 Bắt Đầu Ván Mới';
@@ -237,7 +281,7 @@
     }
 
     // ---------- Đơn hàng (tùy chọn) ----------
-    const orderUnit = (lv) => Math.round(2000 * Math.pow(1.8, lv - 2) / 100) * 100;
+    const orderUnit = (lv) => Math.round(7000 * Math.pow(1.8, lv - 2) / 100) * 100;
     function genOrder(s) {
       const bestAll = Math.max(1, ...THEMES.map(t => s.best[t] || 0));
       const maxLv = Math.max(3, Math.min(9, bestAll + 1));
@@ -245,7 +289,7 @@
       const two = lv <= 5 && Math.random() < 0.4;
       const ts = jgShuffle(THEMES.slice()).slice(0, two ? 2 : 1);
       const need = ts.map(t => ({ t, lv: two ? Math.max(2, lv - jgRand(0, 1)) : lv, n: 1 }));
-      const money = Math.round(need.reduce((a, x) => a + orderUnit(x.lv) * x.n, 0) * 1.5 / 100) * 100;
+      const money = Math.round(need.reduce((a, x) => a + orderUnit(x.lv) * x.n, 0) * 1.6 / 100) * 100;
       const o = { id: 'o' + Date.now() + Math.floor(Math.random() * 1e5), need, money };
       if (Math.random() < 0.4) o.box = { theme: need[0].t, tier: Math.max(...need.map(x => x.lv)) >= 7 ? 'silver' : 'normal' };
       return o;
@@ -276,6 +320,7 @@
       window.state.walletBalance = (window.state.walletBalance || 0) + o.money;
       if (o.box) addBox(o.box.theme, o.box.tier, 1);
       s.orders[k] = genOrder(s);
+      craftBump('orders', 1);
       mtrack('orders', 1);
       craftSel = -1;
       craftPersist(true);
@@ -285,16 +330,51 @@
       craftToast(`✅ Giao đơn xong! +${o.money.toLocaleString('vi-VN')}đ${o.box ? ' + 1 box' : ''}`);
     }
 
+    // Đơn gấp: 1 đơn duy nhất, làm trong 15 phút, thưởng ×2.5 kèm box bạc
+    function genRushOrder(s) {
+      const bestAll = Math.max(1, ...THEMES.map(t => s.best[t] || 0));
+      const lv = Math.max(2, Math.min(9, bestAll));
+      const t = THEMES[Math.floor(Math.random() * THEMES.length)];
+      return { id: 'r' + Date.now() + Math.floor(Math.random() * 1e5), t, lv,
+        money: Math.round(orderUnit(lv) * 2.5 / 100) * 100, exp: nowTs() + RUSH_MS };
+    }
+    function rushNow(s) {
+      if (!s.rush || !s.rush.exp || s.rush.exp <= nowTs()) s.rush = genRushOrder(s);
+      return s.rush;
+    }
+    function rushPick(s, r) { return orderPick(s, { need: [{ t: r.t, lv: r.lv, n: 1 }] }); }
+    function deliverRush() {
+      const s = window.state.craftSession;
+      if (!s) return;
+      const r = rushNow(s);
+      const picks = rushPick(s, r);
+      if (!picks) return craftToast('Chưa đủ nguyên liệu cho đơn gấp!');
+      picks.forEach(i => { s.board[i] = 0; });
+      window.state.walletBalance = (window.state.walletBalance || 0) + r.money;
+      addBox(r.t, 'silver', 1);
+      craftBump('orders', 1);
+      mtrack('orders', 1);
+      s.rush = genRushOrder(s);
+      craftSel = -1;
+      craftPersist(true);
+      renderCraftBoard();
+      renderCraftSheet('orders');
+      refreshWalletDisplay();
+      craftToast(`⏱ Giao đơn gấp xong! +${r.money.toLocaleString('vi-VN')}đ + 🥈 Box bạc`);
+    }
+
     // ---------- Ván chơi ----------
     let craftSel = -1, craftPop = -1, craftSaveTimer = null, craftSheetKind = null, craftBound = false, craftDrag = null, craftToastTimer = null;
 
     function newCraftSession() {
-      const s = { v: 2, autoUsed: false, board: Array(CRAFT_CELLS).fill(0), buys: 0, spent: 0, merges: 0, best: {}, orders: [] };
+      const s = { v: 2, autoUsed: false, board: Array(CRAFT_CELLS).fill(0), buys: 0, spent: 0, merges: 0, best: {}, orders: [], wage: 0, combo: null, rush: null };
       THEMES.forEach(t => { s.best[t] = 0; });
       const cells = jgShuffle(Array.from({ length: CRAFT_CELLS }, (_, i) => i)).slice(0, CRAFT_CFG.startPieces);
       cells.forEach((i, k) => { s.board[i] = ccode(k % THEMES.length, 1); });
       recalcBest(s);
       for (let k = 0; k < CRAFT_CFG.orderSlots; k++) s.orders.push(genOrder(s));
+      craftDaily();
+      s.rush = genRushOrder(s);
       return s;
     }
 
@@ -369,6 +449,12 @@
       if (!s) return;
       const m = document.getElementById('craft-hud-money');
       if (m) m.innerText = '💲 ' + (window.state.walletBalance || 0).toLocaleString('vi-VN');
+      const cb = document.getElementById('craft-hud-combo');
+      if (cb) {
+        const c = s.combo, fresh = c && nowTs() - c.at <= COMBO_WINDOW_MS && c.n > 1;
+        if (fresh) { cb.innerText = '🔥 ×' + (1 + 0.1 * (c.n - 1)).toFixed(1); cb.style.display = ''; }
+        else cb.style.display = 'none';
+      }
       const ch = document.getElementById('craft-chips');
       if (ch) {
         ch.innerHTML = THEMES.map(t => {
@@ -381,11 +467,16 @@
       const bb = document.getElementById('craft-btn-buy'); if (bb) bb.innerText = `🛒 Mua (${left})`;
       const xb = document.getElementById('craft-btn-box'); if (xb) xb.innerText = `🎁 Box (${totalBoxes()})`;
       const tb = document.getElementById('craft-btn-tools'); if (tb) { const sc = stoneCount(s); tb.innerText = sc ? `🧰 Tiện ích 🪨${sc}` : '🧰 Tiện ích'; }
-      const ob = document.getElementById('craft-btn-orders'); if (ob) ob.innerText = `📋 Đơn (${s.orders.length})`;
+      const ob = document.getElementById('craft-btn-orders');
+      if (ob) {
+        const dl = craftDaily();
+        const ready = CRAFT_DAILY_GOALS.filter(g => { const cur = g.id === 'best' ? (dl.best || 0) : (g.id === 'merges' ? dl.merges : dl.orders); return cur >= g.need && !(dl.claimed || {})[g.id]; }).length;
+        ob.innerText = `📋 Đơn (${s.orders.length})${ready ? ' 🎯' + ready : ''}`;
+      }
     }
 
     // ---------- Thao tác: chạm 2 ô hoặc kéo thả ----------
-    function craftAct(from, to) {
+    function craftAct(from, to, isAuto) {
       const s = window.state.craftSession;
       const b = s.board;
       if (from === to || !b[from]) return false;
@@ -398,11 +489,38 @@
         const th = THEMES[cTheme(b[to])], lv = cLv(b[to]);
         if (lv > (s.best[th] || 0)) s.best[th] = lv;
         craftPop = to;
+        // Tiền công theo cấp tạo ra, chuỗi ghép cùng chủ đề trong 10 giây được cộng dồn
+        let mult = 1;
+        if (isAuto) s.combo = null;
+        else {
+          const c = s.combo, now = nowTs();
+          const n = (c && c.t === th && now - c.at <= COMBO_WINDOW_MS) ? Math.min(COMBO_MAX, c.n + 1) : 1;
+          s.combo = { t: th, n, at: now };
+          mult = 1 + 0.1 * (n - 1);
+        }
+        const wage = Math.round(craftWage(lv) * mult);
+        window.state.walletBalance = (window.state.walletBalance || 0) + wage;
+        s.wage = (s.wage || 0) + wage;
+        craftBump('merges', 1);
+        craftBump('best', lv);
+        showCraftGain(wage, mult);
         mtrack('merges', 1);
         mtrack('craftBest', lv, 'max');
         return 'merge';
       }
       return false;
+    }
+
+    let craftGainTimer = null, craftComboTimer = null;
+    function showCraftGain(wage, mult) {
+      const el = document.getElementById('craft-hud-gain');
+      if (!el) return;
+      el.innerText = '+' + wage.toLocaleString('vi-VN') + 'đ';
+      el.style.display = '';
+      if (craftGainTimer) clearTimeout(craftGainTimer);
+      craftGainTimer = setTimeout(() => { el.style.display = 'none'; }, 1300);
+      if (craftComboTimer) clearTimeout(craftComboTimer);
+      craftComboTimer = setTimeout(() => updateCraftHud(), COMBO_WINDOW_MS + 80);
     }
 
     // Sắp xếp: gom cùng chủ đề thành cụm, trong cụm xếp theo cấp, không tốn lượt
@@ -424,7 +542,7 @@
       const pairs = [];
       Object.values(groups).forEach(g => { for (let k = 0; k + 1 < g.length; k += 2) pairs.push([g[k], g[k + 1]]); });
       if (!pairs.length) return craftToast('Chưa có cặp nào để gộp');
-      pairs.forEach(([a, b]) => craftAct(a, b));
+      pairs.forEach(([a, b]) => craftAct(a, b, true));
       s.autoUsed = true;
       craftSel = -1; craftPersist(true);
       craftToast(`⚡ Đã gộp ${pairs.length} cặp`);
@@ -564,7 +682,7 @@
       }
       craftSheetKind = kind;
       sh.dataset.kind = kind;
-      const titles = { buy: '🛒 Mua nguyên liệu', box: '🎁 Mở box nguyên liệu', orders: '📋 Đơn hàng (tùy chọn)', tools: '🧰 Tiện ích' };
+      const titles = { buy: '🛒 Mua nguyên liệu', box: '🎁 Mở box nguyên liệu', orders: '📋 Đơn hàng & việc hôm nay', tools: '🧰 Tiện ích' };
       let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="color:var(--app-dark-green);">${titles[kind]}</b><button class="btn btn-outline" onclick="renderCraftSheet(null)">✖</button></div>`;
       const free = freeCells(s);
 
@@ -595,11 +713,29 @@
         else html += `<div style="font-size:0.75rem;color:#718096;">Bàn còn ${free} ô trống (cần đủ chỗ để mở).</div>`;
       } else if (kind === 'orders') {
         html += '<div style="font-size:0.8rem;color:#718096;margin-bottom:6px;">Giao đủ món (đúng cấp hoặc cao hơn) để nhận tiền, có thể kèm box. Làm hay không tùy bạn.</div>';
+        const r = rushNow(s), rInfo = CRAFTS[r.t].chain[r.lv - 1], okR = !!rushPick(s, r);
+        const mins = Math.max(1, Math.ceil((r.exp - nowTs()) / 60000));
+        html += `<div class="shop-item-row" style="margin-bottom:8px;border:2px solid #ed8936;border-radius:10px;padding:6px;background:#fffaf0;">
+          <div style="min-width:0;"><div style="font-size:0.85rem;font-weight:bold;color:#c05621;">⏱ Đơn gấp · còn ${mins} phút</div>
+          <div style="font-size:0.82rem;">${rInfo[0]} ${rInfo[1]} (Lv.${r.lv}+)</div>
+          <div style="font-size:0.75rem;color:#2c7a7b;">💲 ${r.money.toLocaleString('vi-VN')} + 🥈 Box bạc</div></div>
+          <button class="btn ${okR ? 'btn-pink' : 'btn-outline'}" ${okR ? '' : 'disabled style="opacity:.5"'} onclick="deliverRush()">Giao</button></div>`;
         s.orders.forEach(o => {
           const ok = !!orderPick(s, o);
           const needTxt = o.need.map(n => { const info = CRAFTS[n.t].chain[n.lv - 1]; return `${info[0]} ${info[1]} (Lv.${n.lv}+)`; }).join(' + ');
           const reward = `💲 ${o.money.toLocaleString('vi-VN')}` + (o.box ? ` + ${BOX_TIERS[o.box.tier].icon} Box ${BOX_TIERS[o.box.tier].label} ${CRAFTS[o.box.theme].label.split(' ')[0]}` : '');
           html += `<div class="shop-item-row" style="margin-bottom:6px;"><div style="min-width:0;"><div style="font-size:0.85rem;font-weight:bold;">${needTxt}</div><div style="font-size:0.75rem;color:#2c7a7b;">${reward}</div></div><button class="btn ${ok ? 'btn-pink' : 'btn-outline'}" ${ok ? '' : 'disabled style="opacity:.5"'} onclick="deliverOrder('${o.id}')">Giao</button></div>`;
+        });
+        const dl = craftDaily();
+        html += '<div style="margin:10px 0 6px;font-weight:bold;color:var(--app-dark-green);">🎯 Việc hôm nay</div>';
+        CRAFT_DAILY_GOALS.forEach(g => {
+          const cur = g.id === 'best' ? (dl.best || 0) : (dl[g.id] || 0);
+          const done = cur >= g.need, got = !!(dl.claimed || {})[g.id];
+          const reward = `💲 ${g.money.toLocaleString('vi-VN')} + ${BOX_TIERS[g.tier].icon} Box ${BOX_TIERS[g.tier].label}`;
+          html += `<div class="shop-item-row" style="margin-bottom:6px;"><div style="min-width:0;">
+            <div style="font-size:0.85rem;font-weight:bold;">${g.label} <span style="color:#718096;font-weight:normal;">(${Math.min(cur, g.need)}/${g.need})</span></div>
+            <div style="font-size:0.75rem;color:#2c7a7b;">${reward}</div></div>
+            <button class="btn ${done && !got ? 'btn-pink' : 'btn-outline'}" ${done && !got ? '' : 'disabled style="opacity:.5"'} onclick="claimCraftDaily('${g.id}')">${got ? 'Đã nhận' : 'Nhận'}</button></div>`;
         });
       }
       sh.innerHTML = html;
@@ -692,14 +828,14 @@
         }
       }
 
-      const spent = s.spent || 0;
+      const spent = s.spent || 0, wage = s.wage || 0;
       window.state.craftSession = null;
       craftSel = -1;
       renderCraftSheet(null);
       document.getElementById('craft-screen').classList.remove('active');
       saveStorage();
       renderLifeModeUI();
-      alert(`${auto ? '' : '✅ '}Kết thúc ván!\n${summary}\nĐã chi nguyên liệu: ${spent.toLocaleString('vi-VN')} VNĐ.`);
+      alert(`${auto ? '' : '✅ '}Kết thúc ván!\n${summary}\nTiền công ghép trong ván: ${wage.toLocaleString('vi-VN')} VNĐ.\nĐã chi nguyên liệu: ${spent.toLocaleString('vi-VN')} VNĐ.`);
     }
 
     // Ván cũ (bàn 12x12 một chủ đề) tự kết thúc khi vào bản mới

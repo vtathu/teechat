@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=26" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=26"></noscript>
+  <link rel="stylesheet" href="style.css?v=27" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=27"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -146,7 +146,6 @@
         <button class="rail-btn" onclick="openFs('mall')"><span class="ri">🛍️</span><small>Teemall</small></button>
         <button class="rail-btn" onclick="openFs('life')"><span class="ri">🏡</span><small>Cuộc Sống</small></button>
         <button class="rail-btn" onclick="openFs('bag')"><span class="ri">🎒</span><small>Túi</small></button>
-        <button class="rail-btn" id="ui-mode-toggle" onclick="toggleUiMode()" title="Chuyển chế độ sáng/tối"><span class="ri">🌙</span><small>Tối</small></button>
       </div>
       <div class="scenarios-container" id="story-list"></div>
     </div>
@@ -229,7 +228,6 @@
       </div>
       <div class="scene-col left">
         <button class="scene-ic" onclick="openFs('work')"><span>💼</span><small>Đi làm</small></button>
-        <button class="scene-ic" onclick="openFs('biz')"><span>🏪</span><small>Tự kinh doanh</small></button>
         <button class="scene-ic" onclick="openFs('house')"><span>🏠</span><small>Nhà</small></button>
       <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
       </div>
@@ -276,6 +274,7 @@
           <div style="min-width:0;">
             <div style="font-size:0.86rem; font-weight:bold; color:var(--app-dark-green);">Muốn tự làm chủ?</div>
             <div style="font-size:0.72rem; color:var(--muted); line-height:1.35;">Mở quán mì cay riêng, tự nấu và tự thu tiền mỗi ngày.</div>
+            <div id="work-biz-pending" style="display:none;font-size:0.72rem;color:#c05621;line-height:1.35;margin-top:2px;"></div>
           </div>
         </div>
         <button class="btn btn-outline" style="width:100%;" onclick="openFs('biz')">🏪 Tự kinh doanh</button>
@@ -291,6 +290,10 @@
       <span class="wallet-mini fs-wallet"></span>
     </div>
     <div class="biz-credit" id="biz-credit"></div>
+    <div id="biz-pending-bar" style="display:none;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;background:#fffaf0;border-bottom:1px solid #f6ad55;">
+      <span style="font-size:0.8rem;color:#7b341e;">💵 Lãi chưa rút: <b id="biz-pending-amount">0đ</b></span>
+      <button class="btn btn-pink" style="padding:5px 12px;font-size:0.78rem;" onclick="Biz.withdraw()">Rút về ví</button>
+    </div>
     <div class="fs-body biz-host" id="biz-body">
       <iframe id="biz-frame" class="biz-frame" title="Mỳ cay nhà tui"></iframe>
     </div>
@@ -334,7 +337,7 @@
     </div>
     <div class="fs-body">
       <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Thành Tựu (làm một lần)</h3>
+        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🏅 Thành Tựu</h3>
         <div id="mission-milestone" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
     </div>
@@ -361,7 +364,7 @@
     </div>
     <div class="fs-body">
       <div class="life-card">
-        <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (kéo thả để ghép), tối đa Lv15. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Có đơn hàng tùy chọn để kiếm thêm tiền và box. Đồ làm ra nằm trong 🎒 Túi, tab Thủ công.</div>
+        <div style="font-size: 0.8rem; color: #718096;">Cả 5 chủ đề nằm chung trên một bàn 9×12 toàn màn hình. Ghép 2 món cùng chủ đề và cùng cấp để lên cấp (kéo thả để ghép), tối đa Lv15. Mỗi lần ghép có tiền công, ghép liên tiếp cùng chủ đề trong 10 giây được nhân thưởng 🔥. Có đơn thường, đơn gấp 15 phút và 3 việc hôm nay để kiếm thêm tiền cùng box. Kết thúc ván, chỉ món từ Lv10 trở lên được giữ lại để bán hoặc tặng. Đồ làm ra nằm trong 🎒 Túi, tab Thủ công.</div>
         <div id="craft-chain-preview" style="background: #f7faf8; border: 1px dashed #cbd5e0; border-radius: 8px; padding: 8px;"></div>
         <div id="craft-market-info" style="font-size: 0.78rem; color: #2c7a7b; line-height: 1.5;"></div>
         <button class="btn btn-pink" id="craft-start-btn" style="width: 100%; margin-top: 4px;" onclick="startCraftGame()">🛠 Bắt Đầu Ván Mới</button>
@@ -536,7 +539,13 @@
   <div id="craft-screen" class="craft-full">
     <div class="craft-top">
       <button class="btn btn-outline" onclick="closeCraft()">⬅ Thoát</button>
-      <b id="craft-hud-money" style="color:#2b6cb0;font-size:0.95rem;">💲 0</b>
+      <div style="display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:0;">
+        <b id="craft-hud-money" style="color:#2b6cb0;font-size:0.95rem;">💲 0</b>
+        <span style="display:flex;gap:6px;font-size:0.66rem;line-height:1.1;">
+          <small id="craft-hud-combo" style="display:none;color:#c05621;font-weight:bold;"></small>
+          <small id="craft-hud-gain" style="display:none;color:#2f855a;font-weight:bold;"></small>
+        </span>
+      </div>
       <button class="btn btn-pink" onclick="requestFinishCraft()">✅ Kết thúc ván</button>
     </div>
     <div class="craft-chips" id="craft-chips"></div>
@@ -616,7 +625,7 @@
           <textarea id="story-opening-input" rows="4"></textarea>
         </div>
         <div>
-          <button class="btn btn-outline" style="width: 100%; font-size: 0.8rem;" onclick="scanStoryNow()">🔍 Quét tên nhân vật trong cốt truyện</button>
+          <button class="btn btn-outline" style="width: 100%; font-size: 0.8rem;" onclick="scanStoryNow()">🔍 Quét nhân vật</button>
           <div id="scan-char-status" style="font-size: 0.74rem; color: var(--muted); margin-top: 6px; line-height: 1.5;"></div>
         </div>
       </div>
@@ -737,6 +746,21 @@
     </div>
   </div>
 
+  <div id="modal-scan-pick" class="modal">
+    <div class="modal-content" style="max-width: 420px; max-height: 86vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3>🔍 Nhân Vật Trong Cốt Truyện</h3>
+        <button class="btn btn-outline" onclick="closeModal('modal-scan-pick')">✖</button>
+      </div>
+      <div style="font-size: 0.78rem; color: #718096; margin-bottom: 8px; line-height: 1.4;">AI đọc cốt truyện và chỉ lọc ra những tên là người. Tick chọn người muốn thêm — bỏ tick nếu không phải nhân vật bạn cần.</div>
+      <div id="scan-pick-list" style="flex: 1; min-height: 0; overflow-y: auto;"></div>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-scan-pick')">Huỷ</button>
+        <button class="btn btn-pink" style="flex: 1;" onclick="confirmScanPick()">Thêm Đã Chọn</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-settings" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -846,13 +870,13 @@
   <script src="core.js?v=1"></script>
   <script src="data-shop.js?v=7"></script>
   <script src="shop.js?v=16"></script>
-  <script src="jobs.js?v=4"></script>
-  <script src="craft.js?v=2"></script>
+  <script src="jobs.js?v=6"></script>
+  <script src="craft.js?v=3"></script>
   <script src="quests.js?v=2"></script>
   <script src="pets.js?v=21"></script>
-  <script src="chat.js?v=12"></script>
+  <script src="chat.js?v=15"></script>
   <script src="ui.js?v=4"></script>
-  <script src="biz.js?v=6"></script>
+  <script src="biz.js?v=7"></script>
   <script src="push.js?v=1"></script>
 </body>
 </html>
