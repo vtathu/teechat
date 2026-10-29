@@ -213,17 +213,18 @@
     const n = fold(it.singleName || it.name);
     let c = 2;
     if (/lo dat|dat nen/.test(n)) c = 0;
-    else if (/hon dao|tram khong gian|cao oc|toa nha|dinh biet|sieu do thi/.test(n)) c = 10;
-    else if (/lau dai/.test(n)) c = 8;
-    else if (/villa mini/.test(n)) c = 3;
-    else if (/villa|biet thu|dinh co|nha go|nghi duong/.test(n)) c = 5;
-    else if (/nha cap 4/.test(n)) c = 2;
-    else if (/nha cap 3|nha pho|shophouse/.test(n)) c = 3;
-    else if (/nha cap 2/.test(n)) c = 4;
-    else if (/nha cap 1/.test(n)) c = 5;
-    else if (/phong tro|studio|1 phong ngu|can ho mini|can ho nho/.test(n)) c = 1;
-    else if (/duplex|penthouse|3 phong ngu/.test(n)) c = 3;
-    else if (/can ho|chung cu/.test(n)) c = 2;
+    else if (/hon dao|tram khong gian|cao oc|toa nha|dinh biet|sieu do thi/.test(n)) c = 12;
+    else if (/lau dai|dinh co/.test(n)) c = 10;
+    else if (/villa mini/.test(n)) c = 5;
+    else if (/villa|biet thu|nha go|nghi duong/.test(n)) c = 8;
+    else if (/nha cap 1/.test(n)) c = 6;
+    else if (/nha cap 2/.test(n)) c = 5;
+    else if (/nha cap 3|nha pho|shophouse/.test(n)) c = 4;
+    else if (/(3|ba) phong ngu|duplex|penthouse/.test(n)) c = 4;
+    else if (/nha cap 4|(2|hai) phong ngu/.test(n)) c = 3;
+    else if (/chung cu/.test(n)) c = 3;
+    else if (/phong tro|nha tro/.test(n)) c = 1;
+    else if (/studio|can ho mini|can ho nho|(1|mot) phong ngu|can ho/.test(n)) c = 2;
     return c * (it.qty || 1);
   }
 
