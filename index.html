@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=17" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=17"></noscript>
+  <link rel="stylesheet" href="style.css?v=26" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=26"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -615,6 +615,10 @@
           <label>🎬 Bối Cảnh Mở Đầu:</label>
           <textarea id="story-opening-input" rows="4"></textarea>
         </div>
+        <div>
+          <button class="btn btn-outline" style="width: 100%; font-size: 0.8rem;" onclick="scanStoryNow()">🔍 Quét tên nhân vật trong cốt truyện</button>
+          <div id="scan-char-status" style="font-size: 0.74rem; color: var(--muted); margin-top: 6px; line-height: 1.5;"></div>
+        </div>
       </div>
 
       <div id="cfg-tab-view-theme" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
@@ -660,12 +664,12 @@
         </div>
       </div>
 
-      <div id="cfg-tab-view-chars" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4 style="font-size: 0.92rem; color: var(--app-dark-green);">Danh Sách Nhân Vật Trong Truyện</h4>
-          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
+      <div id="cfg-tab-view-chars" class="hidden" style="display: flex; flex-direction: column; gap: 10px; min-height: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <h4 style="font-size: 0.85rem; color: var(--app-dark-green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Nhân Vật Trong Truyện</h4>
+          <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
         </div>
-        <div id="character-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;"></div>
+        <div id="character-list-container" class="char-list"></div>
       </div>
 
       <button class="btn" style="margin-top: 10px; width:100%; font-size:0.85rem; padding:8px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
@@ -846,7 +850,7 @@
   <script src="craft.js?v=2"></script>
   <script src="quests.js?v=2"></script>
   <script src="pets.js?v=21"></script>
-  <script src="chat.js?v=11"></script>
+  <script src="chat.js?v=12"></script>
   <script src="ui.js?v=4"></script>
   <script src="biz.js?v=6"></script>
   <script src="push.js?v=1"></script>

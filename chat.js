@@ -608,6 +608,9 @@ Trả về ĐÚNG JSON thuần, không markdown:
           chatBgColor: '#e7f5ee', chatBgImg: ''
         }
       };
+      // Tạo truyện mới: dò sẵn nhân vật từ cốt truyện để người chơi chỉ việc thêm tính cách/avatar
+      const scannedNames = scanStoryCharNames(setting + '\n' + openingScene, []);
+      scannedNames.forEach((n, idx) => newStory.characters.push(makeScannedChar(n, idx)));
       if (!window.state.stories) window.state.stories = [];
       window.state.stories.push(newStory);
       saveStorage(); renderStoryList(); closeModal('modal-story');
@@ -726,43 +729,259 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme.chatBgImg = document.getElementById('cfg-chat-bg-img').value.trim();
         story.updatedAt = Date.now(); // để lúc gộp máy ↔ cloud biết bản truyện nào mới hơn
 
-        saveStorage();
+        // Sửa cốt truyện có tên mới -> hỏi trước khi thêm, không tự ý đụng vào danh sách nhân vật
+        let added = [];
+        const newNames = scanStoryCharNames(story.setting + '\n' + story.openingScene, (story.characters || []).map(c => c.name));
+        if (newNames.length && confirm(`Cốt truyện có nhân vật mới: ${newNames.join(', ')}.\nThêm vào danh sách nhân vật?`)) {
+          added = addScannedChars(story, newNames);
+          story.updatedAt = Date.now();
+        }
+
+        saveStorage(); renderCharacterList();
         applyActiveStoryTheme();
         closeModal('modal-story-config');
-        alert('Đã lưu cài đặt truyện thành công!');
+        alert(added.length ? `Đã lưu! Thêm nhân vật mới: ${added.join(', ')}.` : 'Đã lưu cài đặt truyện thành công!');
       }
     }
 
+    let editingCharId = null;
+
     function renderCharacterList() {
       const container = document.getElementById('character-list-container');
-      container.innerHTML = '';
+      if (!container) return;
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.characters || story.characters.length === 0) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:#888; text-align:center; padding: 15px;">Chưa có nhân vật nào trong truyện này.</div>';
+        editingCharId = null;
+        container.innerHTML = '<div class="char-empty">Chưa có nhân vật nào trong truyện này.<br>Bấm "+ Thêm Nhân Vật" hoặc 🔍 quét tên từ cốt truyện.</div>';
+        renderCharEditorSheet(null);
         return;
       }
-      story.characters.forEach(char => {
-        if (!window.state.affectionLevels) window.state.affectionLevels = {};
-        const affData = window.state.affectionLevels[char.id] || { level: 1, points: 0 };
+      if (editingCharId && !story.characters.some(c => c.id === editingCharId)) editingCharId = null;
+      if (!window.state.affectionLevels) window.state.affectionLevels = {};
 
-        const div = document.createElement('div');
-        div.className = 'char-card';
-        div.innerHTML = `
-          <div class="char-header">
-            <img src="${char.avatar || DEFAULT_LOGO}" class="char-avatar-mini" onerror="this.src='${DEFAULT_LOGO}'">
-            <div class="char-info-body">
-              <h4>${escapeHtml(char.name)}${char.livesWith ? ' 🏠' : ''} <span style="display:block; font-size:0.7rem; color:#319795; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">❤️ Lv.${affData.level} (${affData.points}/${affectionNeeded(affData.level)}pts)</span></h4>
-              <p>${escapeHtml(char.personality)}</p>
-            </div>
+      container.innerHTML = story.characters.map(char => {
+        const affData = window.state.affectionLevels[char.id] || { level: 1, points: 0 };
+        const isEditing = editingCharId === char.id;
+        const desc = char.personality
+          ? escapeHtml(char.personality)
+          : '<i style="color:#a0aec0;">Chưa có mô tả — bấm ✏️ Sửa để thêm</i>';
+        const row = `<div class="char-row${isEditing ? ' editing' : ''}">
+          <img src="${char.avatar || DEFAULT_LOGO}" class="char-avt" alt="" onerror="this.src='${DEFAULT_LOGO}'" onclick="openEditCharInline('${char.id}')">
+          <div class="char-body">
+            <div class="char-name">${escapeHtml(char.name)}${char.livesWith ? ' 🏠' : ''}</div>
+            <div class="char-aff">❤️ Lv.${affData.level} · ${affData.points}/${affectionNeeded(affData.level)}</div>
+            <div class="char-desc">${desc}</div>
           </div>
-          <div style="display:flex; gap:4px; flex-shrink:0;">
-            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;${char.livesWith ? ' border-color:#d53f8c; color:#d53f8c;' : ''}" onclick="toggleCohabit('${char.id}')">${char.livesWith ? '🚪 Dọn đi' : '🏠 Dọn vô ở'}</button>
-            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px;" onclick="openEditCharModal('${char.id}')">✏️ Sửa</button>
-            <button class="btn btn-outline" style="font-size:0.7rem; padding: 2px 6px; border-color:#f44336; color:#f44336;" onclick="deleteCharacter('${char.id}')">✖</button>
+          <div class="char-acts">
+            <button class="btn btn-outline char-btn${char.livesWith ? ' live' : ''}" onclick="toggleCohabit('${char.id}')">${char.livesWith ? '🚪 Đi' : '🏠 Ở'}</button>
+            <button class="btn btn-outline char-btn" onclick="openEditCharInline('${char.id}')">✏️ Sửa</button>
+            <button class="btn btn-outline char-btn del" onclick="deleteCharacter('${char.id}')">✖</button>
           </div>
-        `;
-        container.appendChild(div);
+        </div>`;
+        return row;
+      }).join('');
+      renderCharEditorSheet(story);
+    }
+
+    // Form sửa nhân vật hiện đè lên danh sách (không đẩy danh sách xuống)
+    function renderCharEditorSheet(story) {
+      const panel = document.getElementById('cfg-tab-view-chars');
+      if (!panel) return;
+      const old = panel.querySelector('.char-edit-sheet');
+      if (old) old.remove();
+      const char = story && editingCharId ? story.characters.find(c => c.id === editingCharId) : null;
+      if (!char) { editingCharId = null; return; }
+      panel.insertAdjacentHTML('beforeend', charEditorSheet(char));
+      const sheet = panel.querySelector('.char-edit-sheet');
+      if (sheet) {
+        sheet.scrollTop = 0;
+        const inp = document.getElementById('ce-name');
+        if (inp && sheet.getBoundingClientRect().width > 0) inp.focus({ preventScroll: true });
+      }
+    }
+
+    function charEditorSheet(char) {
+      return `<div class="char-edit-sheet">
+        <div class="sheet-head">
+          <h4>✏️ Sửa Nhân Vật</h4>
+          <button class="btn btn-outline" type="button" style="padding: 2px 9px; font-size: 0.8rem;" onclick="cancelCharInline()">✖</button>
+        </div>
+        <div class="form-group">
+          <label>Tên Nhân Vật:</label>
+          <input type="text" id="ce-name" value="${escapeHtml(char.name)}" placeholder="VD: Trần Hạo Nam">
+        </div>
+        <div class="form-group">
+          <label>Avatar:</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="ce-avatar" value="${escapeHtml(char.avatar || '')}" placeholder="URL ảnh..." style="flex: 1;">
+            <button class="btn btn-outline" type="button" onclick="document.getElementById('ce-file').click()">📁 Ảnh</button>
+          </div>
+          <input type="file" id="ce-file" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'ce-avatar')">
+        </div>
+        <div class="form-group">
+          <label>Tính Cách &amp; Xưng Hô:</label>
+          <textarea id="ce-personality" rows="4" placeholder="Lạnh lùng, xưng hô Anh - em...">${escapeHtml(char.personality || '')}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Lời Mở Đầu:</label>
+          <textarea id="ce-first-msg" rows="3">${escapeHtml(char.firstMsg || '')}</textarea>
+        </div>
+        <div class="sheet-acts">
+          <button class="btn btn-pink" style="flex: 1;" onclick="saveCharInline('${char.id}')">💾 Lưu</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="cancelCharInline()">Huỷ</button>
+        </div>
+      </div>`;
+    }
+
+    function openEditCharInline(charId) {
+      const list = document.getElementById('character-list-container');
+      const keepScroll = list ? list.scrollTop : 0;
+      editingCharId = editingCharId === charId ? null : charId;
+      renderCharacterList();
+      if (list) list.scrollTop = keepScroll;
+      if (editingCharId) {
+        const sheet = document.querySelector('#cfg-tab-view-chars .char-edit-sheet');
+        if (sheet) sheet.scrollTop = 0;
+      }
+    }
+
+    function saveCharInline(charId) {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const char = story && story.characters ? story.characters.find(c => c.id === charId) : null;
+      if (!char) return;
+      const name = document.getElementById('ce-name').value.trim();
+      if (!name) return alert('Nhập tên nhân vật!');
+      char.name = name;
+      char.avatar = document.getElementById('ce-avatar').value.trim() || DEFAULT_LOGO;
+      char.personality = document.getElementById('ce-personality').value.trim();
+      char.firstMsg = document.getElementById('ce-first-msg').value.trim();
+      story.updatedAt = Date.now();
+      editingCharId = null;
+      saveStorage(); renderCharacterList();
+    }
+
+    function cancelCharInline() { editingCharId = null; renderCharacterList(); }
+
+    // ===== QUÉT TÊN NHÂN VẬT TRONG CỐT TRUYỆN =====
+    // Chỉ nhận cụm Viết Hoa có hành động đi kèm ("Hạo Nam khẽ cười") hoặc tên 2+ từ lặp lại,
+    // để tránh nhặt nhầm địa danh và danh từ chung.
+    const SCAN_TITLES = new Set('co chu ong ba bac anh chi em thay cau mo di sep ngai'.split(' '));
+    const SCAN_TITLES2 = new Set('co giao|thay giao|dai ca|nhi ca|dai ty|chu tich|giam doc|bac si|thu ky|quan ly'.split('|'));
+    const SCAN_STOP = new Set(('toi minh to cau ban anh chi em co chu ong ba bac thay han nang a ga chang no me ba bo cha con thang nho nguoi ai gi sao the nao do kia nay ' +
+      'mot hai bon sau bay tam chin muoi hom mai qua luc khi vi neu nhung va hoac nen roi da dang se van con cung rat hoi qua lam ' +
+      'tieng mua gio nang troi dat nuoc lua dem sang chieu canh phong ban ghe chiec cai duong mat mep nu cuoi noi buoc').split(/\s+/));
+    const SCAN_ADV = new Set('khe nhe van da dang con roi lien bong chot lai cung vua moi se thi rat hoi nhanh cham luon cu hay deu tung sap'.split(' '));
+    const SCAN_LINK = new Set('va voi cung roi thi'.split(' '));
+    const SCAN_ACTION = new Set(('mim cuoi bat noi hoi dap tra het goi tho lac gat cui ngang quay buoc ngoi dung nhin liec nhiu cau chau mo cam nam om hon khoc ' +
+      'vo xoa tua dua chay ghe dong buong keo day giu go vuot chi gio giat run hu phi do cham siet hit lui tien nep ngu an uong thay nghe muon can den toi vao ' +
+      'phang phay nhun vai hui ngung ngai la ten').split(/\s+/));
+    const SCAN_PLACE_HEAD = new Set('cho pho benh khach tiem khu lang xom hoi bang cong tap sieu ngan cua hoc vien so bo uy nha'.split(' '));
+    const SCAN_PLACES = new Set(('da lat|ha noi|sai gon|ho chi minh|hai phong|da nang|hue|can tho|nha trang|vung tau|ha long|sa pa|sapa|ha giang|quy nhon|' +
+      'quang ninh|ninh binh|phu quoc|con dao|bien hoa|thu duc|binh duong|dong nai').split('|'));
+
+    function foldVi(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    }
+
+    function scanStoryCharNames(raw, existingNames) {
+      const text = String(raw || '');
+      if (!text.trim()) return [];
+      const existsArr = (existingNames || []).map(n => foldVi(n).replace(/\s+/g, ' ').trim()).filter(Boolean);
+      const isDup = (k) => existsArr.some(e => k === e || (' ' + e + ' ').indexOf(' ' + k + ' ') >= 0 || (' ' + k + ' ').indexOf(' ' + e + ' ') >= 0);
+      const tokens = [];
+      const re = /[\p{L}][\p{L}'’]*|[^\s\p{L}]+/gu;
+      let m;
+      while ((m = re.exec(text)) !== null) tokens.push({ w: m[0], i: m.index });
+      const isWord = t => /^\p{L}/u.test(t.w);
+      const isCap = t => /^\p{Lu}/u.test(t.w) && t.w.length > 1;
+      const cands = new Map();
+
+      for (let i = 0; i < tokens.length; i++) {
+        if (!isWord(tokens[i]) || !isCap(tokens[i])) continue;
+        let j = i;
+        while (j - i < 3 && tokens[j + 1] && isWord(tokens[j + 1]) && isCap(tokens[j + 1])) {
+          const gap = text.slice(tokens[j].i + tokens[j].w.length, tokens[j + 1].i);
+          if (!/^[ \t]+$/.test(gap)) break;
+          j++;
+        }
+        let words = tokens.slice(i, j + 1).map(t => t.w);
+        for (;;) {
+          if (words.length > 2 && SCAN_TITLES2.has(foldVi(words[0] + ' ' + words[1]))) { words = words.slice(2); continue; }
+          if (words.length > 1 && SCAN_TITLES.has(foldVi(words[0]))) { words = words.slice(1); continue; }
+          break;
+        }
+        words = words.slice(0, 3);
+        if (!words.length) continue;
+
+        // Nhìn về sau tối đa 6 từ: bỏ qua trạng từ, từ nối và tên khác để tìm động từ hành động
+        let k = j + 1, hops = 0, hasAction = false;
+        while (tokens[k] && isWord(tokens[k]) && hops < 6) {
+          const f = foldVi(tokens[k].w);
+          if (SCAN_ADV.has(f) || SCAN_LINK.has(f) || isCap(tokens[k])) { k++; hops++; continue; }
+          if (SCAN_ACTION.has(f)) hasAction = true;
+          break;
+        }
+
+        const parts = words.map(foldVi);
+        const key = parts.join(' ');
+        const pos = i;
+        i = j; // đã xét trọn cụm, không tách nhỏ thành tên rác
+        if (parts.length === 1 && SCAN_STOP.has(parts[0])) continue;
+        if (SCAN_PLACE_HEAD.has(parts[0]) || SCAN_PLACES.has(key)) continue;
+
+        const c = cands.get(key) || { name: words.join(' '), count: 0, action: false, first: pos };
+        c.count++; c.action = c.action || hasAction;
+        cands.set(key, c);
+      }
+
+      const list = Array.from(cands.values()).sort((a, b) => a.first - b.first);
+      const out = [];
+      list.forEach(c => {
+        // Bỏ tên ngắn nằm trong một tên dài hơn ("Hạo Nam" khi đã có "Trần Hạo Nam")
+        const insideLonger = list.some(d => d !== c && d.name.length > c.name.length && (' ' + d.name + ' ').indexOf(' ' + c.name + ' ') >= 0);
+        if (insideLonger) return;
+        if (c.name.split(' ').length < 2 && !c.action) return;
+        if (!c.action && c.count < 2) return;
+        if (isDup(foldVi(c.name))) return;
+        if (out.length < 10) out.push(c.name);
       });
+      return out;
+    }
+
+    function makeScannedChar(name, idx) {
+      return { id: 'char-' + Date.now() + '-' + (idx || 0), name, avatar: DEFAULT_LOGO, personality: '', firstMsg: '' };
+    }
+
+    function addScannedChars(story, names) {
+      if (!story || !names || !names.length) return [];
+      if (!story.characters) story.characters = [];
+      const added = [];
+      names.forEach((n, idx) => {
+        if (story.characters.some(c => foldVi(c.name) === foldVi(n))) return;
+        story.characters.push(makeScannedChar(n, idx));
+        added.push(n);
+      });
+      return added;
+    }
+
+    function scanStoryNow() {
+      const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+      const status = document.getElementById('scan-char-status');
+      if (!story) return;
+      const text = (document.getElementById('story-setting-input').value || '') + '\n' + (document.getElementById('story-opening-input').value || '');
+      const names = scanStoryCharNames(text, (story.characters || []).map(c => c.name));
+      if (!names.length) {
+        if (status) status.innerText = 'Không tìm thấy nhân vật mới nào trong cốt truyện.';
+        return;
+      }
+      if (!confirm(`Tìm thấy nhân vật mới: ${names.join(', ')}.\nThêm vào danh sách nhân vật?`)) {
+        if (status) status.innerText = 'Đã bỏ qua: ' + names.join(', ');
+        return;
+      }
+      const added = addScannedChars(story, names);
+      story.updatedAt = Date.now();
+      saveStorage(); renderCharacterList();
+      if (status) status.innerText = added.length ? 'Đã thêm: ' + added.join(', ') + '. Bấm vào nhân vật để thêm tính cách/avatar.' : 'Các nhân vật này đã có trong danh sách.';
     }
 
     function openAddCharModal() {
@@ -885,6 +1104,26 @@ Trả về ĐÚNG JSON thuần, không markdown:
     // Trong lời thoại, **...** là in đậm/nhấn mạnh -> đổi sang '...' (không đụng tới từ che kiểu đ**)
     function tidyDialogue(t) {
       return (t || '').replace(/\*\*(?!\s)([^*]+?)(?<!\s)\*\*/g, "'$1'");
+    }
+    // Dọn lỗi chính tả nhỏ khi hiển thị (không đụng vào dữ liệu đã lưu)
+    function polishVi(t) {
+      let s = String(t || '');
+      if (!s) return s;
+      const links = [];
+      s = s.replace(/https?:\/\/[^\s]+|www\.[^\s]+|[\w.+-]+@[\w.-]+\.\w+/g, mm => { links.push(mm); return '\uE100' + (links.length - 1) + '\uE101'; });
+      s = s.replace(/\u00A0/g, ' ');
+      s = s.replace(/[ \t]{2,}/g, ' ');
+      s = s.replace(/\s+([,.;:!?%…])/g, '$1');
+      // "," giữa hai chữ số là dấu thập phân (12,5) -> không chèn space
+      s = s.replace(/([,;:])(?=[\p{L}\d])/gu, (m, p, off, str) => (p === ',' && /\d/.test(str[off - 1] || '') && /\d/.test(str[off + 1] || '')) ? m : p + ' ');
+      s = s.replace(/(^|[^\s])([.!?])(\p{L})/gu, (all, pre, p, c) => (/[A-Z]$/.test(pre) && /\p{Lu}/u.test(c)) ? all : pre + p + ' ' + c);
+      s = s.replace(/(…)(?=\p{L})/gu, '$1 ');
+      s = s.replace(/!{2,}/g, '!').replace(/\?{2,}/g, '?');
+      s = s.replace(/\.{4,}/g, '...');
+      // Dấu "…" hoặc "..." giữa câu thường là ngắt ý, không viết hoa theo
+      s = s.replace(/(^|([.!?])\s+|\n\s*)(\p{Ll})/gu, (mm, sep, punct, c, off) => (punct === '.' && s[off - 1] === '.') ? mm : sep + c.toUpperCase());
+      s = s.replace(/\uE100(\d+)\uE101/g, (mm, i) => links[+i] || mm);
+      return s.trim();
     }
     // AI lỡ lồng "..." bên trong lời thoại ("Cậu là "thần tượng" của tớ.") -> đổi cặp bên trong thành '...' để không tách đôi câu
     function repairNestedQuotes(t) {
@@ -1165,7 +1404,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
             if (narrText) {
               const nDiv = document.createElement('div');
               nDiv.className = 'narrative-block ai-action';
-              nDiv.innerText = narrText; // văn tả: bỏ tiền tố "Tên:" của người không có thoại
+              nDiv.innerText = polishVi(narrText); // văn tả: bỏ tiền tố "Tên:" của người không có thoại
               
               if (lineIdx === lines.length - 1) {
                 const wrapDiv = document.createElement('div');
@@ -1205,7 +1444,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
             if (!hasStar && segs.length === 0) segs.push({ type: 'dialogue', text: restText.replace(/[\*"]/g, '').trim() });
           }
 
-          segs.forEach(sg => { sg.text = restoreStars(sg.text); if (sg.type === 'dialogue') sg.text = tidyDialogue(sg.text); });
+          segs.forEach(sg => { sg.text = polishVi(restoreStars(sg.text)); if (sg.type === 'dialogue') sg.text = tidyDialogue(sg.text); });
           expandSpeech(segs);
           speakers.forEach((sp, spIdx) => {
           matchedAvatar = sp.avatar; speakerName = sp.name;
@@ -1415,6 +1654,14 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 
 [VĂN PHONG]
 - Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
+
+[CHÍNH TẢ & CÂU CÚ - BẮT BUỘC]
+- Viết đúng chính tả tiếng Việt, đủ dấu thanh, đúng dấu hỏi/ngã; không viết tắt kiểu "k", "ko", "kh", "j", "dc", "đc", "vs", "ntn", "r", "uk".
+- Mỗi câu phải đủ chủ ngữ - vị ngữ và kết thúc bằng dấu câu (., ?, ! hoặc …). Không viết câu rời rạc thiếu vị ngữ, không nối nhiều ý bằng dấu phẩy thành một câu dài lê thê.
+- Viết hoa đầu câu, sau dấu chấm/hỏi/than và tên riêng. Không viết hoa giữa câu cho đẹp.
+- Không dùng dấu câu lặp (!!!, ???, ....); không đặt dấu cách trước dấu phẩy/chấm; mỗi dấu phẩy/chấm chỉ một dấu cách phía sau.
+- Xưng hô thống nhất trong toàn bộ câu trả lời và đúng thiết lập nhân vật; không đổi cách gọi giữa các câu.
+- Trước khi trả lời, tự đọc lại từng câu: nếu sai chính tả, thiếu dấu, lặp từ hoặc lủng củng thì viết lại cho đúng rồi mới xuất ra.
 
 [QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
 - Lời thoại luôn đặt trong một cặp ngoặc kép thẳng "..." duy nhất cho mỗi câu nói.
