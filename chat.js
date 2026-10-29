@@ -228,6 +228,7 @@ ${recentHistory}
 5. Phần "desc" chỉ tả tình huống và hành động/lời nói của nhân vật rồi dừng lại để người chơi chọn; KHÔNG viết thay lời nói, hành động hay suy nghĩ của ${userName}.
 6. Lựa chọn 1: hợp tác/ngọt ngào/xử lý khéo (thưởng tiền ${(5000000).toLocaleString('vi-VN')} đến ${(60000000).toLocaleString('vi-VN')}, có thể tặng vật phẩm, tăng thân mật 1-10). Lựa chọn 2: phũ phàng/né tránh/trêu chọc/ích kỷ nhưng vẫn hợp lý với tình huống (trừ tiền ${(2000000).toLocaleString('vi-VN')} đến ${(20000000).toLocaleString('vi-VN')}, giảm thân mật 1-10). Nội dung lựa chọn viết ở ngôi người chơi, ngắn gọn dưới 120 ký tự.
 7. "desc" tối đa 350 ký tự và phải có tên ${charName} và ${userName}; "log" tối đa 200 ký tự, mô tả kết quả hợp lý của lựa chọn đó.
+8. Viết tiếng Việt có dấu, đúng chính tả và đúng nghĩa từ theo "Từ điển tiếng Việt" (Viện Ngôn ngữ học): không viết tắt, không chèn chữ nước ngoài, không dùng từ lệch nghĩa; câu đủ chủ ngữ - vị ngữ, đọc lên tự nhiên và gợi hình ảnh.
 
 Trả về ĐÚNG JSON thuần, không markdown:
 {
@@ -1256,12 +1257,13 @@ Trả về ĐÚNG JSON thuần:
       const keys = (window.state.apiKeys || []).map(k => String(k).trim().replace(/^["']|["']$/g, '')).filter(Boolean);
       if (!keys.length) return out;
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
-      const prompt = `Bạn là biên tập viên tiếng Việt. Sửa lỗi chính tả, dấu thanh, ngữ pháp, từ dùng sai và thay mọi ký tự lạ/tiếng nước ngoài lọt vào bằng tiếng Việt đúng nghĩa trong đoạn văn dưới đây.
+      const prompt = `Bạn là biên tập viên tiếng Việt của một nhà xuất bản, lấy "Từ điển tiếng Việt" của Viện Ngôn ngữ học (GS. Hoàng Phê chủ biên) làm chuẩn. Sửa lỗi chính tả, dấu thanh, ngữ pháp, từ dùng sai, từ không có trong từ điển và thay mọi ký tự lạ/tiếng nước ngoài lọt vào bằng tiếng Việt đúng nghĩa trong đoạn văn dưới đây.
 
 [QUY TẮC]
 - Giữ nguyên nội dung, cảm xúc, tên riêng và thứ tự các dòng; không thêm lời bình, không giải thích.
 - Giữ nguyên định dạng: dòng [Tên Nhân Vật]:, đoạn *hành động*, lời thoại "...", các thẻ [SYSTEM_TRANSFER: ...] và [AFFECTION: ...] nếu có.
 - Chỉ dùng tiếng Việt có dấu, câu đủ chủ ngữ - vị ngữ, đúng chính tả và đúng ngữ cảnh.
+- Từ nào dùng sai nghĩa, sai từ loại, sai ngữ cảnh hoặc không có trong từ điển thì thay bằng từ đúng nghĩa và tự nhiên hơn; câu lủng củng, lặp từ, thiếu ý thì viết lại cho mượt mà đúng ngữ pháp, ý nghĩa không đổi.
 - Chỉ trả về đoạn văn đã sửa, không kèm gì khác.
 
 [ĐOẠN VĂN]
@@ -1877,18 +1879,26 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
   (Ví dụ: [SYSTEM_TRANSFER: 20000000 | Tiền tiêu vặt cho em đấy])
 - Nếu KHÔNG, chỉ từ chối bằng lời thoại đúng tính cách.
 
+[DÙNG TỪ - CHUẨN TỪ ĐIỂN TIẾNG VIỆT]
+- Lấy "Từ điển tiếng Việt" của Viện Ngôn ngữ học (GS. Hoàng Phê chủ biên) làm chuẩn cho mọi từ được dùng: đúng từ loại, đúng nghĩa gốc, đúng nghĩa đang dùng trong câu và đúng ngữ cảnh. Không tự chế từ, không ghép từ vô nghĩa, không dùng từ lệch nghĩa, không dùng thành ngữ - tục ngữ sai nghĩa hay đảo trật tự từ trong thành ngữ.
+- Trước khi dùng một từ ít gặp hoặc một từ Hán Việt, tự soát: từ này có nghĩa rõ ràng không, nghĩa đó có khớp điều mình muốn nói không, có hợp trình độ - tính cách - vùng miền của nhân vật không. Không chắc thì đổi sang từ thông dụng mà mình chắc chắn đúng nghĩa.
+- Ưu tiên từ thuần Việt và từ Hán Việt đã Việt hoá quen thuộc; tránh từ dịch thô từ tiếng nước ngoài, tránh từ đa nghĩa gây hiểu nhầm, tránh từ lóng không hợp nhân vật.
+- Câu văn theo đúng ngữ pháp tiếng Việt: trật tự từ tự nhiên (chủ ngữ - vị ngữ - bổ ngữ đúng chỗ), dùng đúng loại từ và lượng từ (một con mèo, một cái ghế, đôi mắt ấy...), dùng đúng phó từ chỉ thời - thể (đã, đang, sẽ, vừa, từng, sắp).
+- Dùng đúng cặp quan hệ từ và đúng cấu trúc câu tiếng Việt (vì... nên..., tuy... nhưng..., không những... mà còn...); không bỏ vế, không ghép hai cấu trúc khác nhau vào một câu.
+
 [VĂN PHONG]
-- Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng. Lời thoại đúng khẩu khí từng nhân vật.
+- Viết tiếng Việt tự nhiên, mượt mà, giàu hình ảnh và cảm xúc như tiểu thuyết: câu văn có nhịp điệu, câu dài ngắn đan xen, chọn từ tinh tế, tả cử chỉ - ánh mắt - không khí cụ thể thay vì liệt kê khô khan. Tránh lặp từ, tránh câu cụt lủn, tránh sáo rỗng, tránh lạm dụng từ "rất", "cực kỳ", "vô cùng". Lời thoại đúng khẩu khí từng nhân vật, câu nói của mỗi người phải đọc lên thấy đúng là người đó đang nói.
 
 [CHÍNH TẢ & CÂU CÚ - BẮT BUỘC]
 - Toàn bộ câu trả lời CHỈ dùng tiếng Việt có dấu. TUYỆT ĐỐI không chèn chữ Hán, chữ Nhật, chữ Hàn, chữ Nga, chữ Thái hay bất kỳ ký tự nước ngoài/ký tự lạ nào; không chen từ tiếng Anh vào câu (trừ tên riêng/thương hiệu bắt buộc phải giữ nguyên).
-- Viết đúng chính tả tiếng Việt, đủ dấu thanh, đúng dấu hỏi/ngã; không viết tắt kiểu "k", "ko", "kh", "j", "dc", "đc", "vs", "ntn", "r", "uk".
+- Viết đúng chính tả tiếng Việt, đủ dấu thanh, đúng dấu hỏi/ngã đúng như từ điển ghi; không viết tắt kiểu "k", "ko", "kh", "j", "dc", "đc", "vs", "ntn", "r", "uk".
 - Dùng từ đúng nghĩa và đúng ngữ cảnh của câu, đúng tính cách/nghề nghiệp/vùng miền của nhân vật; không dùng từ lệch nghĩa, không dịch máy từng chữ, không ghép từ vô nghĩa.
 - Mỗi câu phải đủ chủ ngữ - vị ngữ và kết thúc bằng dấu câu (., ?, ! hoặc …). Không viết câu rời rạc thiếu vị ngữ, không nối nhiều ý bằng dấu phẩy thành một câu dài lê thê.
+- Câu phải đọc lên xuôi tai: nếu phải ngắt hơi giữa cụm từ mới hiểu, hoặc phải đọc lại hai lần mới rõ ý thì viết lại câu đó cho gọn và sáng nghĩa.
 - Viết hoa đầu câu, sau dấu chấm/hỏi/than và tên riêng. Không viết hoa giữa câu cho đẹp.
 - Không dùng dấu câu lặp (!!!, ???, ....); không đặt dấu cách trước dấu phẩy/chấm; mỗi dấu phẩy/chấm chỉ một dấu cách phía sau.
 - Xưng hô thống nhất trong toàn bộ câu trả lời và đúng thiết lập nhân vật; không đổi cách gọi giữa các câu.
-- Trước khi trả lời, tự đọc lại từng câu: nếu sai chính tả, thiếu dấu, lặp từ, lẫn ký tự lạ hoặc lủng củng thì viết lại cho đúng rồi mới xuất ra.
+- Trước khi trả lời, tự đọc lại từng câu như một biên tập viên soát bản thảo: sai chính tả, thiếu dấu, lặp từ, từ lệch nghĩa, lẫn ký tự lạ, câu cụt hoặc lủng củng thì viết lại cho đúng và mượt rồi mới xuất ra.
 
 [QUY TẮC DẤU NGOẶC TRONG LỜI THOẠI]
 - Lời thoại luôn đặt trong một cặp ngoặc kép thẳng "..." duy nhất cho mỗi câu nói.
