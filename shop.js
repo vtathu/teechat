@@ -162,6 +162,20 @@
       ['teechat_state_v10_bak', 'Trước khi dữ liệu bị thu nhỏ'],
       ['teechat_state_v10_snap', 'Lúc mở app hôm nay']
     ];
+    // Đọc ván sudoku đang dở trong các bản lưu cũ (để mời người chơi lấy lại khi bản chính bị mất)
+    window.readBackupStates = async function () {
+      const out = [];
+      for (const [key, label] of BACKUP_SLOTS) {
+        let raw = null;
+        try { raw = await tcIdbGet(key); } catch (e) {}
+        if (!raw) continue;
+        try {
+          const s = JSON.parse(raw);
+          if (s && s.sudokuSave) out.push({ key: key, label: label, sudokuSave: s.sudokuSave, updatedAt: s.lastUpdated || 0 });
+        } catch (e) {}
+      }
+      return out;
+    };
     function timeAgo(t) {
       if (!t) return 'không rõ thời gian';
       const m = Math.round((Date.now() - t) / 60000);

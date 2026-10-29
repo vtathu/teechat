@@ -120,6 +120,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         hist[id] = mergeHistories((base.chatHistories || {})[id], (other.chatHistories || {})[id]);
       });
       merged.chatHistories = hist;
+      // Ván sudoku đang chơi: giữ bản tiến xa hơn, không để máy mở sau (không có ván) xóa mất
+      const sdkPick = typeof window.pickSudokuSave === 'function'
+        ? window.pickSudokuSave(base.sudokuSave, other.sudokuSave)
+        : (base.sudokuSave || other.sudokuSave || null);
+      if (sdkPick) merged.sudokuSave = sdkPick; else delete merged.sudokuSave;
       return merged;
     }
 
@@ -274,6 +279,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         const snap = await get(ref(db, userPath(user.uid)));
         if (snap.exists()) {
           const cloud = stripKeys(snap.val());
+          // Tải đè cả state: vẫn giữ ván sudoku đang chơi trên máy nếu bản cloud không có tiến xa hơn
+          try {
+            const localSdk = window.state && window.state.sudokuSave;
+            if (localSdk && typeof window.pickSudokuSave === 'function') {
+              const p = window.pickSudokuSave(cloud.sudokuSave, localSdk);
+              if (p) cloud.sudokuSave = p;
+            }
+          } catch (e) {}
           const bizCloud = cloud.bizSave; // saveStorage bên dưới đọc tiệm đang có trên máy, nên giữ riêng bản cloud
           try { if (window.__stateLoaded && window.persistBackup) window.persistBackup(JSON.stringify(window.getSyncableState())); } catch (e) {}
           window.state = cloud; window.saveStorage(); window.loadStorage();

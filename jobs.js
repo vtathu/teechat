@@ -123,6 +123,7 @@
         window.state.walletBalance = (window.state.walletBalance || 0) + earned;
         saveStorage();
         renderLifeModeUI();
+        try { if (window.Sound) window.Sound.play('coin'); } catch (e) {}
       }
       alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}`);
     }
@@ -692,13 +693,43 @@
     const SDK_LABEL = { easy: '🟢 Dễ', hard: '🔴 Cực khó', hell: '💀 Địa ngục' };
     let sdk = null;
 
+    // So 2 ván lưu để gộp máy ↔ cloud: ưu tiên màn cao hơn, rồi số ô đã điền, cuối cùng là lưu gần nhất
+    const sdkRow = (m, r) => (m && typeof m === 'object' ? m[r] : null);
+    const sdkCellOf = (row, c) => {
+      const v = row && typeof row === 'object' ? row[c] : 0;
+      return (v === undefined || v === null || v === 0) ? 0 : (Number(v) || 0);
+    };
+    function sdkFilled(sv) {
+      if (!sv || !sv.vals) return 0;
+      let n = 0;
+      for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (sdkCellOf(sdkRow(sv.vals, r), c)) n++;
+      return n;
+    }
+    function pickSudokuSave(a, b) {
+      const ok = (sv) => {
+        if (!sv || !sv.puzzle || typeof sv.puzzle !== 'object') return false;
+        for (let r = 0; r < 9; r++) if (!sdkRow(sv.puzzle, r)) return false;
+        return true;
+      };
+      const okA = ok(a), okB = ok(b);
+      if (!okA) return okB ? b : null;
+      if (!okB) return a;
+      const pa = (a.stage || 0) * 10000 + Math.min(9999, sdkFilled(a));
+      const pb = (b.stage || 0) * 10000 + Math.min(9999, sdkFilled(b));
+      if (pa !== pb) return pa > pb ? a : b;
+      return (a.savedAt || 0) >= (b.savedAt || 0) ? a : b;
+    }
+    window.pickSudokuSave = pickSudokuSave;
+
     let sdkSaveTimer = null;
     function sdkPersist(now) {
       if (sdkSaveTimer) { clearTimeout(sdkSaveTimer); sdkSaveTimer = null; }
       const write = () => {
         sdkSaveTimer = null;
         if (!sdk || !sdk.vals) return;
-        window.state.sudokuSave = { level: sdk.level, stage: sdk.stage, earned: sdk.earned, puzzle: currentSudokuPuzzle, solution: currentSudokuSolution, vals: sdk.vals, notes: sdk.notes };
+        // Ô trống lưu bằng 0 chứ không dùng null: Firebase bỏ khoá null nên bản trên cloud sẽ hỏng hàng ô
+        const puzzle = currentSudokuPuzzle.map(row => row.map(v => (v === null || v === undefined) ? 0 : Number(v)));
+        window.state.sudokuSave = { level: sdk.level, stage: sdk.stage, earned: sdk.earned, puzzle: puzzle, solution: currentSudokuSolution, vals: sdk.vals, notes: sdk.notes, savedAt: Date.now() };
         saveStorage();
       };
       if (now) write(); else sdkSaveTimer = setTimeout(write, 1200);
@@ -725,14 +756,43 @@
       }
     }
 
+    let sdkBackupPick = null;
+    function sdkResumeBtn(sv) {
+      const filled = sdkFilled(sv);
+      const tail = filled ? ', đã điền ' + filled + ' ô' : ', bàn còn trống';
+      return `<button class="btn btn-pink" style="width:100%;" onclick="resumeSudoku()">▶ Tiếp tục ván đang chơi (${SDK_LABEL[sv.level] || ''}, màn ${sv.stage || 1}${tail})</button>`
+        + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>';
+    }
+    // Không có ván đang lưu: tìm lại ván trong các bản sao lưu trên máy để người chơi đi tiếp
+    async function sdkOfferBackupSave(box) {
+      if (typeof window.readBackupStates !== 'function') return;
+      let list = [];
+      try { list = await window.readBackupStates(); } catch (e) { return; }
+      let best = null;
+      list.forEach(x => { best = pickSudokuSave(best, x.sudokuSave); });
+      if (!best || box.innerHTML) return;
+      if (window.state.sudokuSave) return;   // người chơi vừa có ván mới trong lúc đọc bản lưu
+      sdkBackupPick = best;
+      box.innerHTML = `<button class="btn" style="width:100%;background:#edf2f7;color:#2d3748;" onclick="sdkRestoreBackupSave()">↺ Lấy lại ván từ bản lưu (${SDK_LABEL[best.level] || ''}, màn ${best.stage || 1}${sdkFilled(best) ? ', đã điền ' + sdkFilled(best) + ' ô' : ''})</button>`
+        + '<div style="font-size:0.72rem;color:#718096;margin-top:4px;">Bản lưu cũ vẫn còn ván chơi dở — bấm để chơi tiếp.</div>';
+    }
+    window.sdkRestoreBackupSave = function () {
+      if (!sdkBackupPick) return;
+      window.state.sudokuSave = sdkBackupPick;
+      sdkBackupPick = null;
+      saveStorage();
+      resumeSudoku();
+    };
+
     function openSudoku9Minigame() {
       // Sudoku không giới hạn lượt chơi mỗi ngày
       const sv = window.state.sudokuSave;
       const box = document.getElementById('sdk-resume');
-      box.innerHTML = sv && sv.puzzle ? `<button class="btn btn-pink" style="width:100%;" onclick="resumeSudoku()">▶ Tiếp tục ván đang chơi (${SDK_LABEL[sv.level]}, màn ${sv.stage})</button><div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoặc bắt đầu ván mới bên dưới (ván đang lưu sẽ mất):</div>` : '';
+      box.innerHTML = sv && sv.puzzle ? sdkResumeBtn(sv) : '';
       document.getElementById('sdk-menu').style.display = 'flex';
       document.getElementById('sdk-play').style.display = 'none';
       openModal('modal-sudoku');
+      if (!box.innerHTML) sdkOfferBackupSave(box);
     }
 
     // Giải đề (trả về lưới đầy đủ) — dùng khi ván lưu cũ không có sẵn đáp án
@@ -765,22 +825,26 @@
 
     function resumeSudoku() {
       const sv = window.state.sudokuSave;
-      if (!sv || !Array.isArray(sv.puzzle) || sv.puzzle.length !== 9) return;
-      const grid9 = (m) => Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => {
-        const v = m && Array.isArray(m[r]) ? m[r][c] : 0;
-        return Number(v) || 0;
-      }));
-      // Ván lưu cũ có thể để ô trống là 0 và thiếu notes/đáp án -> chuẩn hoá lại, không thì bàn cờ bị khoá/trống
-      const puzzle = sv.puzzle.map(row => Array.isArray(row) ? row.map(v => (v === 0 || v === undefined || v === null) ? null : Number(v)) : null);
-      if (puzzle.some(row => !row || row.length !== 9)) {
+      if (!sv) return;
+      // Firebase trả mảng thiếu ô null về dạng object {0:5,2:3} -> đọc theo chỉ số, chấp nhận cả hai kiểu
+      const cell = (row, c) => {
+        if (!row || typeof row !== 'object') return 0;
+        const v = row[c];
+        return (v === undefined || v === null || v === 0) ? 0 : (Number(v) || 0);
+      };
+      const grid9 = (m) => Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => cell(m && m[r], c)));
+      const rows = (sv.puzzle && typeof sv.puzzle === 'object') ? Array.from({ length: 9 }, (_, r) => sv.puzzle[r]) : null;
+      const puzzle = rows ? rows.map(row => Array.from({ length: 9 }, (_, c) => cell(row, c) || null)) : null;
+      const givens = puzzle ? puzzle.flat().filter(v => v).length : 0;
+      if (!puzzle || givens === 0) {
         window.state.sudokuSave = null; saveStorage();
         alert('Ván đã lưu bị hỏng, mình mở ván mới nhé.');
         openSudoku9Minigame();
         return;
       }
       currentSudokuPuzzle = puzzle;
-      const solOk = Array.isArray(sv.solution) && sv.solution.length === 9 && sv.solution.every(r => Array.isArray(r) && r.length === 9);
-      currentSudokuSolution = solOk ? sv.solution : (sdkSolveOne(puzzle) || []);
+      const solOk = Array.isArray(sv.solution) && sv.solution.length === 9 && sv.solution.every(r => r && typeof r === 'object' && Array.from({ length: 9 }, (_, c) => cell(r, c)).every(v => v >= 1 && v <= 9));
+      currentSudokuSolution = solOk ? Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => cell(sv.solution[r], c))) : (sdkSolveOne(puzzle) || []);
       sdk = {
         level: sv.level || 'easy', stage: sv.stage || 1, earned: sv.earned || 0,
         noteMode: false, sel: null, review: false,

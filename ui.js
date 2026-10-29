@@ -54,6 +54,7 @@
     house: () => { ensureActive(); houseTick(); renderHouse(); },
     mall: () => { renderMall(); },
     bag: () => { renderBagLists(); applyBagTab(); },
+    play: () => { if (window.Play) window.Play.render(); },
     biz: () => { if (window.Biz) window.Biz.render(); }
   };
 
@@ -77,6 +78,7 @@
     const el = $('fs-' + n); if (el) el.classList.remove('active');
     if (n === 'pet') window.lifeSub = null;
     if (n === 'mall') window.__mallGear = false;
+    if (n === 'play' && window.Play && window.Play.stop) window.Play.stop();
     const t = top();
     if (t) { try { if (t === 'life') renderLifeScene(); else if (t === 'house') renderHouse(); else if (t === 'bag') renderBagLists(); else if (t === 'mall') renderMall(); } catch (e) {} paintWallets(); }
   }

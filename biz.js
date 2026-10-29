@@ -84,6 +84,7 @@
     if (!s || amt <= 0) return;
     s.walletBalance = (Number(s.walletBalance) || 0) + amt;
     s.bizPending = 0;
+    try { if (window.Sound) window.Sound.play('coin'); } catch (e) {}
     try { if (typeof saveStorage === 'function') saveStorage(); } catch (e) { console.warn(e); }
     paintWallet();
     paintPending();

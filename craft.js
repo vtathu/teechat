@@ -504,6 +504,7 @@
         craftBump('merges', 1);
         craftBump('best', lv);
         showCraftGain(wage, mult);
+        try { if (window.Sound) window.Sound.play('merge'); } catch (e) {}
         mtrack('merges', 1);
         mtrack('craftBest', lv, 'max');
         return 'merge';

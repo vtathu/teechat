@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=27" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=27"></noscript>
+  <link rel="stylesheet" href="style.css?v=31" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=31"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -230,6 +230,7 @@
         <button class="scene-ic" onclick="openFs('work')"><span>💼</span><small>Đi làm</small></button>
         <button class="scene-ic" onclick="openFs('house')"><span>🏠</span><small>Nhà</small></button>
       <button class="scene-ic" onclick="openFs('pet')"><span>🐾</span><small>Thú cưng</small></button>
+        <button class="scene-ic" onclick="openFs('play')"><span>🎲</span><small>Giải trí</small></button>
       </div>
       <div class="scene-col right">
         <button class="scene-ic" onclick="openFs('mission')"><span>📋</span><small>Nhiệm vụ</small></button>
@@ -371,6 +372,22 @@
         <button class="btn btn-outline" style="width: 100%;" onclick="openBagTab('craft')">🎒 Mở túi thủ công</button>
       </div>
     </div>
+  </div>
+
+  <!-- GIẢI TRÍ -->
+  <div id="fs-play" class="fs-page">
+    <div class="fs-top">
+      <button class="btn btn-outline" onclick="closeFs()">⬅</button>
+      <b class="fs-title">🎲 Giải Trí</b>
+      <span class="wallet-mini fs-wallet"></span>
+    </div>
+    <div class="play-tabs" id="play-tabs">
+      <button class="play-tab" data-tab="lottery" onclick="Play.tab('lottery')"><span class="pt-i">🎟️</span><span>Vé số</span></button>
+      <button class="play-tab" data-tab="fishing" onclick="Play.tab('fishing')"><span class="pt-i">🎣</span><span>Câu cá</span></button>
+      <button class="play-tab" data-tab="market" onclick="Play.tab('market')"><span class="pt-i">🌙</span><span>Chợ đêm</span></button>
+      <button class="play-tab" data-tab="farm" onclick="Play.tab('farm')"><span class="pt-i">🌾</span><span>Nông trại</span></button>
+    </div>
+    <div class="fs-body" id="play-body"></div>
   </div>
 
   <!-- TEEMALL -->
@@ -792,6 +809,21 @@
           <button class="btn btn-outline" style="flex:1;min-width:0;" onclick="testPushNotif()">Gửi thử</button>
         </div>
       </div>
+      <div class="form-group" style="border-top:1px dashed #cbd5e0;padding-top:10px;">
+        <label>🔊 Âm thanh:</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;">
+          <span style="font-size:0.82rem;color:#4a5568;">Nhạc nền</span>
+          <label class="switch"><input type="checkbox" id="cfg-music"><span class="slider"></span></label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;">
+          <span style="font-size:0.82rem;color:#4a5568;">Hiệu ứng</span>
+          <label class="switch"><input type="checkbox" id="cfg-sfx"><span class="slider"></span></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0 2px;">
+          <span style="font-size:0.82rem;color:#4a5568;white-space:nowrap;">Âm lượng</span>
+          <input type="range" id="cfg-volume" min="0" max="100" step="5" style="flex:1;min-width:0;">
+        </div>
+      </div>
       <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
     </div>
   </div>
@@ -866,17 +898,19 @@
   </div>
 
   <script src="theme.js?v=2"></script>
-  <script type="module" src="firebase.js?v=5"></script>
+  <script type="module" src="firebase.js?v=6"></script>
   <script src="core.js?v=1"></script>
   <script src="data-shop.js?v=7"></script>
-  <script src="shop.js?v=16"></script>
-  <script src="jobs.js?v=6"></script>
-  <script src="craft.js?v=3"></script>
+  <script src="shop.js?v=17"></script>
+  <script src="jobs.js?v=8"></script>
+  <script src="craft.js?v=4"></script>
   <script src="quests.js?v=2"></script>
-  <script src="pets.js?v=21"></script>
+  <script src="pets.js?v=22"></script>
   <script src="chat.js?v=15"></script>
-  <script src="ui.js?v=4"></script>
-  <script src="biz.js?v=7"></script>
+  <script src="ui.js?v=5"></script>
+  <script src="audio.js?v=1"></script>
+  <script src="play.js?v=4"></script>
+  <script src="biz.js?v=8"></script>
   <script src="push.js?v=1"></script>
 </body>
 </html>

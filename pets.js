@@ -1328,6 +1328,17 @@
     closeModal2(); commit();
     toast('🐟 Đã thả cá vào ' + p.name);
   }
+  // Thả cá câu được vào bể trống chỗ (dùng cho trò Câu cá ở mục Giải trí)
+  function addFishToTank(color) {
+    const tanks = ensure().pets.filter(p => p && isTank(p) && (p.fish || []).length < tankCap(p));
+    if (!tanks.length) return null;
+    const p = tanks[0];
+    const c = FISH_SPECIES[color] ? color : 'Trắng';
+    p.fish = p.fish || [];
+    p.fish.push({ id: 'f-' + now().toString(36) + Math.random().toString(36).slice(2, 6), g: Math.random() < 0.5 ? 'male' : 'female', c: c, born: now() });
+    commit();
+    return p.name;
+  }
   function sellFishInv(uid) {
     const obj = findInv(uid); if (!obj || obj.id !== FISH_ITEM_ID) return;
     const v = parseVariants(obj), price = FISH_SELL[v.fishColor] || TUNE.fishSell;
@@ -1536,7 +1547,7 @@
     fishImgFail: (img) => { failed.add(img.getAttribute('src')); img.style.display = 'none'; const n = img.nextElementSibling; if (n) n.style.display = 'block'; },
     closeModal: closeModal2,
     adopt, confirmAdopt, sellInv, openFeed, feed, bathe, vet, play, rename, renameNow, tap, sellPet, sellFish,
-    buy, openEquip, equip, unequip, openPutFish, putFishInTank, sellFishInv, hasTank, openWalk, walk,
+    buy, openEquip, equip, unequip, openPutFish, putFishInTank, sellFishInv, hasTank, addFishToTank, openWalk, walk,
     openBreed, breed, echoTap, chatAbout, gameLane: (i) => { if (game && game.setLane) game.setLane(i); }
   };
   window.renderPetTab = render;
