@@ -94,7 +94,85 @@
     try { (SFX[name] || SFX.click)(); } catch (e) {}
   }
 
-  // ---------- Nhạc nền: vòng hợp âm chậm + điểm chuông thưa ----------
+  // ---------- Nhạc nền: nhạc thật (Pixabay) phát xáo trộn, theo mùa lễ hội ----------
+  const TRACK = (list) => list.map(n => 'music/' + n + '.mp3');
+  const PLAYLISTS = {
+    daily: TRACK(['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10']),
+    tet: TRACK(['t1', 't2', 't3', 't4', 't5', 't6']),
+    trungthu: TRACK(['m1', 'm2', 'm3']),
+    noel: TRACK(['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])
+  };
+  // Mùng 1 Tết Nguyên Đán và rằm Trung Thu (dương lịch, theo lịch Việt Nam)
+  const TET_DAYS = ['2026-02-17', '2027-02-06', '2028-01-26', '2029-02-13', '2030-02-03', '2031-01-23', '2032-02-11', '2033-02-01', '2034-01-22', '2035-02-10'];
+  const MID_DAYS = ['2026-09-25', '2027-09-15', '2028-10-03', '2029-09-22', '2030-09-12', '2031-10-01', '2032-09-19', '2033-09-08', '2034-09-27', '2035-09-16'];
+  const DAY_MS = 86400000;
+  function dayTime(s) { const a = s.split('-').map(Number); return new Date(a[0], a[1] - 1, a[2]).getTime(); }
+  function nearDay(list, before, after) {
+    const now = Date.now();
+    // tính trọn ngày: từ 0h ngày (mốc - before) đến hết ngày (mốc + after)
+    return list.some(s => { const t = dayTime(s); return now >= t - before * DAY_MS && now < t + (after + 1) * DAY_MS; });
+  }
+  function seasonList() {
+    const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    if ((m === 11 && day >= 10) || (m === 12 && day <= 25)) return PLAYLISTS.noel;   // 10/11 - 25/12
+    if (nearDay(TET_DAYS, 15, 15)) return PLAYLISTS.tet;
+    if (nearDay(MID_DAYS, 7, 1)) return PLAYLISTS.trungthu;
+    return PLAYLISTS.daily;
+  }
+
+  let musicEl = null, musicList = null, musicIdx = -1, musicFails = 0, fadeTimer = null, fadingOut = false;
+  const MUSIC_LEVEL = 0.55;   // nhạc thật to hơn nhạc tổng hợp nên hạ bớt
+  function musicVolume() { return Math.max(0, Math.min(1, cfg().volume * MUSIC_LEVEL)); }
+  function clearFade() { if (fadeTimer) { clearInterval(fadeTimer); fadeTimer = null; } }
+  function fadeTo(target, ms) {
+    if (!musicEl) return;
+    clearFade();
+    const from = musicEl.volume, steps = Math.max(1, Math.round(ms / 60));
+    let i = 0;
+    fadeTimer = setInterval(() => {
+      i++;
+      if (!musicEl) { clearFade(); return; }
+      musicEl.volume = Math.max(0, Math.min(1, from + (target - from) * (i / steps)));
+      if (i >= steps) clearFade();
+    }, 60);
+  }
+  function pickNext() {
+    const list = seasonList();
+    if (list !== musicList) { musicList = list; musicIdx = -1; }
+    let i = Math.floor(Math.random() * list.length);
+    while (list.length > 1 && i === musicIdx) i = Math.floor(Math.random() * list.length);
+    musicIdx = i;
+    return list[i];
+  }
+  function ensureEl() {
+    if (musicEl) return musicEl;
+    if (!window.Audio) return null;
+    musicEl = new Audio();
+    musicEl.preload = 'auto';
+    musicEl.addEventListener('playing', () => { musicFails = 0; fadingOut = false; musicEl.volume = 0; fadeTo(musicVolume(), 1500); });
+    musicEl.addEventListener('timeupdate', () => {
+      const left = (musicEl.duration || 0) - musicEl.currentTime;
+      if (!fadingOut && left > 0 && left < 2.2) { fadingOut = true; fadeTo(0, Math.max(300, left * 850)); }
+    });
+    musicEl.addEventListener('ended', () => { if (cfg().music) playTrack(pickNext()); });
+    musicEl.addEventListener('error', () => {
+      if (++musicFails >= 3) { musicEl = null; startSynth(); return; }   // không tải được nhạc -> quay về nhạc tổng hợp
+      if (cfg().music) playTrack(pickNext());
+    });
+    return musicEl;
+  }
+  function playTrack(src) {
+    const el = ensureEl();
+    if (!el) { startSynth(); return; }
+    clearFade();
+    fadingOut = false;
+    el.volume = 0;
+    el.src = src;
+    const p = el.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  // ---------- Nhạc tổng hợp dự phòng: vòng hợp âm chậm + điểm chuông thưa ----------
   const CHORDS = [
     [261.63, 329.63, 392.00, 523.25],
     [220.00, 261.63, 329.63, 440.00],
@@ -134,14 +212,36 @@
     if (Math.random() > 0.45) chime(t0 + 5 + Math.random());
     chordStep++;
   }
-  function startMusic() {
+  function startSynth() {
     if (!build() || !cfg().music) return;
     if (musicTimer) return;
     scheduleLoop();
     musicTimer = setInterval(scheduleLoop, 8000);
   }
-  function stopMusic() {
+  function stopSynth() {
     if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  // ---------- Điều khiển nhạc nền ----------
+  function startMusic() {
+    if (!cfg().music) return;
+    const el = ensureEl();
+    if (!el) { startSynth(); return; }
+    if (el.currentSrc && !el.ended) {        // đang có bài: giữ nguyên, chỉ phát tiếp nếu đang tạm dừng
+      if (el.paused) {
+        const p = el.play();
+        if (p && p.catch) p.catch(() => {});
+      }
+      return;
+    }
+    playTrack(pickNext());
+  }
+  function stopMusic() {
+    stopSynth();
+    if (!musicEl) return;
+    clearFade();
+    fadingOut = false;
+    try { musicEl.pause(); } catch (e) {}
   }
 
   function apply() {
@@ -149,6 +249,7 @@
     if (master) master.gain.setTargetAtTime(a.volume, ctx.currentTime, 0.05);
     if (sfxBus) sfxBus.gain.setTargetAtTime(a.sfx ? 1 : 0, ctx.currentTime, 0.02);
     if (musicBus) musicBus.gain.setTargetAtTime(a.music ? 1 : 0, ctx.currentTime, 0.08);
+    if (musicEl && !fadingOut) { clearFade(); musicEl.volume = musicVolume(); }
     if (a.music && unlocked) startMusic(); else stopMusic();
     syncControls();
   }
@@ -180,7 +281,6 @@
         .observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
     document.addEventListener('visibilitychange', () => {
-      if (!ctx) return;
       if (document.hidden) stopMusic();
       else if (cfg().music && unlocked) startMusic();
     });
