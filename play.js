@@ -189,7 +189,6 @@
     { c: 'Vàng', v: 900000, p: 0.003, pp: 0.008, name: 'Cá Rồng Vàng', emoji: '🐉', rare: true }
   ];
   let fishAnim = null;
-  let farmTimer = null;
 
   function F() {
     const s = S();
@@ -378,65 +377,6 @@
     toast('Bán ' + qty + ' ' + g.n + ' · ' + money(total) + (diff >= 0 ? ' · lời ' + money(diff) : ' · lỗ ' + money(-diff)));
   }
 
-  // ===================== NÔNG TRẠI =====================
-  const CROPS = [
-    { id: 'rau', n: 'Rau cải', e: '🥬', grow: 2 * 60000, seed: 5000, sell: 10000 },
-    { id: 'ngo', n: 'Bắp ngô', e: '🌽', grow: 6 * 60000, seed: 15000, sell: 32000 },
-    { id: 'ca', n: 'Cà chua', e: '🍅', grow: 15 * 60000, seed: 35000, sell: 90000 },
-    { id: 'dua', n: 'Dưa hấu', e: '🍉', grow: 30 * 60000, seed: 80000, sell: 230000 }
-  ];
-  let farmPick = 'rau';
-  function FM() {
-    const s = S();
-    if (!s.farm || typeof s.farm !== 'object') s.farm = {};
-    const f = s.farm;
-    if (!Array.isArray(f.plots)) f.plots = [];
-    const old = f.plots;
-    f.plots = [];
-    for (let i = 0; i < 6; i++) f.plots.push(old[i] && typeof old[i] === 'object' ? old[i] : null);
-    return f;
-  }
-  function plant(i) {
-    const f = FM();
-    if (f.plots[i]) return;
-    const crop = CROPS.find(c => c.id === farmPick) || CROPS[0];
-    if (!pay(crop.seed)) return;
-    f.plots[i] = { crop: crop.id, at: Date.now(), watered: false, pest: Math.random() < 0.18, treated: false };
-    save(); sfx('plant'); render();
-    toast('🌱 Đã trồng ' + crop.n);
-  }
-  function water(i) {
-    const f = FM(), p = f.plots[i];
-    if (!p || p.watered) return;
-    const crop = CROPS.find(c => c.id === p.crop);
-    if (!crop) return;
-    const remaining = Math.max(0, crop.grow - (Date.now() - p.at));
-    p.at -= Math.round(remaining * 0.2);
-    p.watered = true;
-    save(); sfx('click'); render();
-    toast('💧 Đã tưới, cây lớn nhanh hơn.');
-  }
-  function treat(i) {
-    const f = FM(), p = f.plots[i];
-    if (!p || p.treated || !p.pest) return;
-    if (!pay(2000)) return;
-    p.treated = true;
-    save(); sfx('buy'); render();
-    toast('Đã phun thuốc, sạch sâu.');
-  }
-  function harvest(i) {
-    const f = FM(), p = f.plots[i];
-    if (!p) return;
-    const crop = CROPS.find(c => c.id === p.crop);
-    if (!crop) { f.plots[i] = null; save(); render(); return; }
-    if (Date.now() - p.at < crop.grow) return toast('Cây chưa chín đâu.');
-    const bad = p.pest && !p.treated;
-    const val = Math.round(crop.sell * (bad ? 0.5 : 1));
-    f.plots[i] = null;
-    addMoney(val); save(); sfx('coin'); render();
-    toast('🧺 Thu ' + crop.n + ' · ' + money(val) + (bad ? ' (bị sâu ăn nửa)' : ''));
-  }
-
   // ===================== RENDER =====================
   function hero(tone, art, kicker, title, sub, stats) {
     return '<div class="p-hero ' + tone + '">'
@@ -622,62 +562,6 @@
       + card('🏷️', 'Bảng giá', 'mua +2% · bán −2%', rows);
   }
 
-  function farmPlotHtml(p, i) {
-    if (!p) {
-      const c = CROPS.find(x => x.id === farmPick) || CROPS[0];
-      return '<div class="farm-plot empty"><div class="top"><span class="e">🟫</span><span class="lb">Đất trống</span></div>'
-        + '<div class="lb">' + c.e + ' ' + c.n + ' · ' + money(c.seed) + '</div>'
-        + '<button class="btn" onclick="Play.plant(' + i + ')">🌱 Trồng</button></div>';
-    }
-    const crop = CROPS.find(c => c.id === p.crop) || CROPS[0];
-    const prog = Math.min(1, (Date.now() - p.at) / Math.max(1, crop.grow));
-    const ready = prog >= 1;
-    const leftMs = Math.max(0, crop.grow - (Date.now() - p.at));
-    const pestVisible = p.pest && !p.treated && prog >= 0.5;
-    let action;
-    if (ready) action = '<button class="btn btn-pink" onclick="Play.harvest(' + i + ')">🧺 Thu hoạch</button>';
-    else if (pestVisible) action = '<button class="btn" style="background:#feb2b2;color:#742a2a;" onclick="Play.treat(' + i + ')">🐛 Phun thuốc 2.000đ</button>';
-    else if (!p.watered) action = '<button class="btn btn-outline" onclick="Play.water(' + i + ')">💧 Tưới</button>';
-    else action = '<div class="farm-done">💧 Đã tưới</div>';
-    return '<div class="farm-plot">'
-      + '<div class="top"><span class="e">' + crop.e + '</span><span class="lb">' + crop.n + '</span></div>'
-      + '<div class="farm-bar"><div class="farm-fill" style="width:' + Math.round(prog * 100) + '%;"></div></div>'
-      + '<div class="lb">' + (ready ? 'Chín rồi!' : 'Còn ' + (leftMs / 60000).toFixed(1) + ' phút') + '</div>'
-      + (pestVisible ? '<div class="farm-pest">🐛 Sâu phá</div>' : '')
-      + action + '</div>';
-  }
-  function renderFarm(body) {
-    const f = FM();
-    const c = CROPS.find(x => x.id === farmPick) || CROPS[0];
-    const chips = CROPS.map(x => '<button class="farm-chip' + (x.id === farmPick ? ' on' : '') + '" onclick="Play.farmPick(\'' + x.id + '\')">'
-      + '<span class="e">' + x.e + '</span><span>' + x.n + '</span><span class="pr">' + money(x.seed) + '</span></button>').join('');
-    const plots = f.plots.map((p, i) => farmPlotHtml(p, i)).join('');
-    let ready = 0, grown = 0;
-    f.plots.forEach(p => {
-      if (!p) return;
-      grown++;
-      const cr = CROPS.find(x => x.id === p.crop);
-      if (cr && Date.now() - p.at >= cr.grow) ready++;
-    });
-    body.innerHTML = hero('tone-leaf', '🌾', 'Nông trại', 'Vườn nhà', 'Chọn hạt, tưới, chờ chín rồi thu hoạch bán.',
-      [['chín', ready + '/6'], ['đang trồng', grown + '/6'], ['hạt đang chọn', money(c.seed)]])
-      + card('🌱', 'Chọn hạt giống', '', '<div class="farm-chips">' + chips + '</div>'
-        + '<div class="p-sub">' + c.e + ' ' + c.n + ' · chín sau ' + (c.grow / 60000) + ' phút · bán ' + money(c.sell) + '</div>')
-      + card('🪴', '6 luống đất', ready ? ready + ' chín' : '', '<div class="farm-grid">' + plots + '</div>'
-        + '<div class="p-sub">Tưới giúp cây lớn nhanh 20%. Sâu phá thì phun thuốc, không thì mất nửa giá bán.</div>');
-  }
-
-  function ensureFarmTimer() {
-    if (farmTimer) return;
-    farmTimer = setInterval(() => {
-      if (tab !== 'farm' || document.hidden) return;
-      const b = document.getElementById('play-body');
-      const sc = b ? b.scrollTop : 0;
-      render();
-      if (b) b.scrollTop = sc;
-    }, 5000);
-  }
-  function stopFarmTimer() { if (farmTimer) { clearInterval(farmTimer); farmTimer = null; } }
   function stopFishLoop() { if (fishAnim && fishAnim.raf) { cancelAnimationFrame(fishAnim.raf); fishAnim.raf = 0; } }
 
   function render() {
@@ -688,22 +572,23 @@
       if (tab === 'lottery') renderLottery(body);
       else if (tab === 'fishing') renderFishing(body);
       else if (tab === 'market') renderMarket(body);
-      else renderFarm(body);
     } catch (e) { console.error('Play.render', e); }
-    if (tab === 'farm') ensureFarmTimer(); else stopFarmTimer();
     if (tab === 'fishing') { if (fishAnim) startFishLoop(); } else stopFishLoop();
     refreshWallets();
   }
 
   window.Play = {
     render: render,
-    tab: (name) => { if (name === tab) return; tab = name; render(); },
-    stop: () => { stopFarmTimer(); stopFishLoop(); },
+    tab: (name) => {
+      if (name === 'farm') { if (window.FarmGame) window.FarmGame.enter(); return; }
+      if (name === tab) return;
+      tab = name;
+      render();
+    },
+    stop: () => { if (window.FarmGame) window.FarmGame.unmount(); stopFishLoop(); },
     buyScratch, scratch: scratchCell,
     pickNum, luckyPick, buyViet, drawViet,
     fishCast, fishReel, fishSell, fishRelease, enterContest,
-    mktBuy, mktSell,
-    farmPick: (id) => { farmPick = id; render(); },
-    plant, water, treat, harvest
+    mktBuy, mktSell
   };
 })();
