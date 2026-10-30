@@ -41,6 +41,21 @@
     { id: 'ca', n: 'Cà chua', e: '🍅', grow: 15 * 60000, seed: 35000, sell: 90000 },
     { id: 'dua', n: 'Dưa hấu', e: '🍉', grow: 30 * 60000, seed: 80000, sell: 230000 }
   ];
+  const SEED_PACK = 5;
+  const FERTS = [
+    { id: 'thuong', n: 'Phân chuồng', e: '🌾', cut: 0.25, price: 25000 },
+    { id: 'xanh', n: 'Phân hữu cơ', e: '💚', cut: 0.45, price: 60000 },
+    { id: 'cao', n: 'Phân vi sinh', e: '✨', cut: 0.65, price: 150000 }
+  ];
+  const fertSum = (f) => FERTS.reduce((s, t) => s + (f.ferts[t.id] || 0), 0);
+  function spendFert(f) {
+    for (let i = 0; i < FERTS.length; i++) {
+      const t = FERTS[i];
+      if (f.ferts[t.id] > 0) { f.ferts[t.id]--; return t; }
+    }
+    return null;
+  }
+  const PESTS = ['🐛', '🐜', '🦗', '🐌', '🪲'];
   const MAX_PLOTS = 18, START_PLOTS = 6;
   const LAND_COST = (i) => i < 10 ? 400000 : i < 14 ? 1500000 : 4000000;
   const LAND_LVL = (i) => i < 8 ? 2 : i < 10 ? 3 : i < 12 ? 4 : i < 14 ? 5 : i < 16 ? 6 : 7;
@@ -57,12 +72,24 @@
   const TILE = 44;
   const WORLD_COLS = 20, WORLD_ROWS = 26;
   const WORLD_W = WORLD_COLS * TILE, WORLD_H = WORLD_ROWS * TILE;
-  const PAD = { c0: 1, r0: 2, c1: 9, r1: 9 };
+  const BOUND = { c0: 0, r0: 2, c1: 19, r1: 25 };
+  // vùng không được chen công trình: ruộng, ao, chợ làng, cổng, con đường
+  const NO_BUILD = [
+    { c0: 1, r0: 10, c1: 8, r1: 23 },
+    { c0: 12, r0: 18, c1: 17, r1: 21 },
+    { c0: 13, r0: 10, c1: 15, r1: 12 },
+    { c0: 14, r0: 23, c1: 16, r1: 25 },
+    { c0: 18, r0: 0, c1: 19, r1: 25 }
+  ];
   const FOOT = { kho: [2, 2], nha: [2, 2], donggoi: [2, 2], giaohang: [2, 2], cskh: [1, 1], ketoan: [1, 1] };
   const HOME_POS = { kho: { c: 2, r: 2 }, donggoi: { c: 5, r: 2 }, cskh: { c: 4, r: 2 }, ketoan: { c: 4, r: 4 }, nha: { c: 2, r: 5 }, giaohang: { c: 5, r: 5 } };
   const PLOT_COLS = 3, PLOT_ROW = 11;
   const plotRect = (i) => ({ x: (2 + (i % PLOT_COLS) * 2) * TILE + 4, y: (PLOT_ROW + Math.floor(i / PLOT_COLS) * 2) * TILE + 4, w: 2 * TILE - 8, h: 2 * TILE - 8 });
+  const plotCenter = (i) => { const r = plotRect(i); return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; };
   const WALK = [{ x0: 430, x1: 800, y0: 340, y1: 1020 }, { x0: 80, x1: 780, y0: 1030, y1: 1090 }];
+  const FIELD = { x0: 60, x1: 430, y0: 470, y1: 1030 };
+  const WALK_SPEED = 62;
+  const RIPEN_GRACE = 20000;
   const NAMES = ['Chị Hai', 'Anh Ba', 'Cô Tư', 'Chú Năm', 'Bé Sáu', 'Anh Bảy', 'Chị Tám', 'Chú Chín', 'Bé Mười', 'Anh Hai Một', 'Cô Ba Mốt', 'Chú Tư Bốn'];
   const WORKER_EMOJI = { vuon: ['🧑‍🌾', '👩‍🌾', '👨‍🌾'], donggoi: ['🧑‍🏭', '👩‍🏭', '👨‍🏭'] };
   const QUIRKS = [
@@ -109,7 +136,10 @@
     Object.keys(BUILDINGS).forEach(k => { if (typeof f.buildings[k] !== 'number' || f.buildings[k] < 0) f.buildings[k] = 0; });
     if (!f.buildingPos || typeof f.buildingPos !== 'object') f.buildingPos = {};
     if (typeof f.irrigate !== 'boolean') f.irrigate = false;
-    if (typeof f.fertBags !== 'number') f.fertBags = 0;
+    if (!f.seeds || typeof f.seeds !== 'object') f.seeds = { rau: 4, ngo: 2, ca: 1, dua: 0 };
+    CROPS.forEach(c => { if (typeof f.seeds[c.id] !== 'number' || f.seeds[c.id] < 0) f.seeds[c.id] = 0; });
+    if (!f.ferts || typeof f.ferts !== 'object') f.ferts = { thuong: typeof f.fertBags === 'number' ? f.fertBags : 0, xanh: 0, cao: 0 };
+    FERTS.forEach(t => { if (typeof f.ferts[t.id] !== 'number' || f.ferts[t.id] < 0) f.ferts[t.id] = 0; });
     if (typeof f.sprays !== 'number') f.sprays = 0;
     if (!Array.isArray(f.workers)) f.workers = [];
     f.workers.forEach(w => { if (!w.__pw) { w.__pw = true; if (typeof w.tx === 'number' && w.tx <= 100) { w.tx = null; w.ty = null; } } });
@@ -236,32 +266,38 @@
   }
   function canPlace(f, key, c, r) {
     const [fw, fh] = FOOT[key];
-    if (c < PAD.c0 || r < PAD.r0 || c + fw - 1 > PAD.c1 || r + fh - 1 > PAD.r1) return false;
+    if (c < BOUND.c0 || r < BOUND.r0 || c + fw - 1 > BOUND.c1 || r + fh - 1 > BOUND.r1) return false;
+    if (NO_BUILD.some(z => c <= z.c1 && c + fw - 1 >= z.c0 && r <= z.r1 && r + fh - 1 >= z.r0)) return false;
     return !footprintBusy(f, key, c, r);
+  }
+  function doorOf(f, key) {
+    const p = bpos(f, key);
+    if (!p) return null;
+    const s = FOOT[key];
+    return { x: (p.c + s[0] / 2) * TILE, y: (p.r + s[1]) * TILE - 8 };
   }
 
   // ===================== VƯỜN =====================
   let farmPick = 'rau';
-  function plant(i, useFert) {
+  function plant(i, useFert, quiet) {
     const f = FM();
     if (i >= landCount(f)) return;
     if (f.plots[i]) return;
     const crop = cropOf(farmPick);
     let fert = false;
-    if (useFert) {
-      if (f.fertBags <= 0) { toast('Hết phân bón rồi, ghé Shop nhé.'); sfx('error'); return; }
-      fert = true;
-    }
-    if (!pay(crop.seed)) return;
-    if (fert) f.fertBags--;
-    f.plots[i] = { crop: crop.id, at: Date.now(), watered: false, pest: Math.random() < 0.18, treated: false, fert: !!fert };
+    if (useFert && fertSum(f) <= 0) { toast('Hết phân bón rồi, ghé Shop nhé.'); sfx('error'); return; }
+    if ((f.seeds[crop.id] || 0) <= 0) { toast('Hết hạt ' + crop.n + ', mua thêm ở Shop nhé.'); sfx('error'); return; }
+    f.seeds[crop.id]--;
+    if (useFert) { spendFert(f); fert = true; }
+    f.plots[i] = { crop: crop.id, at: Date.now(), watered: false, pest: Math.random() < 0.18, bug: PESTS[Math.floor(Math.random() * PESTS.length)], treated: false, fert: !!fert };
     if (Date.now() < f.__waterOffUntil) f.plots[i].pauseAt = Date.now();
-    save(); sfx('plant'); render();
-    toast('🌱 Đã trồng ' + crop.n + (fert ? ' (bón phân)' : ''));
+    save(); if (!quiet) sfx('plant');
+    render();
+    if (!quiet) toast('🌱 Đã trồng ' + crop.n + (fert ? ' (có bón phân)' : ''));
   }
   function plotGrowTime(p) {
     const crop = cropOf(p.crop);
-    return Math.round(crop.grow * (p.fert ? 0.65 : 1));
+    return Math.round(crop.grow * (p.fert === true ? 0.65 : 1));
   }
   function plotElapsed(p, now = Date.now()) {
     const paused = p.pauseAt ? Math.max(0, Math.min(now, S().farm.__waterOffUntil) - p.pauseAt) : 0;
@@ -272,24 +308,44 @@
     f.__waterOffUntil = Math.max(f.__waterOffUntil || 0, now + duration);
     f.plots.forEach(p => { if (p && !p.pauseAt && plotElapsed(p, now) < plotGrowTime(p)) p.pauseAt = now; });
   }
+  function applyWater(p) {
+    const remaining = Math.max(0, plotGrowTime(p) - plotElapsed(p));
+    p.at -= Math.round(remaining * 0.2);
+    p.watered = true;
+  }
   function water(i) {
     const f = FM(), p = f.plots[i];
     if (!p || p.watered) return;
     if (Date.now() < f.__waterOffUntil) return toast('Đang cúp nước, chưa tưới được.');
-    const remaining = Math.max(0, plotGrowTime(p) - plotElapsed(p));
-    p.at -= Math.round(remaining * 0.2);
-    p.watered = true;
+    applyWater(p);
     save(); sfx('click'); render();
     toast('💧 Đã tưới, cây lớn nhanh hơn.');
   }
+  function fertilize(i, kind) {
+    const f = FM(), p = f.plots[i];
+    if (!p) return;
+    const t = FERTS.find(x => x.id === kind) || FERTS[0];
+    if (p.fert) return toast('Luống này bón phân rồi.');
+    if (plotElapsed(p) >= plotGrowTime(p)) return toast('Cây chín rồi, bón thêm cũng vậy thôi.');
+    if ((f.ferts[t.id] || 0) <= 0) { toast('Hết ' + t.n.toLowerCase() + ' rồi, ghé Shop nhé.'); sfx('error'); return; }
+    const left = Math.max(0, plotGrowTime(p) - plotElapsed(p));
+    f.ferts[t.id]--;
+    p.fert = t.id;
+    p.at -= Math.round(left * t.cut);
+    save(); sfx('buy'); render();
+    toast(t.e + ' Bón ' + t.n.toLowerCase() + ', cây lớn nhanh hơn.');
+  }
   function treat(i) {
     const f = FM(), p = f.plots[i];
-    if (!p || p.treated || !p.pest) return;
+    if (!p) return;
+    if (p.treated) return toast('Luống này vừa xử lý thuốc rồi.');
     if (f.sprays <= 0) { toast('Hết thuốc trừ sâu, mua thêm ở Shop nhé.'); sfx('error'); return; }
+    const had = p.pest && !p.treated;
     f.sprays--;
     p.treated = true;
+    p.pest = false;
     save(); sfx('buy'); render();
-    toast('Đã phun thuốc, sạch sâu.');
+    toast(had ? 'Đã phun thuốc, sạch sâu.' : 'Phun phòng trước, sâu khỏi bén mảng.');
   }
   function harvest(i) {
     const f = FM(), p = f.plots[i];
@@ -317,9 +373,25 @@
   }
 
   // ===================== SHOP =====================
-  function buyItem(kind, arg) {
+  function buyItem(kind) {
     const f = FM();
-    if (kind === 'fert') { if (!pay(25000)) return; f.fertBags += 5; }
+    const crop = CROPS.find(c => c.id === kind);
+    if (crop) {
+      if (!pay(crop.seed * SEED_PACK)) return;
+      f.seeds[crop.id] += SEED_PACK;
+      save(); sfx('buy'); render();
+      toast('Đã mua ' + SEED_PACK + ' hạt ' + crop.n + '.');
+      return;
+    }
+    const ft = FERTS.find(t => 'fert_' + t.id === kind);
+    if (ft) {
+      if (!pay(ft.price)) return;
+      f.ferts[ft.id] += 5;
+      save(); sfx('buy'); render();
+      toast('Đã mua 5 bao ' + ft.n.toLowerCase() + '.');
+      return;
+    }
+    if (kind === 'fert') { if (!pay(FERTS[0].price)) return; f.ferts.thuong += 5; }
     else if (kind === 'spray') { if (!pay(50000)) return; f.sprays += 5; }
     else if (kind === 'irrig') {
       if (f.irrigate) return toast('Máy tưới đã lắp rồi.');
@@ -372,73 +444,207 @@
   function quirkSpd(w) { const q = QUIRKS.find(x => x.id === w.quirk); return (q && q.spd) || 1; }
 
   // vị trí & thoại trong cảnh (chỉ lưu trong phiên)
+  const CHAT_WORK = {
+    water: ['Tưới chút nước cho tươi nào.', 'Luống này khát nước rồi.', 'Nước mát ghê, cây sướng lắm.', 'Tưới xong cái là lá vểnh lên liền.'],
+    spray: ['Có sâu! Phun ngay mới kịp.', 'Thuốc này mùi kỳ ghê.', 'Sâu gì mà lì thế không biết.', 'Phun cho sạch, khỏi lây luống bên.'],
+    fert: ['Bón chút phân cho bõ công.', 'Mùi phân mà thơm là biết tay nghề rồi.', 'Bón xong cây lớn như thổi.', 'Đừng bón nhiều quá, cây ngộp đó.'],
+    harvest: ['Chín rồi, hái thôi!', 'Luống này nặng trĩu luôn.', 'Bội thu bội thu!', 'Hái khéo kẻo dập.', 'Được mùa quá sếp ơi.'],
+    boxed: ['Cất kho xong rồi sếp!', 'Kho còn chỗ, để vô đây.', 'Xếp gọn vô góc nha.'],
+    full: ['Kho đầy rồi sếp ơi!', 'Chất đống ngoài à sếp?', 'Không còn chỗ, bán bớt đi!'],
+    fetch: ['Bốc kiện này qua xưởng.', 'Kho còn ê hề, làm tới đi.', 'Đơn này gấp lắm rồi.', 'Vai đau quá mà lương thì...'],
+    drop: ['Đóng gói tới luôn!', 'Xưởng nhận hàng nha.', 'Xong kiện nữa rồi.'],
+    idleBox: ['Máy đóng gói rảnh quá.', 'Không có đơn buồn ghê.', 'Ngồi chơi nãy giờ rồi đó nha.']
+  };
+  const recentSays = [];
+  function pickLine(w, pool) {
+    const avail = pool.filter(l => l !== w.__lastSay && recentSays.indexOf(l) < 0);
+    const line = pick(avail.length ? avail : pool);
+    w.__lastSay = line;
+    recentSays.push(line);
+    if (recentSays.length > 6) recentSays.shift();
+    return line;
+  }
+  function say(w, pool, now) {
+    w.__say = typeof pool === 'string' ? pool : pickLine(w, pool);
+    w.__sayUntil = now + 4500;
+  }
+  function assignWalk(w, x, y, now, spd) {
+    const cx = w.tx != null ? w.tx : 640, cy = w.ty != null ? w.ty : 700;
+    const d = Math.hypot(x - cx, y - cy);
+    w.tx = Math.round(x); w.ty = Math.round(y);
+    w.__dur = Math.max(0.7, Math.round(d / (spd || WALK_SPEED) * 10) / 10);
+    w.__arrive = now + Math.round(d / (spd || WALK_SPEED) * 1000);
+  }
+  const ripenAge = (p, now) => plotElapsed(p, now) - plotGrowTime(p);
+
+  function gardenJob(f, now) {
+    for (let i = 0; i < landCount(f); i++) {
+      const p = f.plots[i];
+      if (p && ripenAge(p, now) >= RIPEN_GRACE && f.buildings.kho > 0) return { kind: 'harvest', plot: i };
+    }
+    if (f.sprays > 0) {
+      for (let i = 0; i < landCount(f); i++) {
+        const p = f.plots[i];
+        if (p && p.pest && !p.treated && plotElapsed(p, now) >= plotGrowTime(p) * 0.5) return { kind: 'spray', plot: i };
+      }
+    }
+    if (!f.irrigate && !(now < f.__waterOffUntil)) {
+      for (let i = 0; i < landCount(f); i++) {
+        const p = f.plots[i];
+        if (p && !p.watered && plotElapsed(p, now) < plotGrowTime(p)) return { kind: 'water', plot: i };
+      }
+    }
+    if (fertSum(f) > 0) {
+      for (let i = 0; i < landCount(f); i++) {
+        const p = f.plots[i];
+        if (p && !p.fert && plotElapsed(p, now) < plotGrowTime(p) * 0.75) return { kind: 'fert', plot: i };
+      }
+    }
+    return null;
+  }
+  function gardenerTick(f, w, now) {
+    const j = w.__job;
+    if (j && now < w.__arrive) return;
+    if (j && j.phase === 'kho') {
+      const c = w.__carry;
+      if (c && stockTotal(f) + c.qty <= stockCap(f)) {
+        f.stock[c.crop] += c.qty;
+        taskBump('harvest', c.qty);
+        addXp(c.qty);
+        say(w, CHAT_WORK.boxed, now);
+        w.__carry = null;
+      } else if (c) {
+        say(w, CHAT_WORK.full, now);
+        w.__carryWait = now + 20000;
+      }
+      w.__job = null;
+      return;
+    }
+    if (j && j.phase === 'go') {
+      const p = f.plots[j.plot];
+      if (!p) { w.__job = null; return; }
+      const gt = plotGrowTime(p), el = plotElapsed(p, now);
+      if (j.kind === 'harvest') {
+        if (el < gt) { w.__job = null; return; }
+        const crop = cropOf(p.crop);
+        const bad = p.pest && !p.treated;
+        const qty = bad ? 1 : (Math.random() < 0.3 ? 2 : 1);
+        f.plots[j.plot] = null;
+        w.__carry = { crop: crop.id, qty: qty };
+        say(w, CHAT_WORK.harvest, now);
+        const kp = doorOf(f, 'kho');
+        if (!kp) { w.__job = null; w.__carry = null; return; }
+        j.phase = 'kho';
+        assignWalk(w, kp.x + rand(-12, 12), kp.y, now);
+        return;
+      }
+      if (j.kind === 'water') {
+        if (p.watered || now < f.__waterOffUntil) { w.__job = null; return; }
+        applyWater(p);
+        say(w, CHAT_WORK.water, now);
+      } else if (j.kind === 'spray') {
+        if (!p.pest || p.treated || f.sprays <= 0) { w.__job = null; return; }
+        f.sprays--; p.treated = true; p.pest = false;
+        say(w, CHAT_WORK.spray, now);
+      } else if (j.kind === 'fert') {
+        if (p.fert || el >= gt) { w.__job = null; return; }
+        const left = Math.max(0, gt - el);
+        const ft = spendFert(f);
+        if (!ft) { w.__job = null; return; }
+        p.fert = ft.id;
+        p.at -= Math.round(left * ft.cut);
+        say(w, CHAT_WORK.fert, now);
+      }
+      w.__job = null;
+      w.__nextJob = now + rand(1200, 3200);
+      return;
+    }
+    if (!w.__job) {
+      if (w.__carry && now > (w.__carryWait || 0)) {
+        const kp = doorOf(f, 'kho');
+        if (kp) { w.__job = { kind: 'deliver', phase: 'kho' }; assignWalk(w, kp.x + rand(-12, 12), kp.y, now); return; }
+        w.__carry = null;
+      }
+      if (now < (w.__nextJob || 0)) return;
+      const job = w.__carry ? null : gardenJob(f, now);
+      if (job) {
+        const pc = plotCenter(job.plot);
+        w.__job = { kind: job.kind, plot: job.plot, phase: 'go' };
+        assignWalk(w, pc.x + rand(-10, 10), pc.y + 26, now);
+        return;
+      }
+      if (!w.__nextWander || now > w.__nextWander) {
+        const sp = Math.random() < 0.65 ? FIELD : WALK[0];
+        assignWalk(w, rand(sp.x0, sp.x1), rand(sp.y0, sp.y1), now);
+        w.__nextWander = now + rand(7000, 13000);
+      }
+    }
+  }
+  function packerTick(f, w, now) {
+    const j = w.__job;
+    if (j && now < w.__arrive) return;
+    const strike = now < f.__strikeUntil || f.events.some(e => e.type === 'dinhcong' && !e.done);
+    const busy = f.orders.some(o => o.state === 'pack') && f.buildings.donggoi > 0 && !(now < f.__powerOffUntil) && !strike;
+    if (!busy) {
+      if (w.__carryBox) w.__carryBox = false;
+      w.__job = null;
+      if (!w.__nextWander || now > w.__nextWander) {
+        const dp = doorOf(f, 'donggoi');
+        if (dp) {
+          assignWalk(w, dp.x + rand(-30, 30), dp.y + rand(0, 30), now);
+          w.__nextWander = now + rand(8000, 14000);
+          if (Math.random() < 0.3) say(w, CHAT_WORK.idleBox, now);
+        }
+      }
+      return;
+    }
+    if (!j) {
+      if (now < (w.__nextFetch || 0)) return;
+      const kp = doorOf(f, 'kho');
+      if (!kp) { w.__job = null; return; }
+      w.__job = { kind: 'fetch', phase: 'kho' };
+      assignWalk(w, kp.x + rand(-14, 14), kp.y, now);
+      return;
+    }
+    if (j.phase === 'kho') {
+      const dp = doorOf(f, 'donggoi');
+      if (!dp) { w.__job = null; return; }
+      w.__carryBox = true;
+      say(w, CHAT_WORK.fetch, now);
+      j.phase = 'x';
+      assignWalk(w, dp.x + rand(-14, 14), dp.y, now);
+      return;
+    }
+    if (j.phase === 'x') {
+      w.__carryBox = false;
+      w.__job = null;
+      w.__nextFetch = now + rand(1500, 3500);
+      say(w, CHAT_WORK.drop, now);
+    }
+  }
   function workerTick(f, now) {
+    const strike = now < f.__strikeUntil || f.events.some(e => e.type === 'dinhcong' && !e.done);
     f.workers.forEach(w => {
-      if (w.tx == null || !w.__nextMove || now > w.__nextMove) {
-        const a = WALK[Math.random() < 0.72 ? 0 : 1];
-        w.tx = rand(a.x0, a.x1);
-        w.ty = rand(a.y0, a.y1);
-        w.__nextMove = now + rand(2600, 5200);
-      }
-      if (!w.__nextSay || now > w.__nextSay) {
-        const chatty = w.quirk === 'tam' ? 0.5 : 1;
-        w.__say = pick(CHATTER);
-        w.__nextSay = now + rand(9, 22) * 1000 * chatty;
-        w.__sayUntil = now + 4200;
-      }
       if (w.__sayUntil && now > w.__sayUntil) { w.__say = null; w.__sayUntil = 0; }
+      if (!strike) {
+        if (w.role === 'donggoi') packerTick(f, w, now); else gardenerTick(f, w, now);
+      }
+      if (!w.__say && (!w.__nextSay || now > w.__nextSay)) {
+        const chatty = w.quirk === 'tam' ? 0.6 : 1.6;
+        say(w, CHATTER, now);
+        w.__nextSay = now + rand(18, 40) * 1000 * chatty;
+      }
     });
   }
   // AI làm việc: mỗi 3 giây một nhịp
   function workTick(f) {
-    const gardeners = workersOf(f, 'vuon');
     const strike = Date.now() < f.__strikeUntil || f.events.some(e => e.type === 'dinhcong' && !e.done);
-    if (gardeners.length && !strike) {
-      gardeners.forEach(() => {
-      // thu hoạch trước
-      for (let i = 0; i < landCount(f); i++) {
-        const p = f.plots[i];
-        if (!p) continue;
-        if (plotElapsed(p) >= plotGrowTime(p)) {
-          const crop = cropOf(p.crop);
-          const bad = p.pest && !p.treated;
-          const qty = bad ? 1 : (Math.random() < 0.3 ? 2 : 1);
-          if (stockTotal(f) + qty > stockCap(f)) break;
-          f.plots[i] = null;
-          f.stock[crop.id] += qty;
-          taskBump('harvest', qty);
-          addXp(qty);
-          return;
-        }
-      }
-      // phun thuốc
-      if (f.sprays > 0) {
-        for (let i = 0; i < landCount(f); i++) {
-          const p = f.plots[i];
-          if (p && p.pest && !p.treated) { f.sprays--; p.treated = true; return; }
-        }
-      }
-      if (Date.now() < f.__waterOffUntil) return;
-      for (let i = 0; i < landCount(f); i++) {
-        const p = f.plots[i];
-        if (p && !p.watered) {
-          const remaining = Math.max(0, plotGrowTime(p) - plotElapsed(p));
-          p.at -= Math.round(remaining * 0.2);
-          p.watered = true;
-          return;
-        }
-      }
-      });
-    }
-    // đóng gói
     const packers = workersOf(f, 'donggoi');
-    if (packers.length && !strike && !(Date.now() < f.__powerOffUntil)) {
-      const o = f.orders.find(x => x.state === 'pack');
-      if (o) {
-        const spd = packers.reduce((s, w) => s + w.skill * quirkSpd(w) * (w.morale >= 40 ? 1 : 0.5), 0);
-        o.prog += (100 / 240) * spd * (BUILDINGS.donggoi.mult[f.buildings.donggoi] || 1) * 3;
-      }
-    }
+    if (!packers.length || strike || Date.now() < f.__powerOffUntil) return;
+    const o = f.orders.find(x => x.state === 'pack');
+    if (!o) return;
+    const spd = packers.reduce((s, w) => s + w.skill * quirkSpd(w) * (w.morale >= 40 ? 1 : 0.5), 0);
+    o.prog += (100 / 240) * spd * (BUILDINGS.donggoi.mult[f.buildings.donggoi] || 1) * 3;
   }
 
   // ===================== ĐƠN HÀNG =====================
@@ -820,6 +1026,7 @@
   let neg = null;
   let tip = {};
   let fgPanel = null;
+  let plotSel = null;
   let uiSeed = 0;
   function tick() {
     if (!mounted || document.hidden) return;
@@ -910,9 +1117,7 @@
 
   const DECO = (() => {
     const d = [];
-    d.push('<div class="fg-court" style="left:' + PAD.c0 * TILE + 'px;top:' + PAD.r0 * TILE + 'px;width:' + (PAD.c1 - PAD.c0 + 1) * TILE + 'px;height:' + (PAD.r1 - PAD.r0 + 1) * TILE + 'px"></div>');
     d.push('<div class="fg-road" style="left:' + (18 * TILE) + 'px"></div>');
-    d.push('<div class="fg-fence" style="left:76px;top:476px;width:290px;height:552px"></div>');
     d.push('<div class="fg-pond" style="left:560px;top:830px"></div><span class="fg-duck" style="left:604px;top:872px">🦆</span>');
     d.push('<button class="fg-stall" style="left:590px;top:468px" onclick="FarmGame.open(\'board\')"><span>🏪</span><small>Chợ làng</small></button>');
     d.push('<div class="fg-gate" style="left:650px;top:1052px">🚧<small>Cổng trại</small></div>');
@@ -955,9 +1160,11 @@
   }
   function onDown(e) {
     if (e.button > 0) return;
+    if (e.target.closest && e.target.closest('.fg-plotbar')) return;
     stopInertia();
     moved = false;
-    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, lx: e.clientX, ly: e.clientY, lt: performance.now(), vx: 0, vy: 0 };
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, lx: e.clientX, ly: e.clientY, lt: performance.now(), vx: 0, vy: 0,
+      bg: !(e.target.closest && e.target.closest('.fg-plot, .fg-bld, .fg-stall')) };
     if (place) moveGhost(e.clientX, e.clientY);
   }
   function onMove(e) {
@@ -984,7 +1191,69 @@
     if (!drag || (e && e.pointerId !== drag.id)) return;
     const d = drag; drag = null;
     if (!place && moved) startInertia(d.vx, d.vy);
+    if (!moved && d.bg && plotSel != null) { plotSel = null; render(); }
     setTimeout(() => { moved = false; }, 0);
+  }
+  let seedDrag = null, seedGhostEl = null;
+  function plotAtPoint(clientX, clientY) {
+    if (!camEl) return null;
+    const box = camEl.getBoundingClientRect();
+    const wx = clientX - box.left - cam.x, wy = clientY - box.top - cam.y;
+    for (let i = 0; i < landCount(FM()); i++) {
+      const r = plotRect(i);
+      if (wx >= r.x && wx <= r.x + r.w && wy >= r.y && wy <= r.y + r.h) return i;
+    }
+    return null;
+  }
+  function seedGrab(e, cropId) {
+    e.preventDefault(); e.stopPropagation();
+    const f = FM();
+    if ((f.seeds[cropId] || 0) <= 0) {
+      toast('Hết hạt ' + cropOf(cropId).n + ', mở sạp mua thêm nhé.');
+      sfx('error');
+      plotSel = null; fgPanel = 'shop'; render();
+      return;
+    }
+    seedDrag = { crop: cropId, ox: e.clientX, oy: e.clientY, moved: false, last: plotSel };
+    seedGhostEl = document.createElement('div');
+    seedGhostEl.className = 'fg-seed-ghost';
+    seedGhostEl.textContent = cropOf(cropId).e;
+    seedGhostEl.style.left = e.clientX + 'px';
+    seedGhostEl.style.top = e.clientY + 'px';
+    document.body.appendChild(seedGhostEl);
+    window.addEventListener('pointermove', seedMove);
+    window.addEventListener('pointerup', seedUp);
+    window.addEventListener('pointercancel', seedUp);
+  }
+  function seedMove(e) {
+    if (!seedDrag) return;
+    if (Math.abs(e.clientX - seedDrag.ox) + Math.abs(e.clientY - seedDrag.oy) > 6) seedDrag.moved = true;
+    if (seedGhostEl) { seedGhostEl.style.left = e.clientX + 'px'; seedGhostEl.style.top = e.clientY + 'px'; }
+    if (!seedDrag.moved) return;
+    const idx = plotAtPoint(e.clientX, e.clientY);
+    if (idx == null || idx === seedDrag.last) return;
+    seedDrag.last = idx;
+    const f = FM();
+    if (!f.plots[idx] && (f.seeds[seedDrag.crop] || 0) > 0) { farmPick = seedDrag.crop; plant(idx, false, true); }
+  }
+  function seedUp(e) {
+    if (!seedDrag) return;
+    const d = seedDrag;
+    seedDrag = null;
+    if (!d.moved) {
+      if (plotSel != null) { farmPick = d.crop; plant(plotSel, false); }
+    } else if (e) {
+      const idx = plotAtPoint(e.clientX, e.clientY);
+      if (idx != null && idx !== d.last) {
+        const f = FM();
+        if (!f.plots[idx] && (f.seeds[d.crop] || 0) > 0) { farmPick = d.crop; plant(idx, false, true); }
+      }
+    }
+    if (seedGhostEl) { seedGhostEl.remove(); seedGhostEl = null; }
+    window.removeEventListener('pointermove', seedMove);
+    window.removeEventListener('pointerup', seedUp);
+    window.removeEventListener('pointercancel', seedUp);
+    render();
   }
   function onClickCap(e) {
     if (moved || place) { e.preventDefault(); e.stopPropagation(); }
@@ -1015,8 +1284,8 @@
     const box = camEl.getBoundingClientRect();
     const wx = clientX - box.left - cam.x, wy = clientY - box.top - cam.y;
     const s = FOOT[place.key];
-    place.c = Math.max(PAD.c0, Math.min(PAD.c1 - s[0] + 1, Math.round(wx / TILE - s[0] / 2)));
-    place.r = Math.max(PAD.r0, Math.min(PAD.r1 - s[1] + 1, Math.round(wy / TILE - s[1] / 2)));
+    place.c = Math.max(BOUND.c0, Math.min(BOUND.c1 - s[0] + 1, Math.round(wx / TILE - s[0] / 2)));
+    place.r = Math.max(BOUND.r0, Math.min(BOUND.r1 - s[1] + 1, Math.round(wy / TILE - s[1] / 2)));
     place.ok = canPlace(FM(), place.key, place.c, place.r);
     paintGhost();
   }
@@ -1041,10 +1310,14 @@
     if (!b || !FOOT[key] || f.buildings[key] > 0) return;
     if (wallet() < b.cost[1]) { toast('Chưa đủ ' + money(b.cost[1]) + ' để xây ' + b.n + '.'); sfx('error'); return; }
     const s = FOOT[key];
-    let spot = null;
-    for (let r = PAD.r0; r <= PAD.r1 - s[1] + 1 && !spot; r++) {
-      for (let c = PAD.c0; c <= PAD.c1 - s[0] + 1; c++) {
-        if (canPlace(f, key, c, r)) { spot = { c: c, r: r }; break; }
+    const vx = camEl ? (camEl.clientWidth / 2 - cam.x) / TILE : 5;
+    const vy = camEl ? (camEl.clientHeight / 2 - cam.y) / TILE : 5;
+    let spot = null, best = Infinity;
+    for (let r = BOUND.r0; r <= BOUND.r1 - s[1] + 1; r++) {
+      for (let c = BOUND.c0; c <= BOUND.c1 - s[0] + 1; c++) {
+        if (!canPlace(f, key, c, r)) continue;
+        const d = Math.pow(c + s[0] / 2 - vx, 2) + Math.pow(r + s[1] / 2 - vy, 2);
+        if (d < best) { best = d; spot = { c: c, r: r }; }
       }
     }
     if (!spot) { toast('Hết chỗ trống để xây rồi.'); sfx('error'); return; }
@@ -1123,36 +1396,58 @@
       }
       const p = f.plots[i];
       if (!p) {
-        const c = cropOf(farmPick);
-        const fertBtn = f.fertBags > 0 ? '<button class="fg-mini alt" title="Trồng và bón phân" onclick="FarmGame.plant(' + i + ',true)">🌾</button>' : '';
-        plots += '<div class="fg-plot empty" style="' + st + '"><button class="fg-mini" onclick="FarmGame.plant(' + i + ',false)">' + c.e + ' ' + (c.seed / 1000) + 'k</button>' + fertBtn + '</div>';
+        plots += '<button class="fg-plot empty" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
+          + '<span class="fg-p-e">🌱</span><span class="fg-p-lb">Trồng</span></button>';
         continue;
       }
       const crop = cropOf(p.crop);
-      const gt = plotGrowTime(p);
-      const prog = Math.min(1, plotElapsed(p, now) / gt);
-      const ready = prog >= 1;
-      const pestVisible = p.pest && !p.treated && prog >= 0.5;
+      const gt = plotGrowTime(p), el = plotElapsed(p, now);
+      const ready = el >= gt;
+      const pestVisible = p.pest && !p.treated && el >= gt * 0.5;
       const waterOff = f.__waterOffUntil && now < f.__waterOffUntil;
-      let act;
-      if (ready) act = '<button class="fg-mini pink" onclick="FarmGame.harvest(' + i + ')">🧺 Thu</button>';
-      else if (pestVisible) act = '<button class="fg-mini red" onclick="FarmGame.treat(' + i + ')">🐛 Phun</button>';
-      else if (!p.watered && !waterOff) act = '<button class="fg-mini blue" onclick="FarmGame.water(' + i + ')">💧 Tưới</button>';
-      else act = '<span class="fg-p-lb">' + (waterOff ? '🚱 Cúp nước' : Math.max(1, Math.ceil((gt - plotElapsed(p, now)) / 60000)) + 'p') + '</span>';
-      plots += '<div class="fg-plot" style="' + st + '">'
+      const secs = Math.max(0, Math.ceil((gt - el) / 1000));
+      const hint = ready ? '🧺 Thu'
+        : secs >= 60 ? Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2)
+          : secs + 's';
+      plots += '<button class="fg-plot' + (ready ? ' ready' : '') + '" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
         + '<span class="fg-p-e">' + crop.e + '</span>'
-        + '<div class="fg-p-bar"><i style="width:' + Math.round(prog * 100) + '%"></i></div>'
-        + (pestVisible ? '<span class="fg-pest">🐛</span>' : '')
-        + act + '</div>';
+        + (pestVisible ? '<span class="fg-pest" onclick="event.stopPropagation();FarmGame.sprayPlot(' + i + ')">' + (p.bug || '🐛') + '</span>' : '')
+        + (!p.watered && !waterOff && !ready ? '<span class="fg-thirst">💧</span>' : '')
+        + '<span class="fg-p-lb">' + hint + '</span></button>';
+    }
+
+    let plotbar = '';
+    if (plotSel != null && plotSel < landCount(f) && !place) {
+      const rct = plotRect(plotSel), cx = rct.x + rct.w / 2;
+      const p = f.plots[plotSel];
+      let items;
+      if (!p) {
+        items = CROPS.map(c => '<button class="fg-ps' + ((f.seeds[c.id] || 0) > 0 ? '' : ' off') + '"'
+          + ' onpointerdown="FarmGame.seedGrab(event,\'' + c.id + '\')">'
+          + '<span class="fg-ps-e">' + c.e + '</span><b>' + (f.seeds[c.id] || 0) + '</b></button>').join('');
+      } else if (plotElapsed(p, now) >= plotGrowTime(p)) {
+        items = '<button class="fg-ps" onclick="FarmGame.harvest(' + plotSel + ')"><span class="fg-ps-e">🧺</span></button>';
+      } else {
+        const waterOff = f.__waterOffUntil && now < f.__waterOffUntil;
+        items = (p.watered ? '' : waterOff ? '<span class="fg-ps off"><span class="fg-ps-e">🚱</span></span>'
+          : '<button class="fg-ps" onclick="FarmGame.water(' + plotSel + ')"><span class="fg-ps-e">💧</span></button>')
+          + FERTS.map(t => '<button class="fg-ps' + ((p.fert || f.ferts[t.id] <= 0) ? ' off' : '') + '"'
+            + ' onclick="FarmGame.fert(' + plotSel + ',\'' + t.id + '\')">'
+            + '<span class="fg-ps-e">' + t.e + '</span><b>' + f.ferts[t.id] + '</b></button>').join('');
+      }
+      plotbar = '<div class="fg-plotbar" style="left:' + Math.round(cx) + 'px;top:' + (rct.y - 8) + 'px">' + items + '</div>';
     }
 
     let workers = '';
     f.workers.forEach(w => {
       const ev = pendingEvents.find(e => e.target === w.id);
       const x = w.tx != null ? w.tx : 640, y = w.ty != null ? w.ty : 700;
+      const carry = w.__carry ? '<span class="fg-carry">' + cropOf(w.__carry.crop).e + '×' + w.__carry.qty + '</span>'
+        : w.__carryBox ? '<span class="fg-carry">📦</span>' : '';
       workers += '<div class="fg-worker" data-worker="' + esc(w.id) + '" style="left:' + x + 'px;top:' + y + 'px;">'
         + (ev ? '<button class="fg-warn w" onclick="FarmGame.open(\'events\')">⚠️</button>' : '')
         + (w.__say ? '<div class="fg-say">' + esc(w.__say) + '</div>' : '')
+        + carry
         + '<span class="fg-w-e">' + w.emoji + '</span></div>';
     });
 
@@ -1188,6 +1483,19 @@
     set('.fg-placebar', bar);
     set('.fg-blds', blds);
     set('.fg-plots', plots);
+    set('.fg-bar-slot', plotbar);
+    if (plotSel != null && !place && worldEl) {
+      const barEl = worldEl.querySelector('.fg-plotbar');
+      const camW = camEl ? camEl.clientWidth : 0;
+      if (barEl && camW) {
+        const bw = barEl.offsetWidth, rct = plotRect(plotSel);
+        if (bw && bw < camW - 16) {
+          const want = cam.x + rct.x + rct.w / 2 - bw / 2;
+          const left = Math.max(8, Math.min(camW - 8 - bw, want));
+          if (Math.abs(left - want) > 0.5) barEl.style.left = Math.round(left - cam.x + bw / 2) + 'px';
+        }
+      }
+    }
 
     const yard = worldEl.querySelector('.fg-yard');
     if (yard) {
@@ -1240,6 +1548,7 @@
         const x = w.tx != null ? w.tx : 640;
         el.style.left = x + 'px';
         el.style.top = (w.ty != null ? w.ty : 700) + 'px';
+        el.style.transitionDuration = (w.__dur || 1.6) + 's';
         el.classList.toggle('flip', x < (w.__px != null ? w.__px : x));
         w.__px = x;
       });
@@ -1250,16 +1559,20 @@
     if (!fgPanel) return '';
     let inner = '';
     if (fgPanel === 'shop') {
-      const seeds = CROPS.map(c => '<div class="fg-row"><span>' + c.e + ' ' + c.n + '</span><span class="fg-sub">chín ' + (c.grow / 60000) + 'p · bán ' + money(c.sell) + '</span><button class="fg-btn" onclick="FarmGame.pick(\'' + c.id + '\')">' + (farmPick === c.id ? '✓ Đang chọn' : 'Chọn') + '</button></div>').join('');
+      const seedRows = CROPS.map(c => '<div class="fg-row"><span>' + c.e + ' Hạt ' + c.n + ' · có ' + (f.seeds[c.id] || 0) + '</span>'
+        + '<span class="fg-sub">chín ' + (c.grow / 60000) + 'p · bán ' + money(c.sell) + '</span>'
+        + '<button class="fg-btn" onclick="FarmGame.buyItem(\'' + c.id + '\')">×' + SEED_PACK + ' · ' + money(c.seed * SEED_PACK) + '</button></div>').join('');
+      const fertRows = FERTS.map(t => '<div class="fg-row"><span>' + t.e + ' ' + t.n + ' · có ' + f.ferts[t.id] + '</span>'
+        + '<span class="fg-sub">bớt ' + Math.round(t.cut * 100) + '% thời gian</span>'
+        + '<button class="fg-btn" onclick="FarmGame.buyItem(\'fert_' + t.id + '\')">×5 · ' + money(t.price) + '</button></div>').join('');
       inner = '<div class="fg-h">🛒 Sạp hàng nông trại</div>'
-        + '<div class="fg-sec">Hạt giống (trả tiền lúc trồng)</div>' + seeds
-        + '<div class="fg-sec">Vật tư</div>'
-        + '<div class="fg-row"><span>🌾 Phân bón ×5</span><span class="fg-sub">cây lớn nhanh 35%</span><button class="fg-btn" onclick="FarmGame.buyItem(\'fert\')">' + money(25000) + '</button></div>'
-        + '<div class="fg-row"><span>🧪 Thuốc trừ sâu ×5</span><span class="fg-sub">cứu luống bị sâu phá</span><button class="fg-btn" onclick="FarmGame.buyItem(\'spray\')">' + money(50000) + '</button></div>'
+        + '<div class="fg-sec">Hạt giống</div>' + seedRows
+        + '<div class="fg-sec">Phân bón</div>' + fertRows
+        + '<div class="fg-row"><span>🧪 Thuốc trừ sâu · có ' + f.sprays + '</span><span class="fg-sub">cứu luống bị sâu phá</span><button class="fg-btn" onclick="FarmGame.buyItem(\'spray\')">×5 · ' + money(50000) + '</button></div>'
         + '<div class="fg-row"><span>💦 Máy tưới tự động</span><span class="fg-sub">tưới hết vườn không cần tay</span><button class="fg-btn" onclick="FarmGame.buyItem(\'irrig\')">' + (f.irrigate ? 'Đã lắp ✓' : money(3000000)) + '</button></div>'
         + '<div class="fg-sec">Đất</div>'
         + '<div class="fg-row"><span>🟫 Luống đất tiếp theo</span><span class="fg-sub">' + (landCount(f) >= MAX_PLOTS ? 'đã mở hết' : 'chạm ô khóa trên vườn để mua') + '</span></div>'
-        + '<div class="fg-note">Đang có: phân ×' + f.fertBags + ' · thuốc ×' + f.sprays + '</div>';
+        + '<div class="fg-note">Mang hạt về trồng trên luống. Phân càng xịn cắt thời gian chờ càng nhiều.</div>';
     } else if (fgPanel === 'tasks') {
       inner = '<div class="fg-h">🏅 Nhiệm vụ hôm nay</div>'
         + (f.tasks.length ? f.tasks.map((t, i) => {
@@ -1370,8 +1683,8 @@
       root.innerHTML = '<div class="fg-hud"></div>'
         + '<div class="fg-cam"><div class="fg-world">'
         + DECO
-        + '<div class="fg-pad" style="left:' + PAD.c0 * TILE + 'px;top:' + PAD.r0 * TILE + 'px;width:' + (PAD.c1 - PAD.c0 + 1) * TILE + 'px;height:' + (PAD.r1 - PAD.r0 + 1) * TILE + 'px;"></div>'
-        + '<div class="fg-blds"></div><div class="fg-plots"></div><div class="fg-yard"></div>'
+        + '<div class="fg-pad" style="left:0;top:0;width:' + WORLD_W + 'px;height:' + WORLD_H + 'px;"></div>'
+        + '<div class="fg-blds"></div><div class="fg-plots"></div><div class="fg-bar-slot"></div><div class="fg-yard"></div>'
         + '</div></div>'
         + '<div class="fg-tools"></div><div class="fg-orders"></div><div class="fg-placebar"></div><div class="fg-modal-host"></div>';
       camEl = root.querySelector('.fg-cam');
@@ -1381,6 +1694,7 @@
       centerOn(170, 300);
     }
     if (!f.orders.some(o => o.state === 'offer') && !f.orders.length) spawnWalkOrder(f);
+    f.workers.forEach(w => { w.__job = null; w.__carry = null; w.__carryBox = false; w.__arrive = 0; w.__dur = 0; });
     save();
     render();
     tickTimer = setInterval(tick, 1000);
@@ -1389,7 +1703,12 @@
     mounted = false;
     if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
     stopInertia();
-    drag = null; place = null; fgPanel = null; neg = null;
+    drag = null; place = null; fgPanel = null; neg = null; plotSel = null;
+    seedDrag = null;
+    if (seedGhostEl) { seedGhostEl.remove(); seedGhostEl = null; }
+    window.removeEventListener('pointermove', seedMove);
+    window.removeEventListener('pointerup', seedUp);
+    window.removeEventListener('pointercancel', seedUp);
     unbindPtr();
     camEl = null; worldEl = null;
     save();
@@ -1405,10 +1724,21 @@
 
   window.FarmGame = {
     mount, unmount, render, enter, leave,
-    open: (p) => { place = null; fgPanel = p; sfx('click'); render(); },
-    close: () => { fgPanel = null; neg = null; render(); },
+    open: (p) => { place = null; plotSel = null; fgPanel = p; sfx('click'); render(); },
+    openPlot: (i) => {
+      const f = FM();
+      if (!(i < landCount(f))) return;
+      const p = f.plots[i];
+      if (p && plotElapsed(p) >= plotGrowTime(p)) { plotSel = null; harvest(i); return; }
+      plotSel = plotSel === i ? null : i;
+      place = null; fgPanel = null; sfx('click'); render();
+    },
+    sprayPlot: (i) => treat(i),
+    seedGrab,
+    close: () => { fgPanel = null; neg = null; plotSel = null; render(); },
     pick: (id) => { farmPick = id; sfx('click'); render(); },
-    plant, water, treat, harvest, buyLand, buyItem, build,
+    plant, water, treat, fertilize, harvest, buyLand, buyItem, build,
+    fert: fertilize,
     startPlace, placeConfirm, placeCancel,
     hire, fire, accept: acceptOrder, packClick, gift,
     negStart, negTactic, negClose,
@@ -1416,6 +1746,7 @@
     claim: claimTask,
     _debug: {
       FM, spawnWalkOrder, queueEvent, tick,
+      canPlace: (key, c, r) => canPlace(FM(), key, c, r),
       placeAt: (key, c, r) => {
         startPlace(key);
         if (!place) return false;
