@@ -610,7 +610,7 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
 
     .fg-cam { position: absolute; inset: 0; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
     .fg-cam:active { cursor: grabbing; }
-    .fg-world { position: absolute; left: 0; top: 0; width: 880px; height: 1144px; background-color: #9ed18c; background-image: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12), transparent 45%), repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 14px, rgba(0,0,0,0.025) 14px 28px); will-change: transform; }
+    .fg-world { position: absolute; left: 0; top: 0; width: 880px; height: 1144px; transform-origin: 0 0; background-color: #9ed18c; background-image: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12), transparent 45%), repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 14px, rgba(0,0,0,0.025) 14px 28px); will-change: transform; }
     .fg-prop { position: absolute; font-size: 1.7rem; pointer-events: none; filter: drop-shadow(0 3px 3px rgba(30,60,20,0.22)); }
     .fg-road { position: absolute; top: 0; bottom: 0; width: 88px; background: rgba(255,255,255,0.12); border-left: 3px dashed rgba(255,255,255,0.35); border-right: 3px dashed rgba(255,255,255,0.35); }
     .fg-pond { position: absolute; width: 200px; height: 132px; border-radius: 50%; background: radial-gradient(circle at 40% 34%, #a9e0f0, #5fa8c8); border: 4px solid #7cbb84; box-shadow: inset 0 0 18px rgba(0,60,90,0.25); }
@@ -692,6 +692,9 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .fg-ghost.bad { background: rgba(226,88,74,0.4); border-color: #cf4238; box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
 
     .fg-tools { position: absolute; z-index: 21; right: 8px; top: 76px; display: flex; flex-direction: column; gap: 6px; }
+    .fg-zoom { position: absolute; z-index: 21; right: 8px; bottom: 62px; display: flex; flex-direction: column; gap: 6px; }
+    .fg-zbtn { width: 38px; height: 38px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,251,240,0.92); font-size: 1.15rem; font-weight: bold; line-height: 1; color: var(--app-dark-green); box-shadow: 0 3px 10px rgba(60,90,50,0.22); cursor: pointer; touch-action: manipulation; }
+    .fg-zbtn:active { transform: scale(0.9); }
     .fg-tool { position: relative; width: 42px; height: 42px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.75); background: rgba(255,251,240,0.92); font-size: 1.15rem; box-shadow: 0 3px 10px rgba(60,90,50,0.22); cursor: pointer; transition: transform 0.12s; }
     .fg-tool:active { transform: scale(0.9); }
     .fg-badge { position: absolute; top: -6px; right: -4px; background: var(--app-pink); color: #fff; font-size: 0.6rem; font-weight: bold; min-width: 16px; height: 16px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-style: normal; }
@@ -898,3 +901,32 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .fg-hr-main { flex: 1 1 auto; min-width: 0; }
     .fg-hr-act { display: flex; gap: 6px; margin-top: 7px; }
     .fg-hr-act .fg-btn { padding: 7px 10px; font-size: 0.64rem; }
+
+    /* ===== GĐ2: nhân sự, quản lý, giám đốc ===== */
+    .fg-worker { pointer-events: auto; cursor: pointer; }
+    .fg-worker.sulk { opacity: 0.9; }
+    .fg-w-mood { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 0.72rem; pointer-events: none; }
+    .fg-w-post { position: absolute; bottom: -2px; right: -5px; font-size: 0.56rem; background: var(--glass-strong); border: 1px solid var(--border); border-radius: 7px; padding: 0 2px; pointer-events: none; }
+    .fg-av { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; font-size: 1.15rem; flex-shrink: 0; border: 2px solid var(--border); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.06); vertical-align: middle; }
+    .fg-av.sm { width: 24px; height: 24px; font-size: 0.85rem; border-width: 1.5px; }
+    .fg-h .fg-av { margin-right: 4px; }
+    .fg-cv-top .fg-av { margin-right: 3px; }
+    .fg-pay-top .fg-av { margin-right: 1px; }
+    .fg-wcard-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+    .fg-wcard-acts .fg-btn { flex: 1 1 auto; padding: 7px 8px; font-size: 0.62rem; }
+    .fg-team-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .fg-pick { border: 2px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: 10px; padding: 6px 8px; font-size: 0.6rem; font-family: inherit; cursor: pointer; }
+    .fg-pick.on { background: #e8f6f1; border-color: var(--app-green); color: var(--text); font-weight: bold; }
+    .fg-pick:disabled { opacity: 0.45; cursor: not-allowed; }
+    .fg-toggle { border: 2px solid var(--border); background: var(--surface-2); color: var(--muted); border-radius: 20px; padding: 4px 12px; font-size: 0.62rem; font-weight: bold; font-family: inherit; cursor: pointer; min-width: 52px; }
+    .fg-toggle.on { background: var(--app-green); border-color: var(--app-green); color: #fff; }
+    .fg-hrlog { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+    .fg-hrlog:last-child { border-bottom: none; }
+    .fg-hrlog > span { font-size: 1rem; flex-shrink: 0; }
+    .fg-hrlog > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .fg-hrlog b { font-size: 0.64rem; font-weight: normal; color: var(--text-2); line-height: 1.35; }
+    .fg-hrlog > div > span { font-size: 0.54rem; color: var(--muted); }
+    .fg-hrlog.good b { color: #2f7d4f; }
+    .fg-hrlog.bad b { color: #b23b2e; }
+    .fg-neg-adjust { display: flex; align-items: center; gap: 6px; margin: 4px 0 6px; }
+    .fg-neg-adjust .fg-sub { flex: 1 1 auto; text-align: right; }

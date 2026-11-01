@@ -17,8 +17,9 @@
   const sfx = (n) => { try { if (window.Sound) window.Sound.play(n); } catch (e) {} };
   const save = () => { try { if (typeof saveStorage === 'function') saveStorage(); } catch (e) {} };
   const wallet = () => +(S().walletBalance || 0);
-  // ví riêng của nông trại: mọi khoản thu vào đây, rút về ví chính bằng tay
+  // ví riêng của nông trại: mọi khoản thu vào đây, chi tiêu cũng chỉ trừ ví này
   const farmCash = (f) => Math.max(0, Math.round(Number((f || FM()).cash) || 0));
+  const FARM_START_CASH = 5000000;
   const toast = (msg) => {
     let el = document.getElementById('fg-toast');
     if (!el) { el = document.createElement('div'); el.id = 'fg-toast'; el.className = 'play-toast'; document.body.appendChild(el); }
@@ -38,11 +39,8 @@
     } else {
       const need = -n;
       const fromCash = Math.min(farmCash(f), need);
-      const rest = need - fromCash;
-      const fromMain = Math.min(wallet(), rest);
       f.cash = farmCash(f) - fromCash;
-      if (fromMain > 0) S().walletBalance = Math.max(0, Math.round(wallet() - fromMain));
-      f.ledger.out += fromCash + fromMain;
+      f.ledger.out += fromCash;
     }
     save();
     try { if (typeof window.renderLifeModeUI === 'function') window.renderLifeModeUI(); } catch (e) {}
@@ -50,7 +48,7 @@
   function pay(n) {
     n = Math.round(Number(n) || 0);
     if (n <= 0) return true;
-    if (farmCash() + wallet() < n) { toast('Không đủ tiền rồi.'); sfx('error'); return false; }
+    if (farmCash() < n) { toast('Ví nông trại chỉ còn ' + money(farmCash()) + ', không đủ ' + money(n) + '.'); sfx('error'); return false; }
     addMoney(-n);
     return true;
   }
@@ -139,9 +137,9 @@
     if (t < today) t = new Date(y + 1, Math.round(p[0]) - 1, Math.round(p[1]));
     return Math.round((t - today) / 864e5);
   }
-  const MAX_PLOTS = 28, START_PLOTS = 6;
-  const LAND_COST = (i) => i < 10 ? 400000 : i < 14 ? 1500000 : i < 18 ? 4000000 : i < 20 ? 6000000 : i < 22 ? 8000000 : i < 24 ? 12000000 : i < 26 ? 16000000 : 22000000;
-  const LAND_LVL = (i) => i < 8 ? 2 : i < 10 ? 3 : i < 12 ? 4 : i < 14 ? 5 : i < 16 ? 6 : i < 18 ? 7 : i < 20 ? 8 : i < 22 ? 9 : i < 24 ? 10 : i < 26 ? 11 : 12;
+  const MAX_PLOTS = 40, START_PLOTS = 6;
+  const LAND_COST = (i) => i < 10 ? 400000 : i < 14 ? 1500000 : i < 18 ? 4000000 : i < 20 ? 6000000 : i < 24 ? 9000000 : i < 28 ? 14000000 : i < 32 ? 20000000 : i < 36 ? 28000000 : 38000000;
+  const LAND_LVL = (i) => i < 8 ? 2 : i < 10 ? 3 : i < 12 ? 4 : i < 14 ? 5 : i < 16 ? 6 : i < 18 ? 7 : i < 20 ? 8 : i < 24 ? 9 : i < 28 ? 10 : i < 32 ? 11 : 12;
   const MAX_BLD_LV = 8, MAX_BLD_COPIES = 3;
   const BUILDINGS = {
     kho: { n: 'Kho lương thực', s: 'Kho', e: '🏚️', lvl: 1, max: MAX_BLD_LV, cost: [0, 1000000, 3000000, 8000000, 20000000, 32000000, 50000000, 80000000, 120000000], cap: [0, 60, 180, 450, 1000, 2000, 3200, 4700, 6500], d: 'Chứa nông sản thu về.' },
@@ -149,9 +147,14 @@
     donggoi: { n: 'Khu đóng gói', s: 'Đóng gói', e: '📦', lvl: 2, max: MAX_BLD_LV, cost: [0, 1500000, 4000000, 10000000, 20000000, 32000000, 50000000, 75000000, 100000000], mult: [0, 1, 1.8, 2.8, 3.8, 4.8, 5.8, 6.8, 7.6], d: 'Cần có mới đóng gói được đơn hàng.' },
     giaohang: { n: 'Khu giao hàng', s: 'Giao hàng', e: '🚚', lvl: 3, max: MAX_BLD_LV, cost: [0, 1000000, 3000000, 8000000, 16000000, 27000000, 42000000, 63000000, 90000000], d: 'Có xe mới giao đơn được, nâng cấp xe chạy nhanh hơn.' },
     nhansu: { n: 'Phòng nhân sự', s: 'Nhân sự', e: '🧑‍💼', lvl: 3, max: MAX_BLD_LV, cost: [0, 1500000, 4000000, 9000000, 18000000, 29000000, 45000000, 66000000, 95000000], cvN: [0, 3, 4, 5, 6, 7, 8, 9, 10], q: [0, 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35], d: 'Đăng tin tuyển người, quản lý lương thưởng và thăng chức.' },
-    cskh: { n: 'Phòng CSKH', s: 'CSKH', e: '🎧', lvl: 4, max: MAX_BLD_LV, cost: [0, 2500000, 6000000, 13000000, 24000000, 36000000, 54000000, 80000000, 110000000], d: 'Trợ lý nhắc việc, giữ mối khách quen.' },
-    ketoan: { n: 'Phòng kế toán', s: 'Kế toán', e: '📒', lvl: 5, max: MAX_BLD_LV, cost: [0, 2000000, 5000000, 11000000, 21000000, 33000000, 50000000, 76000000, 105000000], d: 'Sổ sách rõ ràng, thanh tra không lo.' }
+    cskh: { n: 'Phòng CSKH', s: 'CSKH', e: '🎧', lvl: 5, max: MAX_BLD_LV, cost: [0, 2500000, 6000000, 13000000, 24000000, 36000000, 54000000, 80000000, 110000000], d: 'Trợ lý nhắc việc, giữ mối khách quen.' },
+    ketoan: { n: 'Phòng kế toán', s: 'Kế toán', e: '📒', lvl: 4, max: MAX_BLD_LV, cost: [0, 2000000, 5000000, 11000000, 21000000, 33000000, 50000000, 76000000, 105000000], d: 'Sổ sách rõ ràng, thanh tra không lo.' },
+    congvien: { n: 'Công viên', s: 'Công viên', e: '🌳', lvl: 4, max: MAX_BLD_LV, cost: [0, 1200000, 3000000, 7000000, 14000000, 22000000, 33000000, 48000000, 65000000], d: 'Chỗ nghỉ ngơi, tinh thần cả đội tăng đều mỗi ngày.' },
+    ghe: { n: 'Ghế đá', s: 'Ghế đá', e: '🪑', lvl: 1, max: MAX_BLD_LV, cost: [0, 150000, 400000, 900000, 1800000, 3000000, 4500000, 6500000, 9000000], d: 'Góc ngồi xả hơi cho người đang mệt.' },
+    giamdoc: { n: 'Phòng giám đốc', s: 'Giám đốc', e: '🧑‍💼', lvl: 6, max: MAX_BLD_LV, cost: [0, 3000000, 7000000, 15000000, 27000000, 42000000, 60000000, 85000000, 115000000], d: 'Giám đốc tự quyết trồng gì, nhận đơn nào khi bạn vắng.' }
   };
+  // thứ tự trưng bày: kế toán đứng trước CSKH, mở dần theo cấp
+  const BUILD_ORDER = ['kho', 'nha', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
   const LEVEL_TITLES = [[1, 'Vườn nhà'], [3, 'Trang trại nhỏ'], [5, 'Trang trại lớn'], [7, 'Hợp tác xã'], [9, 'Tổng công ty thu mua']];
   function levelTitle(lv) {
     let out = LEVEL_TITLES[0][1];
@@ -244,11 +247,27 @@
     { c0: 14, r0: 23, c1: 16, r1: 25 },
     { c0: 18, r0: 0, c1: 19, r1: 25 }
   ];
-  const FOOT = { kho: [2, 2], nha: [2, 2], donggoi: [2, 2], giaohang: [2, 2], nhansu: [1, 1], cskh: [1, 1], ketoan: [1, 1] };
-  const HOME_POS = { kho: { c: 2, r: 2 }, donggoi: { c: 5, r: 2 }, nhansu: { c: 4, r: 3 }, cskh: { c: 4, r: 2 }, ketoan: { c: 4, r: 4 }, nha: { c: 2, r: 5 }, giaohang: { c: 5, r: 5 } };
-  const PLOT_COLS = 4, PLOT_ROW = 10, PLOT_W = 78, PLOT_STEP = 84;
-  const plotRect = (i) => ({ x: 48 + (i % PLOT_COLS) * PLOT_STEP, y: (PLOT_ROW + Math.floor(i / PLOT_COLS) * 2) * TILE + 4, w: PLOT_W, h: PLOT_W });
+  const FOOT = { kho: [2, 2], nha: [2, 2], donggoi: [2, 2], giaohang: [2, 2], nhansu: [1, 1], cskh: [1, 1], ketoan: [1, 1], congvien: [2, 2], ghe: [1, 1], giamdoc: [2, 2] };
+  const HOME_POS = { kho: { c: 2, r: 2 }, donggoi: { c: 5, r: 2 }, nhansu: { c: 4, r: 3 }, cskh: { c: 4, r: 2 }, ketoan: { c: 4, r: 4 }, nha: { c: 2, r: 5 }, giaohang: { c: 5, r: 5 }, congvien: { c: 8, r: 2 }, ghe: { c: 11, r: 2 }, giamdoc: { c: 8, r: 5 } };
+  const PLOT_COLS = 4, PLOT_ROW = 10, PLOT_STEP = 84;
+  const PLOT_W = 78, PLOT_GRID = 14;
+  // bố cục ruộng cũ (4×7) chỉ còn dùng để chuyển vị trí cho save cũ
+  const legacyPlotRect = (i) => ({ x: 48 + (i % PLOT_COLS) * PLOT_STEP, y: (PLOT_ROW + Math.floor(i / PLOT_COLS) * 2) * TILE + 4, w: PLOT_W, h: PLOT_W });
+  function plotRect(i) {
+    const st = S().farm || {};
+    const p = st.plotPos && st.plotPos[i];
+    if (p && isFinite(p.x) && isFinite(p.y)) return { x: Math.round(p.x), y: Math.round(p.y), w: PLOT_W, h: PLOT_W };
+    return legacyPlotRect(i);
+  }
   const plotCenter = (i) => { const r = plotRect(i); return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; };
+  // vùng được đặt luống đất: gần như cả sân, trừ ao, chợ làng, cổng và lối đi bên phải
+  const PLOT_ZONE = { x0: 6, y0: 88, x1: WORLD_W - PLOT_W - 6, y1: WORLD_H - PLOT_W - 6 };
+  const NO_PLOT = [
+    { x0: 520, y0: 800, x1: 830, y1: 1070 },
+    { x0: 560, y0: 440, x1: 740, y1: 545 },
+    { x0: 620, y0: 1020, x1: 740, y1: WORLD_H },
+    { x0: 782, y0: 0, x1: WORLD_W, y1: WORLD_H }
+  ];
   const WALK = [{ x0: 430, x1: 800, y0: 340, y1: 1020 }, { x0: 80, x1: 780, y0: 1030, y1: 1090 }];
   const FIELD = { x0: 40, x1: 430, y0: 430, y1: 1030 };
   const WALK_SPEED = 62;
@@ -285,7 +304,8 @@
   // ===================== STATE =====================
   function FM() {
     const s = S();
-    if (!s.farm || typeof s.farm !== 'object') s.farm = {};
+    const fresh = !s.farm || typeof s.farm !== 'object' || !Object.keys(s.farm).length;
+    if (fresh) s.farm = {};
     const f = s.farm;
     if (!Array.isArray(f.plots)) f.plots = [];
     const old = f.plots;
@@ -313,6 +333,11 @@
       if (typeof w.dueDays !== 'number' || w.dueDays < 0) w.dueDays = 0;
       if (typeof w.rank !== 'number' || w.rank < 0 || w.rank > 3) w.rank = 0;
       if (typeof w.bday !== 'string' || !/^\d{2}-\d{2}$/.test(w.bday)) w.bday = custBday(w);
+      if (typeof w.post !== 'string' || (w.post && !BUILDINGS[w.post])) w.post = '';
+      if (typeof w.manager !== 'boolean') w.manager = false;
+      if (w.manager && !w.post) w.manager = false;
+      if (!w.stat || typeof w.stat !== 'object' || w.stat.day !== dayKey()) w.stat = { day: dayKey(), work: 0 };
+      if (typeof w.stat.work !== 'number' || w.stat.work < 0) w.stat.work = 0;
     });
     if (!Array.isArray(f.orders)) f.orders = [];
     if (!Array.isArray(f.bills)) f.bills = [];
@@ -349,6 +374,7 @@
       if (!Array.isArray(c.traits) || !c.traits.length) c.traits = custTraits(c).map(t => t.id);
       if (!c.bday) c.bday = custBday(c);
       if (typeof c.since !== 'number') c.since = Date.now();
+      if (typeof c.av !== 'number' || c.av < 0 || c.av > 5) c.av = hashNum(c.name) % 6;
     });
     if (!f.gifts || typeof f.gifts !== 'object') f.gifts = {};
     GIFTS.forEach(g => { if (typeof f.gifts[g.id] !== 'number' || f.gifts[g.id] < 0) f.gifts[g.id] = 0; });
@@ -357,14 +383,32 @@
     if (!Array.isArray(f.deliveries)) f.deliveries = [];
     if (!Array.isArray(f.candidates)) f.candidates = [];
     if (!Array.isArray(f.tasks)) f.tasks = [];
+    if (!Array.isArray(f.hrLog)) f.hrLog = [];
+    f.hrLog = f.hrLog.filter(x => x && typeof x === 'object').slice(0, 30);
+    if (!Array.isArray(f.dirLog)) f.dirLog = [];
+    f.dirLog = f.dirLog.filter(x => x && typeof x === 'object').slice(0, 20);
+    if (!f.dir || typeof f.dir !== 'object') f.dir = { plant: true, orders: true };
+    if (typeof f.dir.plant !== 'boolean') f.dir.plant = true;
+    if (typeof f.dir.orders !== 'boolean') f.dir.orders = true;
+    if (typeof f.lastSeen !== 'number') f.lastSeen = Date.now();
     if (!f.season || typeof f.season !== 'object') f.season = {};
     if (!Array.isArray(f.villagers)) f.villagers = [];
     if (!f.ledger || typeof f.ledger !== 'object') f.ledger = { day: dayKey(), in: 0, out: 0 };
     if (!f.ledger.src || typeof f.ledger.src !== 'object') f.ledger.src = {};
     ['ban', 'don', 'khac'].forEach(k => { if (typeof f.ledger.src[k] !== 'number' || f.ledger.src[k] < 0) f.ledger.src[k] = 0; });
-    if (typeof f.cash !== 'number' || !isFinite(f.cash) || f.cash < 0) f.cash = 0;
+    if (typeof f.cash !== 'number' || !isFinite(f.cash) || f.cash < 0) f.cash = fresh ? FARM_START_CASH : 0;
     f.cash = Math.round(f.cash);
     if (typeof f.__landN === 'number') f.__landN = Math.max(0, Math.min(MAX_PLOTS, Math.round(f.__landN)));
+    if (!Array.isArray(f.plotPos)) f.plotPos = [];
+    const bedN = Math.max(0, Math.min(MAX_PLOTS, Math.round(typeof f.__landN === 'number' ? f.__landN : START_PLOTS)));
+    for (let i = 0; i < bedN; i++) {
+      const p = f.plotPos[i];
+      if (!p || typeof p !== 'object' || !isFinite(p.x) || !isFinite(p.y)) {
+        const r = legacyPlotRect(i);
+        f.plotPos[i] = { x: r.x, y: r.y };
+      } else { p.x = Math.round(p.x); p.y = Math.round(p.y); }
+    }
+    if (f.plotPos.length > bedN) f.plotPos.length = bedN;
     if (!Array.isArray(f.ledgerHist)) f.ledgerHist = [];
     if (typeof f.lastEventAt !== 'number') f.lastEventAt = Date.now();
     if (typeof f.nextOrderAt !== 'number') f.nextOrderAt = Date.now() + rand(60, 150) * 1000;
@@ -452,6 +496,8 @@
       syncWage(f);
       genBills(f, prevIn, prevDeliv);
       if (f.bills.some(b => billOverdue(b) > 0)) f.workers.forEach(w => { w.morale = Math.max(0, (w.morale ?? 70) - 3); });
+      const cheer = parkBoost(f) + (f.wageArrears ? 0 : 1);
+      if (cheer > 0) f.workers.forEach(w => { w.morale = Math.min(100, (w.morale ?? 70) + cheer); });
     } else syncWage(f);
     f.tasks = genTasks();
     rollSeason(f);
@@ -505,15 +551,15 @@
     return out;
   }
   const cvSlots = (f) => Math.min(12, bldInsts(f, 'nhansu').reduce((s, b) => s + (BUILDINGS.nhansu.cvN[b.lv] || 0), 0)) || 3;
-  const hrBoost = (f) => Math.min(0.4, bldInsts(f, 'nhansu').reduce((s, b) => s + (BUILDINGS.nhansu.q[b.lv] || 0), 0));
+  const hrBoost = (f) => Math.min(0.5, bldInsts(f, 'nhansu').reduce((s, b) => s + (BUILDINGS.nhansu.q[b.lv] || 0), 0) + postBoost(f, 'nhansu') * 0.3);
 
   // ===================== TIỆN ÍCH =====================
   const stockTotal = (f) => CROPS.reduce((s, c) => s + (f.stock[c.id] || 0), 0);
   const stockCap = (f) => bldInsts(f, 'kho').reduce((s, b) => s + (BUILDINGS.kho.cap[b.lv] || 0), 0);
   const workerSlots = (f) => Math.min(36, bldInsts(f, 'nha').reduce((s, b) => s + (BUILDINGS.nha.slots[b.lv] || 0), 0));
-  const packMult = (f) => Math.min(12, bldInsts(f, 'donggoi').reduce((s, b) => s + (BUILDINGS.donggoi.mult[b.lv] || 0), 0));
-  const ketoanCut = (f) => Math.min(0.4, bldSumLv(f, 'ketoan') * 0.05);
-  const cskhGift = (f) => Math.min(0.4, bldSumLv(f, 'cskh') * 0.05);
+  const packMult = (f) => Math.min(14, bldInsts(f, 'donggoi').reduce((s, b) => s + (BUILDINGS.donggoi.mult[b.lv] || 0), 0) * (1 + postBoost(f, 'donggoi')));
+  const ketoanCut = (f) => Math.min(0.5, bldSumLv(f, 'ketoan') * 0.05 + postBoost(f, 'ketoan') * 0.3);
+  const cskhGift = (f) => Math.min(0.5, bldSumLv(f, 'cskh') * 0.05 + postBoost(f, 'cskh') * 0.3);
   const landCount = (f) => f.__landN || START_PLOTS;
   function cropOf(id) { return CROPS.find(c => c.id === id) || CROPS[0]; }
   function bpos(f, key) {
@@ -531,10 +577,35 @@
       return c < x.c + s[0] && c + fw > x.c && r < x.r + s[1] && r + fh > x.r;
     });
   }
+  function rectHit(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+  function plotAtBusy(f, x, y, w, h, ignore) {
+    const box = { x: x, y: y, w: w || PLOT_W, h: h || PLOT_W };
+    for (let i = 0; i < landCount(f); i++) {
+      if (i === ignore) continue;
+      if (rectHit(box, plotRect(i))) return true;
+    }
+    return false;
+  }
+  function bldAtBusy(f, x, y, w, h) {
+    const box = { x: x, y: y, w: w, h: h };
+    return f.blds.some(b => {
+      const s = FOOT[b.key];
+      if (!s) return false;
+      return rectHit(box, { x: b.c * TILE, y: b.r * TILE, w: s[0] * TILE, h: s[1] * TILE });
+    });
+  }
+  function canPlotAt(f, x, y) {
+    x = Math.round(x); y = Math.round(y);
+    if (x < PLOT_ZONE.x0 || y < PLOT_ZONE.y0 || x + PLOT_W > PLOT_ZONE.x1 || y + PLOT_W > PLOT_ZONE.y1) return false;
+    const box = { x: x, y: y, w: PLOT_W, h: PLOT_W };
+    if (NO_PLOT.some(z => rectHit(box, { x: z.x0, y: z.y0, w: z.x1 - z.x0, h: z.y1 - z.y0 }))) return false;
+    return !plotAtBusy(f, x, y) && !bldAtBusy(f, x, y, PLOT_W, PLOT_W);
+  }
   function canPlace(f, key, c, r, ignoreId) {
     const [fw, fh] = FOOT[key];
     if (c < BOUND.c0 || r < BOUND.r0 || c + fw - 1 > BOUND.c1 || r + fh - 1 > BOUND.r1) return false;
     if (NO_BUILD.some(z => c <= z.c1 && c + fw - 1 >= z.c0 && r <= z.r1 && r + fh - 1 >= z.r0)) return false;
+    if (plotAtBusy(f, c * TILE, r * TILE, fw * TILE, fh * TILE)) return false;
     return !footprintBusy(f, key, c, r, ignoreId);
   }
   function bldFace(f, sel) {
@@ -642,15 +713,95 @@
     toast('🧺 ' + crop.n + ' vào kho ×' + qty + (bad ? ' (sâu ăn mất nửa)' : '') + (lv > 1 ? ' · giống cấp ' + lv : '')
       + (!f.buildings.donggoi ? ' · mang ra Chợ làng bán nhé' : ''));
   }
+  function findPlotSpot(f, nearX, nearY) {
+    const cx = nearX != null ? nearX : (camEl ? (camEl.clientWidth / 2 - cam.x) / cam.z : WORLD_W / 2);
+    const cy = nearY != null ? nearY : (camEl ? (camEl.clientHeight / 2 - cam.y) / cam.z : WORLD_H / 2);
+    const lo = PLOT_ZONE;
+    let best = null, bestD = Infinity;
+    for (let y = lo.y0; y <= lo.y1 - PLOT_W; y += PLOT_GRID) {
+      for (let x = lo.x0; x <= lo.x1 - PLOT_W; x += PLOT_GRID) {
+        if (!canPlotAt(f, x, y)) continue;
+        const d = Math.pow(x + PLOT_W / 2 - cx, 2) + Math.pow(y + PLOT_W / 2 - cy, 2);
+        if (d < bestD) { bestD = d; best = { x: x, y: y }; }
+      }
+    }
+    return best;
+  }
   function buyLand(i) {
     const f = FM();
     if (i !== landCount(f) || i >= MAX_PLOTS) return;
     if (f.level < LAND_LVL(i)) { toast('Cần nông trại cấp ' + LAND_LVL(i) + ' mới mua được ô này.'); sfx('error'); return; }
+    if (farmCash() < LAND_COST(i)) { toast('Ví nông trại chỉ còn ' + money(farmCash()) + ', chưa đủ mua đất.'); sfx('error'); return; }
+    const spot = findPlotSpot(f);
+    if (!spot) { toast('Hết chỗ trống để đặt luống rồi.'); sfx('error'); return; }
     if (!pay(LAND_COST(i))) return;
+    f.plotPos[i] = { x: spot.x, y: spot.y };
     f.__landN = i + 1;
     save(); sfx('buy'); render();
     toast('🟫 Đã mở rộng thêm 1 luống đất!');
   }
+
+  // ===================== MUA ĐẤT: tự kéo đặt từng luống =====================
+  let plotPlace = null;
+  function startPlotPlace() {
+    const f = FM(), i = landCount(f);
+    if (i >= MAX_PLOTS) { toast('Sân đã kín ' + MAX_PLOTS + ' luống rồi.'); sfx('error'); return; }
+    if (f.level < LAND_LVL(i)) { toast('Luống thứ ' + (i + 1) + ' mở ở nông trại cấp ' + LAND_LVL(i) + '.'); sfx('error'); return; }
+    const cost = LAND_COST(i);
+    if (farmCash() < cost) { toast('Ví nông trại chỉ còn ' + money(farmCash()) + ', chưa đủ ' + money(cost) + ' mua đất.'); sfx('error'); return; }
+    const spot = findPlotSpot(f);
+    if (!spot) { toast('Hết chỗ trống để đặt luống rồi.'); sfx('error'); return; }
+    if (lift) { lift = null; detachLift(); }
+    plotSel = null; fgPanel = null; neg = null;
+    plotPlace = { x: spot.x, y: spot.y, cost: cost, ok: canPlotAt(f, spot.x, spot.y) };
+    render();
+    requestAnimationFrame(() => {
+      centerOn(spot.x + PLOT_W / 2, spot.y + PLOT_W / 2);
+      paintPlotGhost();
+    });
+  }
+  function movePlotGhost(clientX, clientY) {
+    if (!plotPlace || !camEl) return;
+    const box = camEl.getBoundingClientRect();
+    const wx = (clientX - box.left - cam.x) / cam.z;
+    const wy = (clientY - box.top - cam.y) / cam.z;
+    let x = Math.round((wx - PLOT_W / 2) / PLOT_GRID) * PLOT_GRID;
+    let y = Math.round((wy - PLOT_W / 2) / PLOT_GRID) * PLOT_GRID;
+    x = Math.max(PLOT_ZONE.x0, Math.min(PLOT_ZONE.x1 - PLOT_W, x));
+    y = Math.max(PLOT_ZONE.y0, Math.min(PLOT_ZONE.y1 - PLOT_W, y));
+    plotPlace.x = x; plotPlace.y = y;
+    plotPlace.ok = canPlotAt(FM(), x, y);
+    paintPlotGhost();
+  }
+  function paintPlotGhost() {
+    if (!plotPlace) return;
+    const g = worldEl && worldEl.querySelector('.fg-ghost');
+    if (g) {
+      g.style.left = plotPlace.x + 'px';
+      g.style.top = plotPlace.y + 'px';
+      g.style.width = (PLOT_W - 4) + 'px';
+      g.style.height = (PLOT_W - 4) + 'px';
+      g.classList.toggle('bad', !plotPlace.ok);
+    }
+    const btn = document.querySelector('.fg-place-ok');
+    if (btn) { btn.disabled = !plotPlace.ok; btn.classList.toggle('off', !plotPlace.ok); }
+    const tipEl = document.querySelector('.fg-place-t span');
+    if (tipEl) tipEl.innerText = plotPlace.ok ? 'chỗ trống, đặt được' : 'vướng rồi, kéo chỗ khác';
+  }
+  function plotPlaceConfirm() {
+    if (!plotPlace) return;
+    const f = FM(), i = landCount(f);
+    if (!plotPlace.ok) { toast('Chỗ này không đặt được, kéo chỗ khác nhé.'); return; }
+    if (i >= MAX_PLOTS) { plotPlace = null; render(); return; }
+    if (f.level < LAND_LVL(i)) { toast('Luống thứ ' + (i + 1) + ' mở ở nông trại cấp ' + LAND_LVL(i) + '.'); sfx('error'); return; }
+    if (!pay(plotPlace.cost)) return;
+    f.plotPos[i] = { x: plotPlace.x, y: plotPlace.y };
+    f.__landN = i + 1;
+    plotPlace = null;
+    save(); sfx('merge'); render();
+    toast('🟫 Luống đất thứ ' + (i + 1) + ' đã đặt xong!');
+  }
+  function plotPlaceCancel() { plotPlace = null; fgPanel = 'land'; render(); }
 
   // ===================== SHOP =====================
   function buyItem(kind) {
@@ -747,7 +898,9 @@
     const c = f.candidates.find(x => x.id === id);
     if (!c) return;
     if (f.workers.length >= workerSlots(f)) { toast('Nhà công nhân hết chỗ, xây thêm tầng đi.'); sfx('error'); return; }
-    f.workers.push({ id: 'w' + Date.now() + '-' + rand(0, 999999), name: c.name, role: c.role, skill: c.skill, wage: c.wage, quirk: c.quirk, quirkN: c.quirkN, quirkD: c.quirkD, emoji: c.emoji, morale: 75, tx: null, ty: null, __pw: true, rank: 0, due: 0, dueDays: 0, bday: custBday(c) });
+    const w = { id: 'w' + Date.now() + '-' + rand(0, 999999), name: c.name, role: c.role, skill: c.skill, wage: c.wage, quirk: c.quirk, quirkN: c.quirkN, quirkD: c.quirkD, emoji: c.emoji, morale: 75, tx: null, ty: null, __pw: true, rank: 0, due: 0, dueDays: 0, bday: custBday(c), post: '', manager: false, stat: { day: dayKey(), work: 0 } };
+    f.workers.push(w);
+    hrLogAdd(f, w, 'Nhận việc, lương ' + money(w.wage) + '/ngày', 'good');
     f.candidates = f.candidates.filter(x => x.id !== id);
     const fill = cvSlots(f);
     if (f.candidates.length < fill) f.candidates = f.candidates.concat(genCandidates(fill, hrBoost(f)).slice(0, fill - f.candidates.length));
@@ -760,7 +913,9 @@
     const w = f.workers.find(x => x.id === id);
     if (!w) return;
     if ((w.due || 0) > 0) { toast('Còn nợ lương ' + money(w.due) + ' của ' + w.name + ', trả xong đã.'); sfx('error'); return; }
+    hrLogAdd(f, w, 'Bị cho nghỉ việc', 'bad');
     f.workers = f.workers.filter(x => x.id !== id);
+    if (workerSel === id) workerSel = null;
     syncWage(f);
     save(); sfx('click'); render();
     toast(w.name + ' đã dọn về quê.');
@@ -812,6 +967,7 @@
     const bday = w.bday && daysUntilMD(w.bday) === 0;
     w.rewardDay = dayKey();
     w.morale = Math.min(100, (w.morale ?? 70) + (bday ? 25 : 12));
+    hrLogAdd(f, w, 'Được thưởng 100.000đ' + (bday ? ' đúng sinh nhật' : '') + ', tinh thần ' + w.morale + '♥', 'good');
     save(); sfx('win'); render();
     toast('🎁 Thưởng ' + w.name + ' · tinh thần ' + w.morale + '♥' + (bday ? ' · đúng sinh nhật luôn!' : ''));
   }
@@ -827,8 +983,94 @@
     w.skill = Math.round(Math.min(1.8, w.skill * 1.08) * 100) / 100;
     w.wage = Math.round(w.wage * 1.1 / 1000) * 1000;
     w.morale = Math.min(100, (w.morale ?? 70) + 8);
+    hrLogAdd(f, w, 'Lên bậc ' + w.rank + ', lương ' + money(w.wage) + '/ngày', 'good');
     save(); sfx('merge'); render();
     toast('⬆ ' + w.name + ' lên bậc ' + w.rank + ' · tay nghề ×' + w.skill.toFixed(2) + ' · lương ' + money(w.wage) + '/ngày');
+  }
+  // ---- thẻ nhân viên: khen / khiển trách / bổ nhiệm / phân công ----
+  function openWorker(id) {
+    const f = FM(), w = f.workers.find(x => x.id === id);
+    if (!w) return;
+    workerSel = id; place = null; plotSel = null; fgPanel = 'worker'; sfx('click'); render();
+  }
+  function maybeResign(f) {
+    if (f.events.some(e => !e.done && e.type === 'xinnghi')) return;
+    if (!f.workers.some(w => (w.morale ?? 70) <= 22)) return;
+    if (Math.random() < 0.6) queueEvent('xinnghi');
+  }
+  function praiseWorker(id) {
+    const f = FM(), w = f.workers.find(x => x.id === id);
+    if (!w) return;
+    if (w.praiseDay === dayKey()) return toast('Hôm nay khen rồi, để mai khen tiếp.');
+    if (!pay(50000)) return;
+    w.praiseDay = dayKey();
+    w.morale = Math.min(100, (w.morale ?? 70) + 10);
+    hrLogAdd(f, w, 'Được khen trước đội, tinh thần ' + w.morale + '♥', 'good');
+    save(); sfx('win'); render();
+    toast('👏 Khen ' + w.name + ' · tinh thần ' + w.morale + '♥');
+  }
+  function scoldWorker(id) {
+    const f = FM(), w = f.workers.find(x => x.id === id);
+    if (!w) return;
+    if (w.scoldDay === dayKey()) return toast('Hôm nay nhắc rồi, để họ làm tiếp đã.');
+    w.scoldDay = dayKey();
+    w.morale = Math.max(0, (w.morale ?? 70) - 12);
+    hrLogAdd(f, w, 'Bị khiển trách, tinh thần còn ' + w.morale + '♥', 'bad');
+    save(); sfx('error'); render();
+    toast('😤 Nhắc nhở ' + w.name + ' · tinh thần ' + w.morale + '♥');
+    maybeResign(f);
+  }
+  function assignPost(id, key) {
+    const f = FM(), w = f.workers.find(x => x.id === id);
+    if (!w) return;
+    key = key || '';
+    if (key) {
+      if (!BUILDINGS[key] || !bldInsts(f, key).length) { toast('Chưa có ' + (BUILDINGS[key] ? BUILDINGS[key].n : 'phòng này') + '.'); sfx('error'); return; }
+      if (staffOf(f, key).filter(x => x.id !== w.id).length >= postCap(f, key)) { toast(BUILDINGS[key].n + ' đủ người rồi.'); sfx('error'); return; }
+      if (key === 'giamdoc') {
+        const cur = directorOf(f);
+        if (cur && cur.id !== w.id) { toast(cur.name + ' đang làm giám đốc.'); sfx('error'); return; }
+        if ((w.rank || 0) < 2) { toast('Cần bậc 2 trở lên mới ngồi ghế giám đốc.'); sfx('error'); return; }
+      }
+    }
+    if (w.post === key) return;
+    w.post = key;
+    if (!key) w.manager = false;
+    hrLogAdd(f, w, key ? 'Chuyển sang ' + BUILDINGS[key].n : 'Quay lại làm ngoài vườn', '');
+    save(); sfx('click'); render();
+    toast(key ? '🧑‍💼 ' + w.name + ' về ' + BUILDINGS[key].n + '.' : '🌾 ' + w.name + ' ra vườn làm tiếp.');
+  }
+  function makeManager(id) {
+    const f = FM(), w = f.workers.find(x => x.id === id);
+    if (!w) return;
+    if (w.manager) return toast(w.name + ' đã là quản lý rồi.');
+    if ((w.rank || 0) < 3) return toast('Phải lên bậc 3 trước đã.');
+    if (!w.post) return toast('Phân công vào một phòng trước đã.');
+    const cur = managerOf(f, w.post);
+    if (cur && cur.id !== w.id) return toast(BUILDINGS[w.post].n + ' đã có quản lý.');
+    const cost = Math.round(w.wage * 4 / 1000) * 1000;
+    if (!pay(cost)) return;
+    w.manager = true;
+    w.wage = Math.round(w.wage * 1.15 / 1000) * 1000;
+    w.morale = Math.min(100, (w.morale ?? 70) + 10);
+    hrLogAdd(f, w, 'Được bổ nhiệm quản lý ' + BUILDINGS[w.post].n, 'good');
+    save(); sfx('win'); render();
+    toast('⭐ ' + w.name + ' làm quản lý ' + BUILDINGS[w.post].n + '!');
+  }
+  function hireDirector() {
+    const f = FM();
+    if (!bldInsts(f, 'giamdoc').length) { toast('Xây phòng giám đốc trước đã.'); sfx('error'); return; }
+    if (directorOf(f)) { toast('Đã có giám đốc rồi.'); return; }
+    if (f.workers.length >= workerSlots(f)) { toast('Hết chỗ ở, xây thêm nhà công nhân.'); sfx('error'); return; }
+    const cost = 2000000;
+    if (!pay(cost)) return;
+    const quirk = pick(QUIRKS);
+    const w = { id: 'w' + Date.now() + '-' + rand(0, 999999), name: pick(NAMES), role: 'giamdoc', post: 'giamdoc', manager: true, skill: Math.round((1.45 + Math.random() * 0.25) * 100) / 100, wage: 600000, quirk: quirk.id, quirkN: quirk.n, quirkD: quirk.d, emoji: '🧑‍💼', morale: 85, tx: null, ty: null, __pw: true, rank: 2, due: 0, dueDays: 0, bday: custBday('g' + Date.now()), stat: { day: dayKey(), work: 0 } };
+    f.workers.push(w);
+    hrLogAdd(f, w, 'Được tuyển làm giám đốc, lương ' + money(w.wage) + '/ngày', 'good');
+    f.dir = { plant: true, orders: true };
+    save(); sfx('win'); render();
+    toast('🧑‍💼 Đã tuyển giám đốc ' + w.name + '!');
   }
   function payBill(id) {
     const f = FM();
@@ -856,6 +1098,47 @@
   function workersOf(f, role) { return f.workers.filter(w => w.role === role); }
   function quirkSpd(w) { const q = QUIRKS.find(x => x.id === w.quirk); return (q && q.spd) || 1; }
   function quirkDesc(w) { const q = QUIRKS.find(x => x.id === w.quirk); return w.quirkD || (q && q.d) || 'Làm chắc tay.'; }
+  // ---- nhân sự theo từng công trình ----
+  function staffOf(f, key) { return f.workers.filter(w => w.post === key); }
+  function directorOf(f) { return f.workers.find(w => w.post === 'giamdoc') || null; }
+  function managerOf(f, key) { return f.workers.find(w => w.post === key && w.manager) || null; }
+  function postBoost(f, key) {
+    return Math.min(0.35, staffOf(f, key).reduce((s, w) => s + (w.manager ? 0.1 : 0.04), 0));
+  }
+  function postCap(f, key) {
+    const list = bldInsts(f, key);
+    return list.length ? Math.min(4, list.reduce((m, b) => Math.max(m, b.lv), 0)) : 0;
+  }
+  function moodOf(w) {
+    const m = w.morale ?? 70;
+    return m >= 80 ? ['Rất vui', '😄'] : m >= 60 ? ['Dễ chịu', '🙂'] : m >= 40 ? ['Hơi mệt', '😐'] : m >= 25 ? ['Bất mãn', '😟'] : ['Muốn nghỉ', '😠'];
+  }
+  function parkBoost(f) {
+    return Math.min(8, Math.round(bldSumLv(f, 'congvien') * 1.2 + bldSumLv(f, 'ghe') * 0.5));
+  }
+  function hrLogAdd(f, w, txt, tone) {
+    if (!Array.isArray(f.hrLog)) f.hrLog = [];
+    f.hrLog.unshift({ at: Date.now(), id: w ? w.id : '', name: w ? w.name : 'Trại', emoji: w ? w.emoji : '🌾', txt: txt, tone: tone || '' });
+    f.hrLog = f.hrLog.slice(0, 30);
+  }
+  function bldExtra(f, key) {
+    return key === 'kho' ? 'chứa ' + stockCap(f) + ' món'
+      : key === 'nha' ? 'chỗ ở ' + workerSlots(f) + ' người'
+        : key === 'donggoi' ? 'tổng tốc độ ×' + packMult(f)
+          : key === 'giaohang' ? 'đơn tối đa ' + orderCap(f) + ' · ' + f.trucks.length + ' xe'
+            : key === 'nhansu' ? 'hồ sơ ' + f.candidates.length + ' · ' + f.workers.length + ' người'
+              : key === 'cskh' ? 'khách quen ' + f.contracts.length + ' · quà +' + Math.round(cskhGift(f) * 100) + '%'
+                : key === 'ketoan' ? 'giảm hoá đơn ' + Math.round(ketoanCut(f) * 100) + '%'
+                  : key === 'congvien' ? 'tinh thần +' + parkBoost(f) + ' mỗi ngày'
+                    : key === 'ghe' ? 'chỗ nghỉ cho người đang mệt'
+                      : key === 'giamdoc' ? (directorOf(f) ? 'giám đốc ' + directorOf(f).name : 'chưa có giám đốc')
+                        : '';
+  }
+  const AV_BG = ['#fbd5d5', '#d6e8fb', '#dcefcf', '#fde9c4', '#e6d9f7', '#cfece5'];
+  function avatarHtml(name, emoji, cls, idx) {
+    const i = (typeof idx === 'number' && idx >= 0 ? idx : hashNum(name)) % AV_BG.length;
+    return '<span class="fg-av' + (cls ? ' ' + cls : '') + '" style="background:' + AV_BG[i] + '">' + (emoji || '🧑') + '</span>';
+  }
 
   // vị trí & thoại trong cảnh (chỉ lưu trong phiên)
   const CHAT_WORK = {
@@ -923,6 +1206,7 @@
       const c = w.__carry;
       if (c && stockTotal(f) + c.qty <= stockCap(f)) {
         f.stock[c.crop] += c.qty;
+        if (w.stat) w.stat.work += c.qty;
         taskBump('harvest', c.qty);
         addXp(c.qty);
         say(w, CHAT_WORK.boxed, now);
@@ -988,11 +1272,53 @@
         return;
       }
       if (!w.__nextWander || now > w.__nextWander) {
-        const sp = Math.random() < 0.65 ? FIELD : WALK[0];
-        assignWalk(w, rand(sp.x0, sp.x1), rand(sp.y0, sp.y1), now);
+        const spot = idleSpot(f, w);
+        assignWalk(w, spot.x, spot.y, now);
         w.__nextWander = now + rand(7000, 13000);
+        if ((w.morale ?? 70) < 35 && Math.random() < 0.4) say(w, ['...', 'Mệt quá, ra góc ngồi chút.', 'Làm hoài chẳng ai thấy.'], now);
       }
     }
+  }
+  // người bất mãn ra ghế đá/góc sân ngồi; người bình thường lượn quanh luống có trồng
+  function cornerSpot(f) {
+    const bench = doorOf(f, 'ghe');
+    if (bench) return { x: bench.x, y: bench.y + 10 };
+    const park = doorOf(f, 'congvien');
+    if (park) return { x: park.x, y: park.y };
+    return { x: FIELD.x0 + 24, y: FIELD.y1 - 30 };
+  }
+  function idleSpot(f, w) {
+    if ((w.morale ?? 70) < 40) return cornerSpot(f);
+    const planted = [];
+    for (let i = 0; i < landCount(f); i++) if (f.plots[i]) planted.push(i);
+    if (planted.length) {
+      const pc = plotCenter(pick(planted));
+      return { x: pc.x + rand(-12, 12), y: pc.y + 26 };
+    }
+    if (bldInsts(f, 'congvien').length && Math.random() < 0.3) {
+      const p = doorOf(f, 'congvien');
+      if (p) return { x: p.x, y: p.y };
+    }
+    const sp = Math.random() < 0.65 ? FIELD : WALK[0];
+    return { x: rand(sp.x0, sp.x1), y: rand(sp.y0, sp.y1) };
+  }
+  const POST_LINES = ['Sổ sách hôm nay gọn rồi.', 'Hồ sơ mới về đủ cả.', 'Khách gọi hỏi thăm lia lịa.', 'Đơn này lời đấy sếp.', 'Để em lo giấy tờ cho.', 'Bàn em lúc nào cũng ngập việc.'];
+  function staffTick(f, w, now) {
+    if (w.__job && now < w.__arrive) return;
+    w.__job = null;
+    if (!w.__nextWander || now > w.__nextWander) {
+      const low = (w.morale ?? 70) < 40;
+      const door = doorOf(f, w.post);
+      if (low) {
+        const c = cornerSpot(f);
+        assignWalk(w, c.x, c.y, now);
+      } else if (door) {
+        assignWalk(w, door.x + rand(-26, 26), door.y + rand(0, 26), now);
+      }
+      w.__nextWander = now + rand(9000, 16000);
+      if (Math.random() < 0.18) say(w, POST_LINES, now);
+    }
+    if (now - (w.__statAt || 0) > 30000) { w.__statAt = now; if (w.stat) w.stat.work += 1; }
   }
   function packerTick(f, w, now) {
     const j = w.__job;
@@ -1003,12 +1329,18 @@
       if (w.__carryBox) w.__carryBox = false;
       w.__job = null;
       if (!w.__nextWander || now > w.__nextWander) {
-        const dp = doorOf(f, 'donggoi');
-        if (dp) {
-          assignWalk(w, dp.x + rand(-30, 30), dp.y + rand(0, 30), now);
-          w.__nextWander = now + rand(8000, 14000);
-          if (Math.random() < 0.3) say(w, CHAT_WORK.idleBox, now);
+        if ((w.morale ?? 70) < 40) {
+          const c = cornerSpot(f);
+          assignWalk(w, c.x, c.y, now);
+          if (Math.random() < 0.35) say(w, ['Chán quá...', 'Ngồi đây cho đỡ mệt.'], now);
+        } else {
+          const dp = doorOf(f, 'donggoi');
+          if (dp) {
+            assignWalk(w, dp.x + rand(-30, 30), dp.y + rand(0, 30), now);
+            if (Math.random() < 0.3) say(w, CHAT_WORK.idleBox, now);
+          }
         }
+        w.__nextWander = now + rand(8000, 14000);
       }
       return;
     }
@@ -1033,6 +1365,7 @@
       w.__carryBox = false;
       w.__job = null;
       w.__nextFetch = now + rand(1500, 3500);
+      if (w.stat) w.stat.work += 1;
       say(w, CHAT_WORK.drop, now);
     }
   }
@@ -1041,7 +1374,9 @@
     f.workers.forEach(w => {
       if (w.__sayUntil && now > w.__sayUntil) { w.__say = null; w.__sayUntil = 0; }
       if (!strike) {
-        if (w.role === 'donggoi') packerTick(f, w, now); else gardenerTick(f, w, now);
+        if (w.post && w.post !== 'donggoi') staffTick(f, w, now);
+        else if (w.post === 'donggoi' || w.role === 'donggoi') packerTick(f, w, now);
+        else gardenerTick(f, w, now);
       }
       if (!w.__say && (!w.__nextSay || now > w.__nextSay)) {
         const chatty = w.quirk === 'tam' ? 0.6 : 1.6;
@@ -1053,7 +1388,7 @@
   // AI làm việc: mỗi 3 giây một nhịp
   function workTick(f) {
     const strike = Date.now() < f.__strikeUntil || f.events.some(e => e.type === 'dinhcong' && !e.done);
-    const packers = workersOf(f, 'donggoi');
+    const packers = f.workers.filter(w => w.role === 'donggoi' || w.post === 'donggoi');
     if (!packers.length || strike || Date.now() < f.__powerOffUntil) return;
     const o = f.orders.find(x => x.state === 'pack');
     if (!o) return;
@@ -1305,14 +1640,26 @@
     if (Date.now() < f.negCooldownUntil) { toast('Khách vừa về, để dành hơi tí rồi tìm người mới.'); return; }
     if (f.orders.filter(o => o.state !== 'done').length >= orderCap(f)) { toast('Đơn đang chờ quá nhiều, giao bớt đã.'); return; }
     const name = pick(CUST_NAMES.filter(n => !f.contracts.some(c => c.name === n))) || pick(CUST_NAMES);
-    neg = { name: name, emoji: pick(CUST_EMOJI), offer: 1.5, ceil: Math.round((1.28 + Math.random() * 0.17) * 100) / 100, patience: 80, round: 1, log: ['Khách muốn hợp đồng đặt sỉ dài hạn, giá thương lượng.'] };
+    neg = { name: name, emoji: pick(CUST_EMOJI), offer: 1.5, ceil: Math.round((1.28 + Math.random() * 0.17) * 100) / 100, patience: 80, round: 1, known: 0, log: ['Khách muốn hợp đồng đặt sỉ dài hạn, giá thương lượng.'] };
     fgPanel = 'neg';
     sfx('click'); render();
+  }
+  function negOffer(d) {
+    const n = neg;
+    if (!n) return;
+    const next = Math.round(Math.max(1, Math.min(2, n.offer + d)) * 100) / 100;
+    if (next === n.offer) return;
+    n.offer = next;
+    n.patience = Math.max(0, Math.min(100, n.patience - (d > 0 ? 4 : 2)));
+    n.log.push(d > 0 ? 'Bạn nâng giá lên ×' + next.toFixed(2) + ', khách cân nhắc.' : 'Bạn hạ giá xuống ×' + next.toFixed(2) + ', khách hài lòng hơn.');
+    if (n.patience <= 0) return negClose();
+    render();
   }
   function negTactic(t) {
     const f = FM(), n = neg;
     if (!n) return;
-    if (t === 'khen') { n.ceil = Math.round((n.ceil + 0.04) * 100) / 100; n.patience = Math.min(100, n.patience + 6); n.log.push('Bạn khen khéo, khách cười tươi hẳn.'); }
+    if (t === 'hoi') { n.known = n.ceil; n.patience = Math.max(0, n.patience - 4); n.log.push('Khách bật mí: chốt được tới ×' + n.ceil.toFixed(2) + '.'); }
+    else if (t === 'khen') { n.ceil = Math.round((n.ceil + 0.04) * 100) / 100; n.patience = Math.min(100, n.patience + 6); n.log.push('Bạn khen khéo, khách cười tươi hẳn.'); }
     else if (t === 'ep') {
       n.offer = Math.round((n.offer - 0.06) * 100) / 100;
       if (Math.random() < 0.35) { n.patience -= 22; n.log.push('Ép giá hơi mạnh, khách nhíu mày.'); }
@@ -1469,6 +1816,17 @@
           { t: 'Cảm ơn qua loa', run: (f) => { spawnWalkOrder(f); return 'Khách cũng đặt đơn, nhưng giá thường thôi.'; } }
         ], expire: () => {} };
       }
+    },
+    {
+      id: 'xinnghi', icon: '🚪', when: (f) => f.workers.some(w => (w.morale ?? 70) < 32),
+      make: (f, event) => {
+        const w = event ? f.workers.find(w => w.id === event.target) : pick(f.workers.filter(w => (w.morale ?? 70) < 32));
+        if (!w) return null;
+        return { type: 'xinnghi', target: w.id, txt: w.name + ' nộp đơn xin nghỉ: "Làm hoài mà lương chẳng đủ sống, em về quê đây."', choices: [
+          { t: 'Giữ người: thưởng 200.000đ + tăng lương 8%', run: (f) => { if (!pay(200000)) return false; w.morale = Math.min(100, (w.morale ?? 70) + 30); w.wage = Math.round(w.wage * 1.08 / 1000) * 1000; hrLogAdd(f, w, 'Được giữ lại, thưởng 200.000đ và tăng lương', 'good'); return w.name + ' lau nước mắt, ở lại làm tiếp.'; } },
+          { t: 'Đồng ý cho nghỉ', run: (f) => { quitWorker(f, w, 'Xin nghỉ việc'); return w.name + ' thu dọn đồ rời trại.'; } }
+        ], expire: (f) => { quitWorker(f, w, 'Bỏ việc vì không được giữ'); } };
+      }
     }
   ];
   function loseStock(f, amount) {
@@ -1478,8 +1836,11 @@
       amount -= taken;
     });
   }
-  function quitWorker(f, w) {
+  function quitWorker(f, w, reason) {
+    if (!w) return;
     f.workers = f.workers.filter(x => x.id !== w.id);
+    if (reason) hrLogAdd(f, w, reason, 'bad');
+    if (workerSel === w.id) workerSel = null;
   }
   function queueEvent(typeId) {
     const f = FM();
@@ -1670,6 +2031,77 @@
   }
   function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 864e5); }
 
+  // ===================== GIÁM ĐỐC TỰ QUYẾT =====================
+  function dirPlant(f, i) {
+    const cands = CROPS.filter(c => (f.seeds[c.id] || 0) > 0)
+      .sort((a, b) => b.sell * (f.season[b.id] ? f.season[b.id].p : 1) - a.sell * (f.season[a.id] ? f.season[a.id].p : 1));
+    if (!cands.length || f.plots[i]) return null;
+    const crop = cands[0], lv = seedLv(f, crop.id);
+    f.seeds[crop.id]--;
+    f.plots[i] = { crop: crop.id, lv: lv, at: Date.now(), watered: false, pest: Math.random() < seedPest(lv), bug: PESTS[Math.floor(Math.random() * PESTS.length)], treated: false, fert: false };
+    if (Date.now() < f.__waterOffUntil) f.plots[i].pauseAt = Date.now();
+    return crop;
+  }
+  function dirRun(f, opts) {
+    const dir = directorOf(f);
+    if (!dir || !bldInsts(f, 'giamdoc').length) return { plant: 0, orders: 0 };
+    opts = opts || {};
+    let planted = 0, taken = 0;
+    const maxPlant = opts.plant != null ? opts.plant : 1;
+    if (f.dir.plant) {
+      for (let i = 0; i < landCount(f) && planted < maxPlant; i++) {
+        if (f.plots[i]) continue;
+        if (!CROPS.some(c => (f.seeds[c.id] || 0) > 0)) break;
+        const c = dirPlant(f, i);
+        if (c) {
+          planted++;
+          f.dirLog.unshift({ at: Date.now(), icon: '🌱', txt: 'Trồng ' + c.n + ' ở luống ' + (i + 1) });
+        }
+      }
+    }
+    if (f.dir.orders && bldInsts(f, 'donggoi').length) {
+      const maxOrders = opts.orders != null ? opts.orders : 1;
+      f.orders.filter(o => o.state === 'offer').forEach(o => {
+        if (taken >= maxOrders) return;
+        if ((f.stock[o.crop] || 0) < o.qty) return;
+        if ((o.price || 0) < cropOf(o.crop).sell * 0.98) return;
+        f.stock[o.crop] -= o.qty;
+        o.state = 'pack';
+        taken++;
+        f.dirLog.unshift({ at: Date.now(), icon: '📋', txt: 'Nhận đơn ' + o.qty + ' ' + cropOf(o.crop).n + ' của ' + o.cust });
+      });
+    }
+    f.dirLog = f.dirLog.slice(0, 20);
+    if (planted || taken) save();
+    return { plant: planted, orders: taken };
+  }
+  function dirPolicy(k) {
+    const f = FM();
+    if (k !== 'plant' && k !== 'orders') return;
+    f.dir[k] = !f.dir[k];
+    save(); sfx('click'); render();
+    toast(f.dir[k] ? 'Giám đốc sẽ tự ' + (k === 'plant' ? 'trồng luống trống' : 'nhận đơn đủ hàng') + '.' : 'Đã tắt tự ' + (k === 'plant' ? 'trồng' : 'nhận đơn') + '.');
+  }
+  function directorTick(f, now) {
+    if (!directorOf(f)) return;
+    if (!f.__dirAt) f.__dirAt = now;
+    if (now - f.__dirAt < 30000) return;
+    f.__dirAt = now;
+    const r = dirRun(f, { plant: 1, orders: 1 });
+    if (r.plant || r.orders) render(true);
+  }
+  function directorCatchUp(f) {
+    if (!directorOf(f)) return null;
+    const away = Date.now() - (f.lastSeen || Date.now());
+    if (away < 10 * 60000) return null;
+    const mins = Math.floor(away / 60000);
+    const r = dirRun(f, { plant: Math.min(8, 1 + Math.floor(mins / 15)), orders: Math.min(3, 1 + Math.floor(mins / 30)) });
+    if (r.plant || r.orders) {
+      toast('🧑‍💼 Giám đốc đã trồng ' + r.plant + ' luống, nhận ' + r.orders + ' đơn trong lúc bạn vắng.');
+    }
+    return r;
+  }
+
   // ===================== VÒNG LẶP =====================
   let mounted = false;
   let tickTimer = null;
@@ -1680,6 +2112,7 @@
   let alertEv = null, alertTimer = null;
   let plotSel = null;
   let bldSel = null, bldTab = null;
+  let workerSel = null;
   let uiKey = '';
   let uiSeed = 0;
   function tick() {
@@ -1751,6 +2184,12 @@
     // trợ lý
     assistantTick(f, now);
     if (tip.until && now > tip.until) { tip.txt = null; tip.until = 0; }
+    // giám đốc tự quyết + người bất mãn xin nghỉ
+    directorTick(f, now);
+    if (!f.__resignAt || now - f.__resignAt > 180000) {
+      f.__resignAt = now;
+      if (Math.random() < 0.35) maybeResign(f);
+    }
     // nhắc nhở nhà nâng cấp trễ hạn
     f.workers.forEach(w => {
       if (w.__upgDue && now > w.__upgDue && f.buildings.nha < w.__upgLevel) {
@@ -1761,16 +2200,19 @@
       }
     });
     // lưu nhẹ
-    if (now - lastSave > 15000) { lastSave = now; save(); }
+    if (now - lastSave > 15000) { lastSave = now; f.lastSeen = now; save(); }
     render(true);
   }
 
   // ===================== RENDER =====================
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-  let cam = { x: 0, y: 0 };
+  let cam = { x: 0, y: 0, z: 1 };
+  const ZOOM_MIN = 0.45, ZOOM_MAX = 1.6;
   let camEl = null, worldEl = null;
   let ptrBound = false, drag = null, moved = false, inertiaRaf = 0;
+  const ptrs = new Map();
+  let pinch = null;
   let place = null;
 
   const DECO = (() => {
@@ -1789,20 +2231,45 @@
   })();
 
   function applyCam() {
-    if (worldEl) worldEl.style.transform = 'translate3d(' + Math.round(cam.x) + 'px,' + Math.round(cam.y) + 'px,0)';
+    if (worldEl) worldEl.style.transform = 'translate3d(' + Math.round(cam.x) + 'px,' + Math.round(cam.y) + 'px,0) scale(' + cam.z + ')';
   }
+  function clampZoom(z) { return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)); }
   function clampCam() {
     if (!camEl) return;
     const vw = camEl.clientWidth || 0, vh = camEl.clientHeight || 0;
     if (!vw || !vh) return;
-    cam.x = vw >= WORLD_W ? Math.round((vw - WORLD_W) / 2) : Math.min(0, Math.max(vw - WORLD_W, cam.x));
-    cam.y = vh >= WORLD_H ? Math.round((vh - WORLD_H) / 2) : Math.min(0, Math.max(vh - WORLD_H, cam.y));
+    const ww = WORLD_W * cam.z, wh = WORLD_H * cam.z;
+    cam.x = ww >= vw ? Math.min(0, Math.max(vw - ww, cam.x)) : Math.round((vw - ww) / 2);
+    cam.y = wh >= vh ? Math.min(0, Math.max(vh - wh, cam.y)) : Math.round((vh - wh) / 2);
   }
   function centerOn(x, y) {
     if (!camEl) return;
-    cam.x = (camEl.clientWidth || 360) / 2 - x;
-    cam.y = (camEl.clientHeight || 700) / 2 - y;
+    cam.x = (camEl.clientWidth || 360) / 2 - x * cam.z;
+    cam.y = (camEl.clientHeight || 700) / 2 - y * cam.z;
     clampCam(); applyCam();
+  }
+  function zoomAt(clientX, clientY, factor) {
+    if (!camEl) return;
+    const box = camEl.getBoundingClientRect();
+    const wx = (clientX - box.left - cam.x) / cam.z;
+    const wy = (clientY - box.top - cam.y) / cam.z;
+    const z = clampZoom(cam.z * factor);
+    if (Math.abs(z - cam.z) < 0.001) return;
+    cam.z = z;
+    cam.x = clientX - box.left - wx * z;
+    cam.y = clientY - box.top - wy * z;
+    clampCam(); applyCam();
+  }
+  function zoom(factor) {
+    if (!camEl) return;
+    const box = camEl.getBoundingClientRect();
+    zoomAt(box.left + box.width / 2, box.top + box.height / 2, factor);
+  }
+  function onWheel(e) {
+    if (e.target.closest && e.target.closest('.fg-sheet, .fg-placebar')) return;
+    e.preventDefault();
+    stopInertia();
+    zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
   }
   function stopInertia() { if (inertiaRaf) cancelAnimationFrame(inertiaRaf); inertiaRaf = 0; }
   function startInertia(vx, vy) {
@@ -1816,8 +2283,24 @@
     };
     inertiaRaf = requestAnimationFrame(step);
   }
+  function pinchInfo() {
+    const it = Array.from(ptrs.values());
+    const a = it[0], b = it[1];
+    if (!a || !b) return null;
+    return { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
   function onDown(e) {
     if (e.button > 0) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) {
+      stopInertia();
+      drag = null; moved = true;
+      pinch = pinchInfo();
+      if (place) paintGhost();
+      if (plotPlace) paintPlotGhost();
+      return;
+    }
+    if (ptrs.size > 2) return;
     if (e.target.closest && e.target.closest('.fg-plotbar')) return;
     if (lift) {
       if (e.target.closest && e.target.closest('.fg-bld, .fg-placebar')) return;
@@ -1828,8 +2311,16 @@
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, lx: e.clientX, ly: e.clientY, lt: performance.now(), vx: 0, vy: 0,
       bg: !(e.target.closest && e.target.closest('.fg-plot, .fg-bld, .fg-stall')) };
     if (place) moveGhost(e.clientX, e.clientY);
+    else if (plotPlace) movePlotGhost(e.clientX, e.clientY);
   }
   function onMove(e) {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) {
+      const p = pinchInfo();
+      if (pinch && p && p.d > 12) zoomAt(p.mx, p.my, p.d / pinch.d);
+      pinch = p;
+      return;
+    }
     if (!drag || e.pointerId !== drag.id) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.abs(dx) + Math.abs(dy) > 7) moved = true;
@@ -1842,6 +2333,15 @@
       moveGhost(e.clientX, e.clientY);
       return;
     }
+    if (plotPlace) {
+      const box = camEl.getBoundingClientRect(), edge = 70;
+      let px = 0, py = 0;
+      if (e.clientX < box.left + edge) px = 10; else if (e.clientX > box.right - edge) px = -10;
+      if (e.clientY < box.top + edge) py = 10; else if (e.clientY > box.bottom - edge) py = -10;
+      if (px || py) { cam.x += px; cam.y += py; clampCam(); applyCam(); }
+      movePlotGhost(e.clientX, e.clientY);
+      return;
+    }
     cam.x = drag.cx + dx; cam.y = drag.cy + dy;
     clampCam(); applyCam();
     const t = performance.now(), dt = Math.max(8, t - drag.lt);
@@ -1850,9 +2350,11 @@
     drag.lx = e.clientX; drag.ly = e.clientY; drag.lt = t;
   }
   function onUp(e) {
+    if (e && ptrs.has(e.pointerId)) ptrs.delete(e.pointerId);
+    if (ptrs.size < 2 && pinch) { pinch = null; setTimeout(() => { moved = false; }, 0); }
     if (!drag || (e && e.pointerId !== drag.id)) return;
     const d = drag; drag = null;
-    if (!place && moved) startInertia(d.vx, d.vy);
+    if (!place && !plotPlace && moved) startInertia(d.vx, d.vy);
     if (!moved && d.bg && plotSel != null) { plotSel = null; render(); }
     setTimeout(() => { moved = false; }, 0);
   }
@@ -1860,7 +2362,7 @@
   function plotAtPoint(clientX, clientY) {
     if (!camEl) return null;
     const box = camEl.getBoundingClientRect();
-    const wx = clientX - box.left - cam.x, wy = clientY - box.top - cam.y;
+    const wx = (clientX - box.left - cam.x) / cam.z, wy = (clientY - box.top - cam.y) / cam.z;
     for (let i = 0; i < landCount(FM()); i++) {
       const r = plotRect(i);
       if (wx >= r.x && wx <= r.x + r.w && wy >= r.y && wy <= r.y + r.h) return i;
@@ -1918,7 +2420,7 @@
     render();
   }
   function onClickCap(e) {
-    if (moved || place) { e.preventDefault(); e.stopPropagation(); }
+    if (moved || place || plotPlace) { e.preventDefault(); e.stopPropagation(); }
   }
   function onResize() { clampCam(); applyCam(); }
   function bindPtr() {
@@ -1926,6 +2428,7 @@
     ptrBound = true;
     camEl.addEventListener('pointerdown', onDown);
     camEl.addEventListener('click', onClickCap, true);
+    camEl.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
@@ -1934,7 +2437,8 @@
   function unbindPtr() {
     if (!ptrBound) return;
     ptrBound = false;
-    if (camEl) { camEl.removeEventListener('pointerdown', onDown); camEl.removeEventListener('click', onClickCap, true); }
+    ptrs.clear(); pinch = null;
+    if (camEl) { camEl.removeEventListener('pointerdown', onDown); camEl.removeEventListener('click', onClickCap, true); camEl.removeEventListener('wheel', onWheel); }
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
     window.removeEventListener('pointercancel', onUp);
@@ -1944,7 +2448,7 @@
   function moveGhost(clientX, clientY) {
     if (!place || !camEl) return;
     const box = camEl.getBoundingClientRect();
-    const wx = clientX - box.left - cam.x, wy = clientY - box.top - cam.y;
+    const wx = (clientX - box.left - cam.x) / cam.z, wy = (clientY - box.top - cam.y) / cam.z;
     const s = FOOT[place.key];
     place.c = Math.max(BOUND.c0, Math.min(BOUND.c1 - s[0] + 1, Math.round(wx / TILE - s[0] / 2)));
     place.r = Math.max(BOUND.r0, Math.min(BOUND.r1 - s[1] + 1, Math.round(wy / TILE - s[1] / 2)));
@@ -1973,12 +2477,13 @@
     const have = bldCount(f, key);
     if (have >= MAX_BLD_COPIES) { toast(b.n + ' đã đủ ' + MAX_BLD_COPIES + ' căn rồi.'); sfx('error'); return; }
     if (lift) { lift = null; detachLift(); }
+    if (plotPlace) { plotPlace = null; }
     if (!have && bldLocked(f, key)) { toast(b.n + ' mở khóa ở cấp ' + b.lvl + ', ráng lên nhé.'); sfx('error'); return; }
     const cost = have ? newBldCost(f, key) : b.cost[1];
-    if (wallet() < cost) { toast('Chưa đủ ' + money(cost) + ' để ' + (have ? 'mua thêm' : 'xây') + ' ' + b.n + '.'); sfx('error'); return; }
+    if (farmCash() < cost) { toast('Ví nông trại chỉ còn ' + money(farmCash()) + ', chưa đủ ' + money(cost) + ' để ' + (have ? 'mua thêm' : 'xây') + ' ' + b.n + '.'); sfx('error'); return; }
     const s = FOOT[key];
-    const vx = camEl ? (camEl.clientWidth / 2 - cam.x) / TILE : 5;
-    const vy = camEl ? (camEl.clientHeight / 2 - cam.y) / TILE : 5;
+    const vx = camEl ? (camEl.clientWidth / 2 - cam.x) / cam.z / TILE : 5;
+    const vy = camEl ? (camEl.clientHeight / 2 - cam.y) / cam.z / TILE : 5;
     let spot = null, best = Infinity;
     for (let r = BOUND.r0; r <= BOUND.r1 - s[1] + 1; r++) {
       for (let c = BOUND.c0; c <= BOUND.c1 - s[0] + 1; c++) {
@@ -2013,6 +2518,7 @@
   // ============ ĐÈ CÔNG TRÌNH: kê lên để dời / xoay hướng / tháo ============
   let lift = null, bldHold = null, bldTapBlock = 0;
   function bldTap(k) {
+    if (plotPlace) return;
     if (Date.now() < bldTapBlock) return;
     if (lift) { bldDone(); return; }
     const f = FM(), inst = bldOf(f, k);
@@ -2021,6 +2527,7 @@
     else openBld(inst.id);
   }
   function bldPress(e, k) {
+    if (plotPlace) return;
     if (e.button > 0) return;
     if (lift && lift.k === k) { startLiftDrag(e); return; }
     if (lift) bldDone();
@@ -2079,7 +2586,7 @@
     if (!lift.moved && Math.abs(e.clientX - lift.sx) + Math.abs(e.clientY - lift.sy) < 8) return;
     lift.moved = true;
     const f = FM(), s = liftFoot(), box = camEl.getBoundingClientRect();
-    const wx = e.clientX - box.left - cam.x, wy = e.clientY - box.top - cam.y;
+    const wx = (e.clientX - box.left - cam.x) / cam.z, wy = (e.clientY - box.top - cam.y) / cam.z;
     const c = Math.max(BOUND.c0, Math.min(BOUND.c1 - s[0] + 1, Math.round(wx / TILE - s[0] / 2)));
     const r = Math.max(BOUND.r0, Math.min(BOUND.r1 - s[1] + 1, Math.round(wy / TILE - s[1] / 2)));
     if (c === lift.c && r === lift.r) return;
@@ -2190,6 +2697,7 @@
       + '<button class="fg-tool" onclick="FarmGame.open(\'orders\')">' + (openOrders.length ? '<b class="fg-badge">' + openOrders.length + '</b>' : '') + '📋</button>'
       + '<button class="fg-tool" onclick="FarmGame.openHire()">👷</button>'
       + '<button class="fg-tool" onclick="FarmGame.open(\'build\')">' + (pendingEvents.length ? '<b class="fg-badge">' + pendingEvents.length + '</b>' : '') + '🏗️</button>'
+      + '<button class="fg-tool" onclick="FarmGame.open(\'land\')">🟫</button>'
       + '<button class="fg-tool" onclick="FarmGame.open(\'board\')">📰</button>'
       + '<button class="fg-tool" onclick="FarmGame.open(\'events\')">' + (pendingEvents.length ? '<b class="fg-badge warn">' + pendingEvents.length + '</b>' : '') + '🔔</button>';
 
@@ -2214,17 +2722,9 @@
     });
 
     let plots = '';
-    for (let i = 0; i < MAX_PLOTS; i++) {
+    for (let i = 0; i < landCount(f); i++) {
       const rct = plotRect(i);
       const st = 'left:' + rct.x + 'px;top:' + rct.y + 'px;width:' + rct.w + 'px;height:' + rct.h + 'px;';
-      if (i >= landCount(f)) {
-        const canBuy = i === landCount(f) && f.level >= LAND_LVL(i);
-        plots += '<div class="fg-plot locked" style="' + st + '">'
-          + (canBuy ? '<button class="fg-mini" onclick="FarmGame.buyLand(' + i + ')">🟫 ' + bigMoney(LAND_COST(i)) + '</button>'
-            : '<span class="fg-p-lb">🔒 Cấp ' + LAND_LVL(i) + '</span>')
-          + '</div>';
-        continue;
-      }
       const p = f.plots[i];
       if (!p) {
         plots += '<button class="fg-plot empty" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
@@ -2249,7 +2749,7 @@
     }
 
     let plotbar = '';
-    if (plotSel != null && plotSel < landCount(f) && !place) {
+    if (plotSel != null && plotSel < landCount(f) && !place && !plotPlace) {
       const rct = plotRect(plotSel), cx = rct.x + rct.w / 2;
       const p = f.plots[plotSel];
       let items;
@@ -2280,11 +2780,16 @@
       const x = w.tx != null ? w.tx : 640, y = w.ty != null ? w.ty : 700;
       const carry = w.__carry ? '<span class="fg-carry">' + cropOf(w.__carry.crop).e + '×' + w.__carry.qty + '</span>'
         : w.__carryBox ? '<span class="fg-carry">📦</span>' : '';
-      workers += '<div class="fg-worker" data-worker="' + esc(w.id) + '" style="left:' + x + 'px;top:' + y + 'px;z-index:1400;">'
-        + (ev ? '<button class="fg-warn w" onclick="FarmGame.open(\'events\')">⚠️</button>' : '')
+      const mood = moodOf(w);
+      workers += '<div class="fg-worker' + ((w.morale ?? 70) < 35 ? ' sulk' : '') + '" data-worker="' + esc(w.id) + '"'
+        + ' style="left:' + x + 'px;top:' + y + 'px;z-index:1400;" onclick="FarmGame.openWorker(\'' + w.id + '\')">'
+        + (ev ? '<button class="fg-warn w" onclick="event.stopPropagation();FarmGame.open(\'events\')">⚠️</button>' : '')
         + (w.__say ? '<div class="fg-say">' + esc(w.__say) + '</div>' : '')
         + carry
-        + '<span class="fg-w-e">' + w.emoji + '</span></div>';
+        + ((w.morale ?? 70) < 35 ? '<span class="fg-w-mood">' + mood[1] + '</span>' : '')
+        + '<span class="fg-w-e">' + w.emoji + '</span>'
+        + (w.post ? '<span class="fg-w-post">' + BUILDINGS[w.post].e + '</span>' : '')
+        + '</div>';
     });
 
     const cp = bpos(f, 'cskh');
@@ -2303,9 +2808,14 @@
         + o.emoji + ' ' + esc(o.cust) + ' · ' + o.qty + cropOf(o.crop).e
         + '<i><b style="width:' + Math.min(100, Math.round(pr)) + '%"></b></i></button>';
     }).join('') : '';
-    const orders = place || lift ? '' : orderChips;
+    const orders = place || plotPlace || lift ? '' : orderChips;
 
-    const bar = place ? ('<div class="fg-placebar">'
+    const bar = plotPlace ? ('<div class="fg-placebar">'
+      + '<div class="fg-place-t"><b>🟫 Luống đất mới</b>'
+      + '<span>' + (plotPlace.ok ? 'chỗ trống, đặt được' : 'vướng rồi, kéo chỗ khác') + '</span></div>'
+      + '<button class="fg-btn ghost" onclick="FarmGame.plotPlaceCancel()">Hủy</button>'
+      + '<button class="fg-btn fg-place-ok' + (plotPlace.ok ? '' : ' off') + '"' + (plotPlace.ok ? '' : ' disabled') + ' onclick="FarmGame.plotPlaceConfirm()">Đặt · ' + bigMoney(plotPlace.cost) + '</button>'
+      + '</div>') : place ? ('<div class="fg-placebar">'
       + '<div class="fg-place-t"><b>' + BUILDINGS[place.key].e + ' ' + BUILDINGS[place.key].n + '</b>'
       + '<span>' + (place.ok ? 'chỗ trống, đặt được' : 'vướng rồi, kéo chỗ khác') + '</span></div>'
       + '<button class="fg-btn ghost" onclick="FarmGame.placeCancel()">Hủy</button>'
@@ -2331,11 +2841,11 @@
       const barEl = worldEl.querySelector('.fg-plotbar');
       const camW = camEl ? camEl.clientWidth : 0;
       if (barEl && camW) {
-        const bw = barEl.offsetWidth, rct = plotRect(plotSel);
-        if (bw && bw < camW - 16) {
-          const want = cam.x + rct.x + rct.w / 2 - bw / 2;
-          const left = Math.max(8, Math.min(camW - 8 - bw, want));
-          if (Math.abs(left - want) > 0.5) barEl.style.left = Math.round(left - cam.x + bw / 2) + 'px';
+        const bw = barEl.offsetWidth, rct = plotRect(plotSel), shown = bw * cam.z;
+        if (bw && shown < camW - 16) {
+          const want = cam.x + (rct.x + rct.w / 2) * cam.z - shown / 2;
+          const left = Math.max(8, Math.min(camW - 8 - shown, want));
+          if (Math.abs(left - want) > 0.5) barEl.style.left = Math.round((left - cam.x) / cam.z + bw / 2) + 'px';
         }
       }
     }
@@ -2364,11 +2874,11 @@
       node.innerHTML = (tip.txt ? '<div class="fg-say big">' + esc(tip.txt) + '</div>' : '') + '<span class="fg-w-e">🧑‍💼</span>';
     } else if (oldAst) oldAst.remove();
 
-    worldEl.classList.toggle('placing', !!place);
+    worldEl.classList.toggle('placing', !!place || !!plotPlace);
     let ghost = worldEl.querySelector('.fg-ghost');
-    if (place) {
+    if (place || plotPlace) {
       if (!ghost) { ghost = document.createElement('div'); ghost.className = 'fg-ghost'; worldEl.appendChild(ghost); }
-      paintGhost();
+      if (plotPlace) paintPlotGhost(); else paintGhost();
     } else if (ghost) ghost.remove();
 
     const host = root.querySelector('.fg-modal-host');
@@ -2404,15 +2914,19 @@
 
   // ===================== BẢNG CÔNG TRÌNH =====================
   const BLD_TABS = {
-    kho: [['san', '🌾 Nông sản'], ['vat', '🧰 Vật tư'], ['qua', '🎁 Quà tặng']],
+    kho: [['san', '🌾 Nông sản'], ['vat', '🧰 Vật tư'], ['qua', '🎁 Quà tặng'], ['team', '🧑‍💼 Nhân viên']],
     nha: [['o', '🛏 Đang ở'], ['tham', '📖 Nhật ký']],
     nhansu: [['cv', '📇 Ứng viên'], ['staff', '🧑‍💼 Nhân sự'], ['info', 'ℹ️ Thông tin']],
-    cskh: [['khach', '🤝 Khách quen'], ['nhac', '📅 Nhắc việc']],
-    ketoan: [['nhan', '👥 Nhân sự & lương'], ['no', '🧾 Công nợ'], ['dt', '📈 Doanh thu']],
-    donggoi: [['info', '📦 Xưởng']],
-    giaohang: [['ship', '🚚 Chuyến đang chạy'], ['fleet', '🚛 Đội xe'], ['info', 'Thông tin']]
+    cskh: [['khach', '🤝 Khách quen'], ['nhac', '📅 Nhắc việc'], ['team', '🧑‍💼 Nhân viên']],
+    ketoan: [['nhan', '👥 Nhân sự & lương'], ['no', '🧾 Công nợ'], ['dt', '📈 Doanh thu'], ['team', '🧑‍💼 Nhân viên']],
+    donggoi: [['info', '📦 Xưởng'], ['team', '🧑‍💼 Nhân viên']],
+    giaohang: [['ship', '🚚 Chuyến đang chạy'], ['fleet', '🚛 Đội xe'], ['info', 'Thông tin'], ['team', '🧑‍💼 Nhân viên']],
+    congvien: [['info', '🌳 Công viên']],
+    ghe: [['info', '🪑 Ghế đá']],
+    giamdoc: [['dir', '🎯 Điều hành'], ['team', '🧑‍💼 Nhân viên'], ['info', 'ℹ️ Thông tin']]
   };
-  const roleName = (r) => r === 'vuon' ? 'Làm vườn' : 'Đóng gói';
+  const roleName = (r) => r === 'vuon' ? 'Làm vườn' : r === 'donggoi' ? 'Đóng gói' : r === 'giamdoc' ? 'Giám đốc' : 'Nhân viên';
+  const postRole = (w) => w.post === 'giamdoc' ? 'Giám đốc' : w.post ? 'Nhân viên ' + (BUILDINGS[w.post] ? BUILDINGS[w.post].s : '') : roleName(w.role);
   function agoText(at) {
     const s = Math.max(0, Math.round((Date.now() - at) / 1000));
     if (s < 15) return 'vừa xong';
@@ -2423,7 +2937,7 @@
   }
   function openPanel(p) {
     if (lift) { lift = null; detachLift(); }
-    place = null; plotSel = null; fgPanel = p; sfx('click'); render();
+    place = null; plotPlace = null; plotSel = null; fgPanel = p; sfx('click'); render();
   }
   function openBld(k) {
     const f = FM(), inst = bldOf(f, k);
@@ -2441,13 +2955,7 @@
     const inst = bldOf(f, sel);
     if (!inst) return '';
     const key = inst.key, b = BUILDINGS[key], lv = inst.lv, full = lv >= MAX_BLD_LV, count = bldCount(f, key);
-    const extra = key === 'kho' ? 'chứa ' + stockCap(f) + ' món'
-      : key === 'nha' ? 'chỗ ở ' + workerSlots(f) + ' người'
-        : key === 'donggoi' ? 'tổng tốc độ ×' + packMult(f)
-          : key === 'giaohang' ? 'đơn tối đa ' + orderCap(f) + ' · ' + f.trucks.length + ' xe'
-            : key === 'nhansu' ? 'hồ sơ ' + f.candidates.length + ' · ' + f.workers.length + ' người'
-              : key === 'cskh' ? 'khách quen ' + f.contracts.length + ' · quà +' + Math.round(cskhGift(f) * 100) + '%'
-                : 'giảm hoá đơn ' + Math.round(ketoanCut(f) * 100) + '%';
+    const extra = bldExtra(f, key);
     const tag = count > 1 ? 'C' + lv + ' · ' + count + ' căn' : 'Cấp ' + lv + '/' + MAX_BLD_LV;
     const acts = (full ? '<b class="fg-done">C' + MAX_BLD_LV + '</b>'
       : '<button class="fg-btn" onclick="FarmGame.build(\'' + inst.id + '\')">Nâng cấp · ' + bigMoney(b.cost[lv + 1]) + '</button>')
@@ -2516,7 +3024,7 @@
     const cap = workerSlots(f);
     const head = '<div class="fg-row"><span>Chỗ ở</span><span class="fg-sub">' + f.workers.length + '/' + cap + ' người</span></div>';
     const list = f.workers.length ? f.workers.map(w => '<div class="fg-row"><span>' + w.emoji + ' ' + esc(w.name) + '</span>'
-      + '<span class="fg-sub">' + roleName(w.role) + ' · tay nghề ×' + w.skill.toFixed(2) + ' · ' + money(w.wage) + '/ngày</span>'
+      + '<span class="fg-sub">' + postRole(w) + ' · tay nghề ×' + w.skill.toFixed(2) + ' · ' + money(w.wage) + '/ngày</span>'
       + '<b class="fg-done">' + (w.morale ?? 70) + '♥</b></div>').join('')
       : '<div class="fg-note">Nhà trống, tuyển người về cho vui.</div>';
     return head + list + '<div class="fg-note">Ghé thăm mỗi người mỗi ngày để tăng tinh thần làm việc.</div>';
@@ -2534,7 +3042,7 @@
       }).join('');
       const care = f.contracts.filter(c => (c.close || 0) < 60 || !c.lastOrderDay).map(c => {
         const why = (c.close || 0) < 60 ? 'thân thiết mới ' + c.close + '/100' : 'lâu rồi chưa đặt đơn';
-        return '<div class="fg-row"><span>' + c.emoji + ' ' + esc(c.name) + '</span><span class="fg-sub">' + why + '</span>'
+        return '<div class="fg-row"><span>' + avatarHtml(c.name, c.emoji, 'sm', c.av) + ' ' + esc(c.name) + '</span><span class="fg-sub">' + why + '</span>'
           + '<span class="fg-sub">' + (c.giftDay === dayKey() ? 'đã tặng hôm nay' : 'nên tặng quà') + '</span></div>';
       }).join('');
       return '<div class="fg-sec">Ngày quan trọng</div>' + dates
@@ -2551,8 +3059,7 @@
         : '<button class="fg-btn' + (g ? '' : ' ghost') + '" onclick="FarmGame.gift(\'' + c.id + '\')">'
           + (g ? g.e + ' Tặng' : '🎁 Mua quà') + '</button>';
       const d = daysUntilMD(c.bday);
-      return '<div class="fg-cust"><div class="fg-cv-top"><span class="fg-cv-e">' + c.emoji + '</span>'
-        + '<b>' + esc(c.name) + '</b><span class="fg-tag">hợp đồng ×' + c.ceil.toFixed(2) + '</span></div>'
+      return '<div class="fg-cust"><div class="fg-cv-top">' + avatarHtml(c.name, c.emoji, '', c.av) + '<b>' + esc(c.name) + '</b><span class="fg-tag">hợp đồng ×' + c.ceil.toFixed(2) + '</span></div>'
         + '<div class="fg-chips">' + chips + '</div>'
         + '<div class="fg-metric"><span class="fg-sub">Thân thiết</span>'
         + '<span class="fg-prog"><i style="width:' + Math.max(0, Math.min(100, c.close || 0)) + '%"></i></span>'
@@ -2580,6 +3087,22 @@
         + '<div class="fg-row"><span>Thu</span><b class="fg-money">' + money(f.ledger.in) + '</b></div>'
         + '<div class="fg-row"><span>Chi</span><b class="fg-money out">' + money(f.ledger.out) + '</b></div>';
     }
+    if (key === 'congvien') {
+      return '<div class="fg-row"><span>Tinh thần cả đội</span><b class="fg-money">+' + parkBoost(f) + ' mỗi sáng</b></div>'
+        + '<div class="fg-row"><span>Người đang bất mãn</span><b class="fg-money' + (f.workers.some(w => (w.morale ?? 70) < 40) ? ' out' : '') + '">' + f.workers.filter(w => (w.morale ?? 70) < 40).length + ' người</b></div>'
+        + '<div class="fg-note">Cây xanh và chỗ ngồi giúp tinh thần hồi lại mỗi ngày. Nâng cấp công viên để hồi nhanh hơn.</div>';
+    }
+    if (key === 'ghe') {
+      return '<div class="fg-row"><span>Chỗ nghỉ</span><b class="fg-money">' + bldCount(f, 'ghe') + ' ghế</b></div>'
+        + '<div class="fg-note">Người mệt sẽ ra ghế ngồi thay vì lang thang. Ghế đá cũng góp phần hồi tinh thần mỗi ngày.</div>';
+    }
+    if (key === 'giamdoc') {
+      const dir = directorOf(f);
+      return '<div class="fg-row"><span>Giám đốc</span><b>' + (dir ? dir.emoji + ' ' + esc(dir.name) : 'chưa tuyển') + '</b></div>'
+        + '<div class="fg-row"><span>Tự trồng luống trống</span><b class="fg-money">' + (f.dir.plant ? 'Bật' : 'Tắt') + '</b></div>'
+        + '<div class="fg-row"><span>Tự nhận đơn</span><b class="fg-money">' + (f.dir.orders ? 'Bật' : 'Tắt') + '</b></div>'
+        + '<div class="fg-note">Giám đốc xử lý việc trong lúc bạn vắng. Bật/tắt ở tab Điều hành.</div>';
+    }
     return '';
   }
   function giaohangTab(f, tab) {
@@ -2595,14 +3118,14 @@
       const tr = truckOf(f, o.truck);
       const spd = tr ? TRUCK_SPEED[tr.lv] : 1;
       const eta = Math.max(1, Math.ceil((100 - sp) * 30 / (100 * spd)));
-      return '<div class="fg-ship"><div class="fg-ship-top"><span>' + o.emoji + ' ' + esc(o.cust) + ' · ' + o.qty + cropOf(o.crop).e + '</span>'
+      return '<div class="fg-ship"><div class="fg-ship-top"><span>' + avatarHtml(o.cust, o.emoji, 'sm') + ' ' + esc(o.cust) + ' · ' + o.qty + cropOf(o.crop).e + '</span>'
         + '<span class="fg-sub">' + (tr ? '🚛 cấp ' + tr.lv : '🚛') + ' · còn ~' + eta + ' giây</span></div>'
         + '<span class="fg-prog"><i style="width:' + sp + '%"></i></span>'
         + '<div class="fg-ship-bot"><span class="fg-sub">' + money(o.qty * o.price) + '</span>'
         + (o.__boosted ? '<b class="fg-done">Đã thuê xe nhanh</b>'
           : '<button class="fg-btn" onclick="FarmGame.shipBoost(\'' + o.id + '\')">⚡ Thuê xe nhanh · 150.000đ</button>') + '</div></div>';
     }).join('') : '<div class="fg-note">Chưa có chuyến nào trên đường. Nhận đơn rồi đóng gói ở mục 📋 Đơn hàng.</div>';
-    const recent = f.deliveries.length ? f.deliveries.slice(0, 6).map(d => '<div class="fg-row"><span>' + d.emoji + ' ' + esc(d.cust) + ' · ' + d.qty + cropOf(d.crop).e + '</span>'
+    const recent = f.deliveries.length ? f.deliveries.slice(0, 6).map(d => '<div class="fg-row"><span>' + avatarHtml(d.cust, d.emoji, 'sm') + ' ' + esc(d.cust) + ' · ' + d.qty + cropOf(d.crop).e + '</span>'
       + '<span class="fg-sub">' + agoText(d.at) + ' trước</span><b class="fg-money">+' + money(d.total) + '</b></div>').join('')
       : '<div class="fg-note">Chưa giao đơn nào.</div>';
     return '<div class="fg-row"><span>Hôm nay giao</span><span class="fg-sub">' + todayDeliv.length + ' đơn · ' + money(earn) + '</span></div>'
@@ -2717,19 +3240,24 @@
       const upCost = Math.round(w.wage * 2 * (rank + 1));
       return '<div class="fg-pay"><div class="fg-pay-top"><span class="fg-pay-e">' + w.emoji + '</span>'
         + '<div class="fg-pay-m"><b>' + esc(w.name) + ' · bậc ' + rank + '/3</b>'
-        + '<span>' + roleName(w.role) + ' · tay nghề ×' + w.skill.toFixed(2) + ' · ' + money(w.wage) + '/ngày</span></div>'
+        + '<span>' + postRole(w) + ' · tay nghề ×' + w.skill.toFixed(2) + ' · ' + money(w.wage) + '/ngày</span></div>'
         + '<span class="fg-sub">' + (w.morale ?? 70) + '♥</span></div>'
         + '<div class="fg-metric"><span class="fg-sub">Tinh thần</span><span class="fg-prog"><i style="width:' + Math.max(0, Math.min(100, w.morale ?? 70)) + '%"></i></span></div>'
         + '<div class="fg-pay-bot">'
+        + '<button class="fg-btn" onclick="FarmGame.openWorker(\'' + w.id + '\')">🪪 Thẻ nhân viên</button>'
         + (rank < 3 ? '<button class="fg-btn" onclick="FarmGame.promoteWorker(\'' + w.id + '\')">⬆ Thăng chức · ' + bigMoney(upCost) + '</button>'
           : '<b class="fg-done">Bậc cao nhất</b>')
         + '<button class="fg-btn" onclick="FarmGame.rewardWorker(\'' + w.id + '\')">' + (w.rewardDay === dayKey() ? 'Đã thưởng hôm nay' : '🎁 Khen thưởng') + '</button>'
         + '<button class="fg-btn danger" onclick="FarmGame.fire(\'' + w.id + '\')">Cho nghỉ</button>'
         + '</div></div>';
     }).join('') : '<div class="fg-note">Chưa có ai trong biên chế.</div>';
+    const log = (f.hrLog || []).slice(0, 8).map(l => '<div class="fg-hrlog ' + (l.tone || '') + '"><span>' + l.emoji + '</span>'
+      + '<div><b>' + esc(l.name) + ': ' + esc(l.txt) + '</b><span>' + agoText(l.at) + ' trước</span></div></div>').join('')
+      || '<div class="fg-note">Chưa có ghi chép nhân sự.</div>';
     return '<div class="fg-row"><span>Biên chế</span><span class="fg-sub">' + f.workers.length + '/' + workerSlots(f) + ' người · quỹ lương ' + money(f.workers.reduce((s, w) => s + w.wage, 0)) + '/ngày</span></div>'
       + rows
-      + '<div class="fg-note">Thăng chức tăng tay nghề và lương; khen thưởng giữ tinh thần. Còn nợ lương thì chưa cho nghỉ được.</div>';
+      + '<div class="fg-sec">Sổ nhân sự</div>' + log
+      + '<div class="fg-note">Bấm thẻ để xem hiệu suất, khen hoặc khiển trách. Tinh thần thấp quá thì họ xin nghỉ.</div>';
   }
   function hrInfoTab(f) {
     return '<div class="fg-row"><span>Chỗ làm</span><span class="fg-sub">' + f.workers.length + '/' + workerSlots(f) + ' người</span></div>'
@@ -2743,11 +3271,113 @@
     if (tab === 'info') return hrInfoTab(f);
     return cvTab(f);
   }
+  function workerCard(f, w) {
+    if (!w) return '';
+    const mood = moodOf(w);
+    const rank = w.rank || 0;
+    const upCost = Math.round(w.wage * 2 * (rank + 1));
+    const mgCost = Math.round(w.wage * 4 / 1000) * 1000;
+    const due = w.due || 0;
+    const work = w.stat ? w.stat.work : 0;
+    const posts = Object.keys(BUILDINGS).filter(k => k !== 'nha' && k !== 'giamdoc' && bldInsts(f, k).length);
+    const assign = '<div class="fg-team-pick">'
+      + '<button class="fg-pick' + (!w.post ? ' on' : '') + '" onclick="FarmGame.assignPost(\'' + w.id + '\',\'\')">🌾 Ra vườn</button>'
+      + posts.map(k => {
+        const other = staffOf(f, k).filter(x => x.id !== w.id).length;
+        const full = other >= postCap(f, k);
+        return '<button class="fg-pick' + (w.post === k ? ' on' : '') + '"' + (full ? ' disabled' : '')
+          + ' onclick="FarmGame.assignPost(\'' + w.id + '\',\'' + k + '\')">' + BUILDINGS[k].e + ' ' + BUILDINGS[k].n + ' · ' + other + '/' + postCap(f, k) + '</button>';
+      }).join('') + '</div>';
+    const logs = (f.hrLog || []).filter(l => l.id === w.id).slice(0, 6).map(l => '<div class="fg-hrlog ' + (l.tone || '') + '"><span>' + l.emoji + '</span><div><b>' + esc(l.txt) + '</b><span>' + agoText(l.at) + ' trước</span></div></div>').join('')
+      || '<div class="fg-note">Chưa có ghi chép gì.</div>';
+    return '<div class="fg-h">' + avatarHtml(w.name, w.emoji) + ' ' + esc(w.name) + '</div>'
+      + '<div class="fg-row"><span>' + postRole(w) + ' · bậc ' + rank + '/3</span><span class="fg-tag">' + mood[1] + ' ' + mood[0] + '</span></div>'
+      + '<div class="fg-metric"><span class="fg-sub">Tinh thần</span><span class="fg-prog"><i style="width:' + Math.max(0, Math.min(100, w.morale ?? 70)) + '%"></i></span><span class="fg-sub">' + (w.morale ?? 70) + '/100</span></div>'
+      + '<div class="fg-row"><span>Đang làm</span><b>' + (w.post ? BUILDINGS[w.post].n : 'Ngoài vườn') + (w.manager ? ' · quản lý' : '') + '</b></div>'
+      + '<div class="fg-row"><span>Tay nghề</span><b class="fg-money">×' + w.skill.toFixed(2) + '</b></div>'
+      + '<div class="fg-row"><span>Việc hôm nay</span><b>' + work + ' lượt</b></div>'
+      + '<div class="fg-row"><span>Lương</span><span class="fg-sub">' + money(w.wage) + '/ngày' + (due ? ' · nợ ' + money(due) : '') + '</span></div>'
+      + '<div class="fg-row"><span>Nết</span><span class="fg-sub">' + esc(w.quirkN || '') + ' — ' + esc(quirkDesc(w)) + '</span></div>'
+      + '<div class="fg-sec">Khen thưởng & kỷ luật</div>'
+      + '<div class="fg-wcard-acts">'
+      + '<button class="fg-btn" onclick="FarmGame.praise(\'' + w.id + '\')">' + (w.praiseDay === dayKey() ? 'Đã khen hôm nay' : '👏 Khen · 50.000đ') + '</button>'
+      + '<button class="fg-btn" onclick="FarmGame.rewardWorker(\'' + w.id + '\')">' + (w.rewardDay === dayKey() ? 'Đã thưởng hôm nay' : '🎁 Thưởng · 100.000đ') + '</button>'
+      + '<button class="fg-btn danger" onclick="FarmGame.scold(\'' + w.id + '\')">' + (w.scoldDay === dayKey() ? 'Đã nhắc hôm nay' : '😤 Khiển trách') + '</button>'
+      + '</div>'
+      + (rank < 3 ? '<button class="fg-btn wide" onclick="FarmGame.promoteWorker(\'' + w.id + '\')">⬆ Thăng bậc ' + (rank + 1) + ' · ' + bigMoney(upCost) + '</button>'
+        : '<div class="fg-note">Bậc cao nhất rồi.</div>')
+      + (w.post && !w.manager && rank >= 3 ? '<button class="fg-btn wide" onclick="FarmGame.makeManager(\'' + w.id + '\')">⭐ Bổ nhiệm quản lý · ' + bigMoney(mgCost) + '</button>' : '')
+      + '<div class="fg-sec">Phân công phòng ban</div>' + assign
+      + '<div class="fg-sec">Nhật ký của ' + esc(w.name.split(' ').slice(-1)[0]) + '</div>' + logs;
+  }
+  function teamTab(f, key) {
+    const staff = staffOf(f, key);
+    const mgr = managerOf(f, key);
+    const cap = postCap(f, key);
+    const rows = staff.length ? staff.map(w => {
+      const mood = moodOf(w);
+      return '<div class="fg-pay"><div class="fg-pay-top">' + avatarHtml(w.name, w.emoji, 'sm')
+        + '<div class="fg-pay-m"><b>' + esc(w.name) + (w.manager ? ' ⭐' : '') + ' · bậc ' + (w.rank || 0) + '/3</b>'
+        + '<span>' + postRole(w) + ' · tay nghề ×' + w.skill.toFixed(2) + ' · ' + money(w.wage) + '/ngày</span></div>'
+        + '<span class="fg-sub">' + mood[1] + ' ' + (w.morale ?? 70) + '♥</span></div>'
+        + '<div class="fg-pay-bot"><b class="fg-sub">' + (w.manager ? 'Quản lý phòng' : 'Nhân viên') + ' · hôm nay ' + ((w.stat && w.stat.work) || 0) + ' lượt</b>'
+        + '<button class="fg-btn" onclick="FarmGame.openWorker(\'' + w.id + '\')">Xem thẻ</button>'
+        + '<button class="fg-btn ghost" onclick="FarmGame.assignPost(\'' + w.id + '\',\'\')">Rút về vườn</button></div></div>';
+    }).join('') : '<div class="fg-note">Phòng chưa có người. Chọn người bên dưới để phân công.</div>';
+    const avail = cap > staff.length ? f.workers.filter(w => w.post !== key && w.post !== 'giamdoc') : [];
+    const availRows = avail.length ? avail.map(w => {
+      const lowRank = key === 'giamdoc' && (w.rank || 0) < 2;
+      return '<div class="fg-row"><span>' + avatarHtml(w.name, w.emoji, 'sm') + ' ' + esc(w.name) + '</span>'
+        + '<span class="fg-sub">' + (w.post ? BUILDINGS[w.post].n : 'Ngoài vườn') + ' · ×' + w.skill.toFixed(2) + '</span>'
+        + '<button class="fg-btn"' + (lowRank ? ' disabled' : '') + ' onclick="FarmGame.assignPost(\'' + w.id + '\',\'' + key + '\')">' + (lowRank ? 'Cần bậc 2' : 'Nhận') + '</button></div>';
+    }).join('') : '<div class="fg-note">' + (cap <= staff.length ? 'Phòng đủ biên chế, nâng cấp để chứa thêm.' : 'Không còn ai rảnh ngoài vườn.') + '</div>';
+    const head = '<div class="fg-row"><span>' + BUILDINGS[key].n + '</span><span class="fg-sub">' + staff.length + '/' + cap + ' người' + (mgr ? ' · quản lý ' + esc(mgr.name) : '') + '</span></div>';
+    const extra = key === 'giamdoc' ? '<div class="fg-note">Giám đốc lo trồng luống trống và nhận đơn khi bạn vắng. Bật/tắt trong tab Điều hành.</div>' : '';
+    return head + rows + '<div class="fg-sec">Phân công thêm · còn ' + Math.max(0, cap - staff.length) + ' chỗ</div>' + availRows + extra
+      + '<div class="fg-note">Mỗi người trong phòng tăng hiệu suất của phòng; bổ nhiệm quản lý (bậc 3) thêm một nấc nữa.</div>';
+  }
+  function dirTab(f) {
+    const dir = directorOf(f);
+    if (!dir) {
+      return '<div class="fg-note">Chưa có giám đốc. Tuyển người có đầu óc để trại tự vận hành lúc bạn vắng.</div>'
+        + '<div class="fg-row"><span>Tuyển giám đốc</span><b class="fg-money">2.000.000đ</b></div>'
+        + '<button class="fg-btn wide" onclick="FarmGame.hireDirector()">🧑‍💼 Tuyển giám đốc · 2.000.000đ</button>'
+        + '<div class="fg-note">Giám đốc tự trồng luống trống và nhận đơn đủ hàng khi bạn rời trại. Lương 600.000đ/ngày.</div>';
+    }
+    const seeded = CROPS.filter(c => (f.seeds[c.id] || 0) > 0);
+    const pool = seeded.length ? seeded : CROPS;
+    const season = pool.map(c => ({ c: c, p: (f.season[c.id] || { p: 1 }).p })).sort((a, b) => b.p - a.p)[0];
+    const plantRow = '<div class="fg-row"><span>Ưu tiên trồng</span><span class="fg-sub">' + season.c.e + ' ' + season.c.n + ' · hạt còn ' + (f.seeds[season.c.id] || 0) + '</span>'
+      + '<button class="fg-toggle' + (f.dir.plant ? ' on' : '') + '" onclick="FarmGame.dirPolicy(\'plant\')">' + (f.dir.plant ? 'Bật' : 'Tắt') + '</button></div>';
+    const orderRow = '<div class="fg-row"><span>Tự nhận đơn</span><span class="fg-sub">khi kho đủ hàng, giá ≥ 98% chợ</span>'
+      + '<button class="fg-toggle' + (f.dir.orders ? ' on' : '') + '" onclick="FarmGame.dirPolicy(\'orders\')">' + (f.dir.orders ? 'Bật' : 'Tắt') + '</button></div>';
+    const log = (f.dirLog || []).slice(0, 10).map(l => '<div class="fg-hrlog"><span>' + l.icon + '</span><div><b>' + esc(l.txt) + '</b><span>' + agoText(l.at) + ' trước</span></div></div>').join('')
+      || '<div class="fg-note">Chưa có quyết định nào.</div>';
+    const away = f.lastSeen ? (Date.now() - f.lastSeen < 15000 ? 'Bạn vừa mới ghé trại.' : 'Lần cuối bạn ghé ' + agoText(f.lastSeen) + ' trước.') : '';
+    return '<div class="fg-pay"><div class="fg-pay-top">' + avatarHtml(dir.name, dir.emoji, 'sm')
+      + '<div class="fg-pay-m"><b>' + esc(dir.name) + ' · Giám đốc</b><span>Tay nghề ×' + dir.skill.toFixed(2) + ' · ' + money(dir.wage) + '/ngày · ' + (dir.morale ?? 70) + '♥</span></div>'
+      + '<button class="fg-btn ghost" onclick="FarmGame.openWorker(\'' + dir.id + '\')">Xem thẻ</button></div></div>'
+      + '<div class="fg-sec">Chính sách khi bạn vắng</div>' + plantRow + orderRow
+      + '<button class="fg-btn wide" onclick="FarmGame.dirRun()">▶ Chạy một lượt ngay</button>'
+      + '<div class="fg-sec">Nhật ký điều hành</div>' + log
+      + '<div class="fg-note">' + away + ' Giám đốc tự xử lý mỗi 30 giây và dồn việc khi bạn vắng lâu.</div>';
+  }
 
   function modalHtml(f, now) {
     if (!fgPanel) return '';
     let inner = '';
-    if (fgPanel === 'shop') {
+    if (fgPanel === 'land') {
+      const n = landCount(f), next = LAND_COST(n), needLv = LAND_LVL(n), max = n >= MAX_PLOTS;
+      inner = '<div class="fg-h">🟫 Đất trồng</div>'
+        + '<div class="fg-row"><span>Đang có</span><b>' + n + ' / ' + MAX_PLOTS + ' luống</b></div>'
+        + '<div class="fg-row"><span>Ví nông trại</span><b class="fg-money">' + money(farmCash(f)) + '</b></div>'
+        + (max ? '<div class="fg-note">Sân đã kín luống rồi.</div>'
+          : '<div class="fg-row"><span>Luống kế tiếp</span><b class="fg-money">' + money(next) + '</b></div>'
+            + (f.level < needLv ? '<div class="fg-row"><span>Cần nông trại cấp</span><b class="fg-money">' + needLv + '</b></div>' : '')
+            + '<div class="fg-note">' + (f.level < needLv ? 'Lên cấp ' + needLv + ' mới mua được luống này.' : 'Chọn chỗ rồi kéo luống đất tới nơi bạn muốn đặt.') + '</div>'
+            + (f.level < needLv ? '' : '<button class="fg-btn wide' + (farmCash() < next ? ' off' : '') + '"' + (farmCash() < next ? ' disabled' : '') + ' onclick="FarmGame.startPlotPlace()">📐 Chọn chỗ đặt · ' + bigMoney(next) + '</button>'))
+        + '<div class="fg-note">Đặt luống ở đâu trên sân cũng được, miễn không đè ao, chợ, cổng hay công trình khác.</div>';
+    } else if (fgPanel === 'shop') {
       const seedTiles = CROPS.map(c => '<button class="fg-cell" onclick="FarmGame.buyItem(\'' + c.id + '\')">'
         + '<b class="fg-cell-b">' + (f.seeds[c.id] || 0) + '</b>'
         + '<span class="fg-cell-e">' + c.e + '</span>'
@@ -2787,31 +3417,38 @@
         + '<span class="fg-cell-s">tưới cả vườn</span>'
         + '<span class="fg-cell-p' + (f.irrigate ? ' on' : '') + '">' + (f.irrigate ? 'Đã lắp ✓' : bigMoney(3000000)) + '</span></button>';
       inner = '<div class="fg-h">🛒 Sạp hàng</div>'
+        + '<div class="fg-row"><span>Ví nông trại</span><b class="fg-money">' + money(farmCash(f)) + '</b></div>'
         + '<div class="fg-sec">Hạt giống</div><div class="fg-grid">' + seedTiles + '</div>'
         + '<div class="fg-sec">Nâng cấp giống</div>' + seedUp
         + '<div class="fg-sec">Phân bón</div><div class="fg-grid">' + fertTiles + '</div>'
         + '<div class="fg-sec">Vật tư</div><div class="fg-grid">' + toolTiles + '</div>'
         + '<div class="fg-sec">Quà tặng khách</div><div class="fg-grid">' + giftTiles + '</div>'
-        + '<div class="fg-note">Chạm ô để mua. Hàng mua về nằm trong kho. Luống đất mới thì chạm ô khóa trên vườn.</div>';
+        + '<div class="fg-note">Chạm ô để mua, tiền trừ thẳng vào ví nông trại. Luống đất mới mua ở nút 🟫 ngoài vườn.</div>';
     } else if (fgPanel === 'money') {
       const cash = farmCash(f);
       inner = '<div class="fg-h">💲 Ví nông trại</div>'
         + '<div class="fg-cash-big">' + money(cash) + '</div>'
-        + '<div class="fg-note">Tiền bán nông sản, đơn hàng và thưởng đều vào ví này trước.</div>'
-        + '<div class="fg-row"><span>Ví chính</span><b class="fg-money">' + money(wallet()) + '</b></div>'
+        + '<div class="fg-note">Tiền bán nông sản, đơn hàng và thưởng đều vào ví này. Trong trại chỉ tiêu bằng ví này.</div>'
+        + '<div class="fg-row"><span>Ví chính (ngoài trại)</span><b class="fg-money">' + money(wallet()) + '</b></div>'
         + '<button class="fg-btn wide' + (cash ? '' : ' off') + '"' + (cash ? '' : ' disabled') + ' onclick="FarmGame.withdraw()">🏦 Rút hết về ví chính</button>'
-        + '<div class="fg-note">Chi tiêu trong trại trừ ví nông trại trước, thiếu mới lấy thêm từ ví chính.</div>';
+        + '<div class="fg-note">Hết ví trại thì bán nông sản hoặc giao đơn để có thêm tiền. Tiền ngoài trại không tự chảy vào đây.</div>';
+    } else if (fgPanel === 'worker' && workerSel) {
+      const w = f.workers.find(x => x.id === workerSel);
+      if (w) inner = workerCard(f, w);
+      else fgPanel = null;
     } else if (fgPanel === 'bld' && bldSel && bldOf(f, bldSel)) {
       const bkey = bldOf(f, bldSel).key;
       const tabs = BLD_TABS[bkey] || [['info', 'Thông tin']];
       const active = tabs.some(t => t[0] === bldTab) ? bldTab : tabs[0][0];
       let body = '';
-      if (bkey === 'kho') body = khoTab(f, active);
+      if (bkey === 'kho' && active !== 'team') body = khoTab(f, active);
       else if (bkey === 'nha') body = nhaTab(f, active);
       else if (bkey === 'nhansu') body = nhansuTab(f, active);
-      else if (bkey === 'cskh') body = cskhTab(f, active);
-      else if (bkey === 'ketoan') body = ketoanTab(f, active);
-      else if (bkey === 'giaohang') body = giaohangTab(f, active);
+      else if (bkey === 'cskh' && active !== 'team') body = cskhTab(f, active);
+      else if (bkey === 'ketoan' && active !== 'team') body = ketoanTab(f, active);
+      else if (bkey === 'giaohang' && active !== 'team') body = giaohangTab(f, active);
+      else if (bkey === 'giamdoc' && active === 'dir') body = dirTab(f);
+      else if (active === 'team') body = teamTab(f, bkey);
       else body = infoTab(f, bkey);
       inner = bldHead(f, bldSel)
         + (tabs.length > 1 ? '<div class="fg-tabs">' + tabs.map(t => '<button class="fg-tb' + (t[0] === active ? ' on' : '') + '"'
@@ -2828,19 +3465,19 @@
     } else if (fgPanel === 'orders') {
       const offers = f.orders.filter(o => o.state === 'offer');
       const doing = f.orders.filter(o => o.state === 'pack' || o.state === 'ship');
-      const contracts = f.contracts.map(c => '<div class="fg-row"><span>' + c.emoji + ' ' + esc(c.name) + '</span><span class="fg-sub">giá hợp đồng ×' + c.ceil.toFixed(2) + '</span>'
+      const contracts = f.contracts.map(c => '<div class="fg-row"><span>' + avatarHtml(c.name, c.emoji, 'sm', c.av) + ' ' + esc(c.name) + '</span><span class="fg-sub">giá hợp đồng ×' + c.ceil.toFixed(2) + '</span>'
         + (c.giftDay === dayKey() ? '<b class="fg-done">Đã tặng quà 🎁</b>'
           : f.buildings.cskh ? '<button class="fg-btn ghost" onclick="FarmGame.openBld(\'cskh\')">🎁 Quà</button>' : '') + '</div>').join('');
       inner = '<div class="fg-h">📋 Đơn hàng</div>'
         + '<div class="fg-sec">Khách tự tìm đến · ' + offers.length + ' đơn chờ nhận</div>'
-        + (offers.length ? offers.map(o => '<div class="fg-row"><span>' + o.emoji + ' ' + esc(o.cust) + ' cần ' + o.qty + cropOf(o.crop).e + ' ' + cropOf(o.crop).n + '</span><span class="fg-sub">' + money(o.qty * o.price) + '</span>'
+        + (offers.length ? offers.map(o => '<div class="fg-row"><span>' + avatarHtml(o.cust, o.emoji, 'sm') + ' ' + esc(o.cust) + ' cần ' + o.qty + cropOf(o.crop).e + ' ' + cropOf(o.crop).n + '</span><span class="fg-sub">' + money(o.qty * o.price) + '</span>'
           + (f.buildings.donggoi ? '<button class="fg-btn" onclick="FarmGame.accept(\'' + o.id + '\')">Nhận đơn</button>' : '<b class="fg-done">🔒 Cần khu đóng gói</b>') + '</div>').join('')
           + (f.buildings.donggoi ? '' : '<div class="fg-note">Xây Khu đóng gói ở cấp ' + BUILDINGS.donggoi.lvl + ' mới nhận đơn sỉ được. Giờ mang hàng ra Chợ làng bán lẻ nhé.</div>')
           : '<div class="fg-note">' + (f.buildings.donggoi ? 'Chưa có khách lạ nào ghé.' : 'Chưa có khu đóng gói nên chưa nhận đơn sỉ được. Mang hàng ra Chợ làng bán lẻ trước nhé.') + '</div>')
         + '<div class="fg-sec">Đang làm · ' + doing.length + ' đơn</div>'
         + (doing.length ? doing.map(o => {
           const pr = o.state === 'pack' ? o.prog : (o.shipProg || 0);
-          return '<div class="fg-row"><span>' + o.emoji + ' ' + esc(o.cust) + ' · ' + o.qty + cropOf(o.crop).e + '</span>'
+          return '<div class="fg-row"><span>' + avatarHtml(o.cust, o.emoji, 'sm') + ' ' + esc(o.cust) + ' · ' + o.qty + cropOf(o.crop).e + '</span>'
             + '<span class="fg-prog"><i style="width:' + Math.min(100, Math.round(pr)) + '%"></i></span>'
             + (o.state === 'pack' ? '<button class="fg-btn" onclick="FarmGame.packPlay(\'' + o.id + '\')">📦 Đóng gói</button>' : '<b class="fg-done">🚚 Đang giao</b>') + '</div>';
         }).join('') : '<div class="fg-note">Nhận đơn rồi đóng gói tại đây, có công nhân thì tụi nó lo.</div>')
@@ -2857,7 +3494,7 @@
         + (workerSlots(f) <= 0 ? '<div class="fg-note">Xây Nhà công nhân trước đã nhé.</div>' : cvs)
         + (f.workers.length ? '<div class="fg-sec">Đội ngũ hiện tại</div>' + f.workers.map(w => '<div class="fg-row"><span>' + w.emoji + ' ' + esc(w.name) + ' · ' + (w.role === 'vuon' ? 'Làm vườn' : 'Đóng gói') + '</span><span class="fg-sub">' + money(w.wage) + '/ngày · ' + w.morale + '♥</span><button class="fg-btn danger" onclick="FarmGame.fire(\'' + w.id + '\')">Cho nghỉ</button></div>').join('') : '');
     } else if (fgPanel === 'build') {
-      const order = Object.keys(BUILDINGS).sort((a, b) => BUILDINGS[a].lvl - BUILDINGS[b].lvl || BUILDINGS[a].cost[1] - BUILDINGS[b].cost[1]);
+      const order = BUILD_ORDER.filter(k => BUILDINGS[k]).concat(Object.keys(BUILDINGS).filter(k => BUILD_ORDER.indexOf(k) < 0));
       const rows = order.map(k => {
         const b = BUILDINGS[k], insts = bldInsts(f, k);
         if (!insts.length && bldLocked(f, k)) {
@@ -2868,13 +3505,7 @@
         const lv = insts.reduce((m, x) => Math.max(m, x.lv), 0);
         const full = insts.length > 0 && insts.every(x => x.lv >= MAX_BLD_LV);
         const tag = !insts.length ? 'Chưa xây' : insts.length > 1 ? insts.length + ' căn · C' + lv : 'Cấp ' + lv + '/' + MAX_BLD_LV;
-        const extra = k === 'kho' ? 'Sức chứa ' + stockCap(f)
-          : k === 'nha' ? 'Chỗ ở ' + workerSlots(f) + ' người'
-            : k === 'donggoi' ? 'Tốc độ ×' + packMult(f)
-              : k === 'giaohang' ? 'Đơn tối đa ' + orderCap(f) + ' · ' + f.trucks.length + ' xe'
-                : k === 'nhansu' ? 'Hồ sơ ' + f.candidates.length + ' · ' + f.workers.length + ' người'
-                  : k === 'cskh' ? 'Khách quen ' + f.contracts.length + ' · quà +' + Math.round(cskhGift(f) * 100) + '%'
-                    : 'Giảm hoá đơn ' + Math.round(ketoanCut(f) * 100) + '%';
+        const extra = bldExtra(f, k);
         const up = insts.slice().sort((a, c) => a.lv - c.lv)[0];
         const acts = !insts.length
           ? '<span class="fg-sub">' + money(b.cost[1]) + '</span>'
@@ -2949,12 +3580,18 @@
     } else if (fgPanel === 'neg' && neg) {
       const n = neg;
       const react = n.patience > 60 ? '😊' : n.patience > 30 ? '🤔' : '😤';
-      inner = '<div class="fg-h">✍️ Đàm phán với ' + n.emoji + ' ' + esc(n.name) + '</div>'
-        + '<div class="fg-neg"><div class="fg-row"><span>Giá bạn đề xuất</span><b class="fg-money">×' + n.offer.toFixed(2) + '</b></div>'
+      inner = '<div class="fg-h">' + avatarHtml(n.name, n.emoji) + ' Đàm phán với ' + esc(n.name) + '</div>'
+        + '<div class="fg-neg"><div class="fg-row"><span>Giá bạn đề xuất</span>'
+        + '<span class="fg-sub">' + (n.known ? (n.offer <= n.known ? 'khách chịu được' : 'cao hơn trần khách') : 'chưa rõ trần') + '</span>'
+        + '<b class="fg-money">×' + n.offer.toFixed(2) + '</b></div>'
+        + '<div class="fg-neg-adjust"><button class="fg-mini" onclick="FarmGame.negOffer(-0.05)">− 0.05</button>'
+        + '<button class="fg-mini alt" onclick="FarmGame.negOffer(0.05)">+ 0.05</button>'
+        + '<span class="fg-sub">Trần khách có thể chốt: ' + (n.known ? '×' + n.known.toFixed(2) : 'chưa rõ') + '</span></div>'
         + '<div class="fg-row"><span>Thái độ khách ' + react + '</span><span class="fg-prog"><i style="width:' + Math.max(0, n.patience) + '%"></i></span></div>'
-        + '<div class="fg-row"><span>Vòng ' + Math.min(n.round, 3) + '/3</span></div></div>'
+        + '<div class="fg-row"><span>Vòng ' + Math.min(n.round, 3) + '/3</span><span class="fg-sub">' + (n.known ? 'đã dò ra giá trần' : 'dò giá để biết trần') + '</span></div></div>'
         + '<div class="fg-note">' + n.log.slice(-3).map(esc).join('<br>') + '</div>'
         + '<div class="fg-ev-c">'
+        + '<button class="fg-btn" onclick="FarmGame.negTactic(\'hoi\')">🔍 Dò giá khách</button>'
         + '<button class="fg-btn" onclick="FarmGame.negTactic(\'khen\')">😊 Khen khéo</button>'
         + '<button class="fg-btn" onclick="FarmGame.negTactic(\'ep\')">💪 Ép giá (×' + (n.offer - 0.06).toFixed(2) + ')</button>'
         + '<button class="fg-btn" onclick="FarmGame.negTactic(\'qua\')">🎁 Tặng mẫu thử 50.000đ</button>'
@@ -2979,7 +3616,10 @@
         + '<div class="fg-pad" style="left:0;top:0;width:' + WORLD_W + 'px;height:' + WORLD_H + 'px;"></div>'
         + '<div class="fg-blds"></div><div class="fg-plots"></div><div class="fg-bar-slot"></div><div class="fg-yard"></div>'
         + '</div></div>'
-        + '<div class="fg-tools"></div><div class="fg-orders"></div><div class="fg-placebar"></div><div class="fg-modal-host"></div>'
+        + '<div class="fg-tools"></div><div class="fg-zoom">'
+        + '<button class="fg-zbtn" onclick="FarmGame.zoomBy(1.25)" title="Phóng to">＋</button>'
+        + '<button class="fg-zbtn" onclick="FarmGame.zoomBy(0.8)" title="Thu nhỏ">－</button>'
+        + '</div><div class="fg-orders"></div><div class="fg-placebar"></div><div class="fg-modal-host"></div>'
         + '<div class="fg-pack-host"></div><div class="fg-alert-host"></div>';
       camEl = root.querySelector('.fg-cam');
       worldEl = root.querySelector('.fg-world');
@@ -2988,6 +3628,8 @@
       centerOn(170, 300);
     }
     if (f.buildings.donggoi > 0 && !f.orders.length) spawnWalkOrder(f);
+    directorCatchUp(f);
+    f.lastSeen = Date.now();
     f.workers.forEach(w => { w.__job = null; w.__carry = null; w.__carryBox = false; w.__arrive = 0; w.__dur = 0; });
     save();
     render();
@@ -2996,8 +3638,10 @@
   function unmount() {
     mounted = false;
     if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    const fm = FM();
+    fm.lastSeen = Date.now();
     stopInertia();
-    drag = null; place = null; fgPanel = null; neg = null; plotSel = null;
+    drag = null; place = null; plotPlace = null; fgPanel = null; neg = null; plotSel = null;
     lift = null; endBldHold(); detachLift();
     seedDrag = null;
     if (seedGhostEl) { seedGhostEl.remove(); seedGhostEl = null; }
@@ -3023,6 +3667,21 @@
     open: openPanel,
     openBld,
     openHire,
+    openWorker,
+    praise: praiseWorker,
+    scold: scoldWorker,
+    makeManager,
+    assignPost,
+    hireDirector,
+    dirPolicy,
+    negOffer,
+    dirRun: () => {
+      const r = dirRun(FM(), { plant: 8, orders: 3 });
+      sfx('click'); render();
+      toast(r.plant || r.orders
+        ? '🧑‍💼 Giám đốc xử lý ' + (r.plant ? r.plant + ' luống' : '') + (r.plant && r.orders ? ' và ' : '') + (r.orders ? r.orders + ' đơn' : '') + '.'
+        : 'Chưa có gì để giám đốc làm.');
+    },
     bldTabSet: (t) => { bldTab = t; sfx('click'); render(); },
     openPlot: (i) => {
       const f = FM();
@@ -3034,10 +3693,13 @@
     },
     sprayPlot: (i) => treat(i),
     seedGrab,
-    close: () => { fgPanel = null; neg = null; plotSel = null; bldSel = null; render(); },
+    close: () => { fgPanel = null; neg = null; plotSel = null; bldSel = null; workerSel = null; render(); },
     pick: (id) => { farmPick = id; sfx('click'); render(); },
     plant, water, treat, fertilize, harvest, buyLand, buyItem, sellCrop, build, upgradeSeed,
+    startPlotPlace, plotPlaceConfirm, plotPlaceCancel,
     withdraw,
+    zoomBy: (f) => zoom(Number(f) || 1.25),
+    zoomReset: () => zoom(1 / cam.z),
     fert: fertilize,
     startPlace, placeConfirm, placeCancel,
     bldPress, bldTap, bldRotate, bldRemove, bldDone,
@@ -3050,6 +3712,19 @@
     _debug: {
       FM, spawnWalkOrder, queueEvent, tick,
       canPlace: (key, c, r) => canPlace(FM(), key, c, r),
+      canPlotAt: (x, y) => canPlotAt(FM(), x, y),
+      landCount: () => landCount(FM()),
+      plotPos: () => FM().plotPos.slice(0, landCount(FM())),
+      plotRect: (i) => plotRect(i),
+      plotPlaceMove: (x, y) => {
+        if (!plotPlace) return false;
+        plotPlace.x = x; plotPlace.y = y;
+        plotPlace.ok = canPlotAt(FM(), x, y);
+        return plotPlace.ok;
+      },
+      plotPlaceInfo: () => plotPlace ? { x: plotPlace.x, y: plotPlace.y, ok: plotPlace.ok, cost: plotPlace.cost } : null,
+      cam: () => ({ x: cam.x, y: cam.y, z: cam.z }),
+      centerOn: (x, y) => centerOn(x, y),
       face: (key) => bldFace(FM(), key),
       door: (key) => doorOf(FM(), key),
       alertId: () => alertEv,
@@ -3081,7 +3756,23 @@
         place.ok = canPlace(FM(), key, c, r);
         placeConfirm();
         return bldCount(FM(), key) > before;
-      }
+      },
+      mood: (id) => {
+        const w = FM().workers.find(x => x.id === id || x.name === id);
+        return w ? { morale: w.morale ?? 70, label: moodOf(w)[0] } : null;
+      },
+      staff: (key) => staffOf(FM(), key).map(w => ({ id: w.id, name: w.name, manager: !!w.manager, mor: w.morale ?? 70, post: w.post })),
+      postBoost: (key) => postBoost(FM(), key),
+      parkBoost: () => parkBoost(FM()),
+      director: () => { const d = directorOf(FM()); return d ? { id: d.id, name: d.name, mor: d.morale ?? 70 } : null; },
+      dirRun: (o) => dirRun(FM(), o || {}),
+      catchUp: () => directorCatchUp(FM()),
+      dirLog: () => (FM().dirLog || []).slice(0, 5),
+      idleSpot: (id) => { const f = FM(), w = f.workers.find(x => x.id === id); return w ? idleSpot(f, w) : null; },
+      corner: () => cornerSpot(FM()),
+      openWorker: (id) => openWorker(id),
+      neg: () => neg ? { name: neg.name, offer: neg.offer, ceil: neg.ceil, patience: neg.patience, round: neg.round, known: neg.known, log: neg.log.slice() } : null,
+      hrLog: () => (FM().hrLog || []).slice(0, 10)
     }
   };
 })();
