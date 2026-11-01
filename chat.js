@@ -857,21 +857,43 @@ Trả về ĐÚNG JSON thuần, không markdown:
     function cancelCharInline() { editingCharId = null; renderCharacterList(); }
 
     // ===== QUÉT TÊN NHÂN VẬT TRONG CỐT TRUYỆN =====
-    // Chỉ nhận cụm Viết Hoa có hành động đi kèm ("Hạo Nam khẽ cười") hoặc tên 2+ từ lặp lại,
-    // để tránh nhặt nhầm địa danh và danh từ chung.
+    // Nhận tên Viết Hoa có hành động/chức danh, tên 2+ từ lặp lại, tên ở đầu dòng thoại,
+    // danh sách sau "Nhân vật:", và cả tên viết thường kiểu "hạo nam khẽ cười" / "cô giáo lan".
     const SCAN_TITLES = new Set('co chu ong ba bac anh chi em thay cau mo di sep ngai'.split(' '));
-    const SCAN_TITLES2 = new Set('co giao|thay giao|dai ca|nhi ca|dai ty|chu tich|giam doc|bac si|thu ky|quan ly'.split('|'));
+    const SCAN_TITLES2 = new Set(('co giao|thay giao|dai ca|nhi ca|dai ty|chu tich|giam doc|bac si|thu ky|quan ly|y ta|su phu|su muoi|su ty|truong phong|' +
+      'tong giam doc|pho giam doc').split('|'));
     const SCAN_STOP = new Set(('toi minh to cau ban anh chi em co chu ong ba bac thay han nang a ga chang no me ba bo cha con thang nho nguoi ai gi sao the nao do kia nay ' +
-      'mot hai bon sau bay tam chin muoi hom mai qua luc khi vi neu nhung va hoac nen roi da dang se van con cung rat hoi qua lam ' +
+      'mot hai bon sau bay tam chin muoi hom mai qua luc khi vi neu nhung va hoac nen roi da dang se van con cung rat hoi qua lam ve ' +
       'tieng mua gio nang troi dat nuoc lua dem sang chieu canh phong ban ghe chiec cai duong mat mep nu cuoi noi buoc').split(/\s+/));
     const SCAN_ADV = new Set('khe nhe van da dang con roi lien bong chot lai cung vua moi se thi rat hoi nhanh cham luon cu hay deu tung sap'.split(' '));
     const SCAN_LINK = new Set('va voi cung roi thi'.split(' '));
-    const SCAN_ACTION = new Set(('mim cuoi bat noi hoi dap tra het goi tho lac gat cui ngang quay buoc ngoi dung nhin liec nhiu cau chau mo cam nam om hon khoc ' +
-      'vo xoa tua dua chay ghe dong buong keo day giu go vuot chi gio giat run hu phi do cham siet hit lui tien nep ngu an uong thay nghe muon can den toi vao ' +
-      'phang phay nhun vai hui ngung ngai la ten').split(/\s+/));
-    const SCAN_PLACE_HEAD = new Set('cho pho benh khach tiem khu lang xom hoi bang cong tap sieu ngan cua hoc vien so bo uy nha'.split(' '));
+    const SCAN_ACTION = new Set(('mim cuoi bat noi dap chao het goi gat cui ngang quay buoc ngoi dung nhin liec nhiu cau om khoc tho ' +
+      'vo xoa tua dua chay ghe buong keo day giu go vuot gio giat run hu do siet hit lui nep ngu uong thay muon den toi vao ' +
+      'phang phay nhun vai hui ngung ngai la ten nhao tron nuong xao luoc hap rua bam goi mang don lau quet tuoi xep bua').split(/\s+/));
+    const SCAN_PLACE_HEAD = new Set(('cho pho benh khach tiem khu lang xom hoi bang cong tap sieu ngan cua hoc vien so bo uy nha ' +
+      'thanh tinh xa ap thon buon cang ben bai hon deo suoi toa thi nui song bien').split(/\s+/));
     const SCAN_PLACES = new Set(('da lat|ha noi|sai gon|ho chi minh|hai phong|da nang|hue|can tho|nha trang|vung tau|ha long|sa pa|sapa|ha giang|quy nhon|' +
       'quang ninh|ninh binh|phu quoc|con dao|bien hoa|thu duc|binh duong|dong nai').split('|'));
+    const SCAN_ROLE = new Set(('chu tien|khach|thay|co|co giao|giao vien|hoc sinh|bac si|y ta|quan ly|giam doc|chu tich|nhan vien|truong phong|thu ky|' +
+      'le tan|dau bep|phuc vu|canh sat|linh|thuong nhan|nong dan|tho|cong nhan|nghe si|ca nhac|hoa si|dao dien').split('|'));
+    const SCAN_HEAD_NOUN = new Set(('buoi mui tieng giong anh mat ban tay chan dau vai lung toc doi chiec cai con nguoi nha cua phong canh bau khong ' +
+      'dem hom sang trua chieu toi mua nang gio may sao trang dat nuoc lua mong uoc ky uc cau chuyen cau hoi loi noi').split(/\s+/));
+    const SCAN_LABEL_SINGLE = new Set(['ten']);
+    const SCAN_NONNAME_HEAD = new Set(('gai nguoi con cai chiec dem hom buoi tieng mui giong toc ban tay chan mat cua nha canh cau hoi loi noi').split(/\s+/));
+    const SCAN_STRONG_NOUN = new Set(('kiem khay mam bat coc banh tien vang nha cua phong duong ghe ban tay chan mat moi rang toc ao quan non giay tui sach but ' +
+      'vuon ruong dat troi mua nang gio may sao trang nuoc lua guom thap cau tho').split(/\s+/));
+    const SCAN_LSTOP = new Set(('toi ban cua va voi cung roi thi la nhung mot hai bon sau bay tam chin muoi hom nay qua luc khi vi neu dang se van con rat hoi lam ' +
+      'nguoi ai gi sao the nao do kia ay o no ho ta chung co cau chu ong ba bac chi em thay can nghi ve ca').split(/\s+/));
+    const SCAN_LABEL = new Set(['boi canh', 'tom tat', 'ghi chu', 'nhan vat', 'nhan vat chinh', 'nhan vat phu', 'dia diem', 'thoi gian', 'tinh cach',
+      'ngoai hinh', 'chu de', 'the loai', 'gioi thieu', 'cau chuyen', 'tieu de', 'vai tro', 'ky nang', 'suc manh', 'phe phai', 'nhan xet',
+      'the gioi', 'quy tac', 'luu y', 'dong y', 'tuong']);
+    const SCAN_FACTION_HEAD = new Set(['bang', 'hoi', 'bang dang', 'gia toc', 'mon phai', 'to chuc', 'cong ty', 'tap doan', 'quan an', 'tiem an']);
+    const SCAN_NAME_RAW = new Set(['lâm', 'thơ', 'dũng', 'đỗ', 'võ', 'an', 'nam', 'chi', 'tiên', 'đông', 'phi', 'cẩm', 'mơ', 'châu', 'trà', 'lạc', 'châm']);
+    const SCAN_TITLES_RAW = new Set(['cô', 'chú', 'ông', 'bà', 'bác', 'anh', 'chị', 'em', 'thầy', 'cậu', 'mợ', 'dì', 'sếp', 'ngài']);
+    const SCAN_TITLES2_RAW = new Set(['cô giáo', 'thầy giáo', 'đại ca', 'nhị ca', 'đại tỷ', 'chủ tịch', 'giám đốc', 'bác sĩ', 'thư ký', 'quản lý', 'y tá', 'sư phụ', 'sư mẫu', 'sư tỷ', 'trưởng phòng', 'tổng giám đốc', 'phó giám đốc']);
+    const SCAN_ROLE_RAW = new Set(['chủ tiệm', 'khách', 'thầy', 'cô', 'cô giáo', 'giáo viên', 'học sinh', 'bác sĩ', 'y tá', 'quản lý', 'giám đốc',
+      'chủ tịch', 'nhân viên', 'trưởng phòng', 'thư ký', 'lễ tân', 'đầu bếp', 'phục vụ', 'cảnh sát', 'lính', 'thương nhân', 'nông dân', 'thợ', 'công nhân',
+      'nghệ sĩ', 'ca nhạc', 'họa sĩ', 'đạo diễn']);
 
     function foldVi(s) {
       return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
@@ -889,7 +911,86 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const isWord = t => /^\p{L}/u.test(t.w);
       const isCap = t => /^\p{Lu}/u.test(t.w) && t.w.length > 1;
       const cands = new Map();
+      const niceName = (ws) => ws.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      const put = (key, name, pos, flags) => {
+        let c = cands.get(key);
+        if (!c) { c = { name: name, count: 0, action: false, title: false, dialog: false, low: false, first: pos }; cands.set(key, c); }
+        else if (/^\p{Ll}/u.test(c.name) && /^\p{Lu}/u.test(name)) c.name = name;
+        c.count++;
+        if (flags && flags.action) c.action = true;
+        if (flags && flags.title) c.title = true;
+        if (flags && flags.dialog) c.dialog = true;
+        if (flags && flags.low) c.low = true;
+      };
+      const lineHead = (before) => /(?:^|[\n\r])[ \t]*[-–—*•]?[ \t]*\[?[ \t]*$/.test(before);
+      const titleBefore = (i) => {
+        const a = tokens[i - 1], b = tokens[i - 2];
+        if (!a || !isWord(a)) return false;
+        if (!/^[ \t]+$/.test(text.slice(a.i + a.w.length, tokens[i].i))) return false;
+        if (SCAN_TITLES_RAW.has(String(a.w).toLowerCase())) return true;
+        if (b && isWord(b) && /^[ \t]+$/.test(text.slice(b.i + b.w.length, a.i))) return SCAN_TITLES2_RAW.has(String(b.w).toLowerCase() + ' ' + String(a.w).toLowerCase());
+        return false;
+      };
+      const roleBefore = (i) => {
+        const a = tokens[i - 1], b = tokens[i - 2];
+        if (!a || !isWord(a)) return false;
+        if (!/^[ \t]+$/.test(text.slice(a.i + a.w.length, tokens[i].i))) return false;
+        if (SCAN_ROLE_RAW.has(String(a.w).toLowerCase())) return true;
+        if (b && isWord(b) && /^[ \t]+$/.test(text.slice(b.i + b.w.length, a.i))) return SCAN_ROLE_RAW.has(String(b.w).toLowerCase() + ' ' + String(a.w).toLowerCase());
+        return false;
+      };
+      const rolePhraseAt = (i) => {
+        const a = tokens[i - 1];
+        if (!a || !isWord(a)) return false;
+        if (!/^[ \t]+$/.test(text.slice(a.i + a.w.length, tokens[i].i))) return false;
+        return SCAN_ROLE_RAW.has(String(a.w).toLowerCase() + ' ' + String(tokens[i].w).toLowerCase());
+      };
+      const titlePairHead = (i) => {
+        const b = tokens[i + 1];
+        if (!b || !isWord(b)) return false;
+        if (!/^[ \t]+$/.test(text.slice(tokens[i].i + tokens[i].w.length, b.i))) return false;
+        return SCAN_TITLES2_RAW.has(String(tokens[i].w).toLowerCase() + ' ' + String(b.w).toLowerCase());
+      };
+      const titleTail = (i) => {
+        const a = tokens[i - 1];
+        if (!a || !isWord(a)) return false;
+        return /^[ \t]+$/.test(text.slice(a.i + a.w.length, tokens[i].i)) && SCAN_TITLES2_RAW.has(String(a.w).toLowerCase() + ' ' + String(tokens[i].w).toLowerCase());
+      };
+      // Nhìn về sau tối đa 8 từ: bỏ qua dấu câu, trạng từ, từ nối và tên khác để tìm dấu hiệu là người
+      const actionAfter = (j) => {
+        let k = j + 1, hops = 0, afterPunct = false, linkBudget = 0;
+        while (tokens[k] && hops < 8) {
+          if (!isWord(tokens[k])) {
+            if (/^[.!?…]+$/.test(tokens[k].w)) return false;
+            afterPunct = true;
+            k++; hops++;
+            continue;
+          }
+          const f = foldVi(tokens[k].w);
+          if (afterPunct && isCap(tokens[k])) return false;
+          if (f === 'la' && tokens[k + 1] && isWord(tokens[k + 1])) {
+            const n1 = foldVi(tokens[k + 1].w);
+            const n2 = tokens[k + 2] && isWord(tokens[k + 2]) ? foldVi(tokens[k + 2].w) : '';
+            if (SCAN_ROLE.has(n1) || (n2 && SCAN_ROLE.has(n1 + ' ' + n2))) return true;
+          }
+          if (f === 'va' || f === 'voi') { linkBudget = 2; k++; hops++; continue; }
+          if (SCAN_ADV.has(f) || isCap(tokens[k])) { k++; hops++; continue; }
+          if (SCAN_ACTION.has(f)) return true;
+          if (linkBudget > 0) { linkBudget--; k++; hops++; continue; }
+          return false;
+        }
+        return false;
+      };
+      const addListName = (ws, pos) => {
+        const parts = ws.map(foldVi);
+        if (!parts.length || parts.length > 3 || !/^\p{L}/u.test(ws[0])) return;
+        if (SCAN_STOP.has(parts[0]) || SCAN_PLACE_HEAD.has(parts[0])) return;
+        if (SCAN_LABEL.has(parts.join(' ')) || (parts.length === 1 && SCAN_LABEL_SINGLE.has(parts[0]))) return;
+        if (SCAN_PLACES.has(parts.join(' ')) || parts.some(p => SCAN_STRONG_NOUN.has(p))) return;
+        put(parts.join(' '), niceName(ws), pos, { title: true });
+      };
 
+      // 1) Cụm Viết Hoa: "Hạo Nam khẽ cười", "Cô giáo Minh Anh", "Hạo Nam:"
       for (let i = 0; i < tokens.length; i++) {
         if (!isWord(tokens[i]) || !isCap(tokens[i])) continue;
         let j = i;
@@ -899,45 +1000,90 @@ Trả về ĐÚNG JSON thuần, không markdown:
           j++;
         }
         let words = tokens.slice(i, j + 1).map(t => t.w);
+        const headTitle = titleBefore(i);
+        let stripped = false;
         for (;;) {
-          if (words.length > 2 && SCAN_TITLES2.has(foldVi(words[0] + ' ' + words[1]))) { words = words.slice(2); continue; }
-          if (words.length > 1 && SCAN_TITLES.has(foldVi(words[0]))) { words = words.slice(1); continue; }
+          if (words.length > 2 && SCAN_TITLES2.has(foldVi(words[0] + ' ' + words[1]))) { words = words.slice(2); stripped = true; continue; }
+          if (words.length > 1 && SCAN_TITLES.has(foldVi(words[0]))) { words = words.slice(1); stripped = true; continue; }
           break;
         }
         words = words.slice(0, 3);
+        const ti = i, pos = tokens[i].i;
+        i = j; // đã xét trọn cụm, không tách nhỏ thành tên rác
         if (!words.length) continue;
-
-        // Nhìn về sau tối đa 6 từ: bỏ qua trạng từ, từ nối và tên khác để tìm động từ hành động
-        let k = j + 1, hops = 0, hasAction = false;
-        while (tokens[k] && isWord(tokens[k]) && hops < 6) {
-          const f = foldVi(tokens[k].w);
-          if (SCAN_ADV.has(f) || SCAN_LINK.has(f) || isCap(tokens[k])) { k++; hops++; continue; }
-          if (SCAN_ACTION.has(f)) hasAction = true;
-          break;
-        }
-
         const parts = words.map(foldVi);
         const key = parts.join(' ');
-        const pos = i;
-        i = j; // đã xét trọn cụm, không tách nhỏ thành tên rác
         if (parts.length === 1 && SCAN_STOP.has(parts[0])) continue;
-        if (SCAN_PLACE_HEAD.has(parts[0]) || SCAN_PLACES.has(key)) continue;
+        const dialog = tokens[j + 1] && tokens[j + 1].w === ':' && lineHead(text.slice(0, pos));
+        put(key, niceName(words), pos, { action: actionAfter(j), title: headTitle || stripped || roleBefore(ti), dialog: dialog });
+      }
 
-        const c = cands.get(key) || { name: words.join(' '), count: 0, action: false, first: pos };
-        c.count++; c.action = c.action || hasAction;
-        cands.set(key, c);
+      // 2) Danh sách sau nhãn "Nhân vật:" (kể cả viết thường, có ghi chú trong ngoặc)
+      const labelRe = /(?:^|[\n\r])[ \t]*[-–—*•]?[ \t]*(?:nhân\s*vật(?:\s*chính|\s*phụ)?|tuyến\s*nhân\s*vật|dàn\s*nhân\s*vật)\s*[:：]\s*([^\n\r]+)/gi;
+      while ((m = labelRe.exec(text)) !== null) {
+        const bodyStart = m.index + m[0].length - m[1].length;
+        let cursor = 0;
+        String(m[1]).split(/[,;\/&+]|\s+và\s+|\s+va\s+|\s*[-–—]\s*/g).forEach(seg => {
+          const at = m[1].indexOf(seg, cursor);
+          if (at >= 0) cursor = at + seg.length;
+          const ws = seg.replace(/\([^)]*\)|\[[^\]]*\]/g, ' ').replace(/^[\s.!?*•]+|[\s.!?]+$/g, '').split(/\s+/).filter(Boolean);
+          if (ws.length) addListName(ws, bodyStart + (at >= 0 ? at : 0));
+        });
+      }
+
+      // 3) Tên viết thường: "hạo nam khẽ cười", "cô giáo lan", "hạo nam:", hoặc lặp lại 2 lần
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (!isWord(t) || isCap(t)) continue;
+        const f0 = foldVi(t.w), rawLow = String(t.w).toLowerCase();
+        if (!SCAN_NAME_RAW.has(rawLow) && (SCAN_LSTOP.has(f0) || SCAN_ADV.has(f0) || SCAN_ACTION.has(f0) || SCAN_LINK.has(f0))) continue;
+        if (SCAN_TITLES_RAW.has(rawLow) || titlePairHead(i) || titleTail(i)) continue;
+        let j = i;
+        const words = [t.w];
+        while (j - i < 2 && tokens[j + 1] && isWord(tokens[j + 1]) && !isCap(tokens[j + 1])) {
+          const gap = text.slice(tokens[j].i + tokens[j].w.length, tokens[j + 1].i);
+          if (!/^[ \t]+$/.test(gap)) break;
+          const f = foldVi(tokens[j + 1].w);
+          if (SCAN_LSTOP.has(f) || SCAN_ADV.has(f) || SCAN_ACTION.has(f) || SCAN_LINK.has(f)) break;
+          j++;
+          words.push(tokens[j].w);
+        }
+        const parts = words.map(foldVi);
+        if (!parts[0] || parts[0].length < 2) continue;
+        const dialog = tokens[j + 1] && tokens[j + 1].w === ':' && lineHead(text.slice(0, t.i));
+        const title = titleBefore(i);
+        if (!title && !SCAN_NAME_RAW.has(rawLow) && (roleBefore(i) || rolePhraseAt(i)) && !words.slice(1).some(w => SCAN_NAME_RAW.has(String(w).toLowerCase()))) continue;
+        put(parts.join(' '), niceName(words), t.i, { low: true, title: title, dialog: dialog, action: actionAfter(j) });
       }
 
       const list = Array.from(cands.values()).sort((a, b) => a.first - b.first);
-      const out = [];
+      const pass = [];
       list.forEach(c => {
+        const parts = c.name.split(/\s+/).map(foldVi);
+        const single = parts.length === 1;
+        if (SCAN_PLACES.has(parts.join(' ')) || SCAN_LABEL.has(parts.join(' ')) || (single && SCAN_LABEL_SINGLE.has(parts[0]))) return;
+        if (parts.length > 1 && (SCAN_FACTION_HEAD.has(parts[0]) || SCAN_FACTION_HEAD.has(parts[0] + ' ' + parts[1]))) return;
+        if (SCAN_NONNAME_HEAD.has(parts[0])) return;
+        const personish = !!(c.action || c.dialog || c.title);
+        if (!personish && SCAN_PLACE_HEAD.has(parts[0])) return;
+        if (single) {
+          if (SCAN_STOP.has(parts[0])) return;
+          if (c.low && !c.title && !c.dialog) return;
+          if (!c.action && !c.dialog && !c.title) return;
+        } else if (!c.action && !c.dialog && !c.title && c.low && c.count < 2) {
+          return;
+        }
+        if (!c.action && !c.dialog && (SCAN_HEAD_NOUN.has(parts[0]) || parts.some(p => SCAN_STRONG_NOUN.has(p)))) return;
+        pass.push(c);
+      });
+      const out = [];
+      pass.forEach(c => {
         // Bỏ tên ngắn nằm trong một tên dài hơn ("Hạo Nam" khi đã có "Trần Hạo Nam")
-        const insideLonger = list.some(d => d !== c && d.name.length > c.name.length && (' ' + d.name + ' ').indexOf(' ' + c.name + ' ') >= 0);
+        const lname = ' ' + foldVi(c.name) + ' ';
+        const insideLonger = pass.some(d => d !== c && d.name.length > c.name.length && (' ' + foldVi(d.name) + ' ').indexOf(lname) >= 0);
         if (insideLonger) return;
-        if (c.name.split(' ').length < 2 && !c.action) return;
-        if (!c.action && c.count < 2) return;
         if (isDup(foldVi(c.name))) return;
-        if (out.length < 10) out.push(c.name);
+        if (out.length < 16) out.push(c.name);
       });
       return out;
     }
@@ -987,7 +1133,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
       const prompt = `Bạn là trợ lý đọc truyện, giúp lọc ra NHÂN VẬT (con người) trong cốt truyện.
 [CỐT TRUYỆN]
-${String(text).slice(0, 6000)}
+${String(text).slice(0, 12000)}
 
 [TÊN MÁY DÒ ĐƯỢC - CẦN LỌC]
 ${names.length ? names.map(n => '- ' + n).join('\n') : '(không có)'}
@@ -996,7 +1142,7 @@ ${names.length ? names.map(n => '- ' + n).join('\n') : '(không có)'}
 1. CHỈ trả về những tên là MỘT NGƯỜI cụ thể trong truyện: biết nói, hành động, xuất hiện, có vai trò.
 2. TUYỆT ĐỐI không trả về tên bang hội, hội, môn phái, gia tộc, tổ chức, công ty, nhóm giang hồ (ví dụ "bang Hồng Hưng", "Đông Tinh" nếu trong truyện là tên bang), địa danh, con đường, toà nhà, món đồ, hay chức danh chung (bác sĩ, cảnh sát, phục vụ... nếu không phải một nhân vật có tên riêng).
 3. Đọc cả cốt truyện và bổ sung những NGƯỜI có trong truyện mà máy dò còn thiếu.
-4. Không bịa tên ngoài cốt truyện; gộp tên trùng; tối đa 15 người.
+4. Không bịa tên ngoài cốt truyện; gộp tên trùng; tối đa 20 người.
 5. note: một câu ngắn dưới 12 từ nói người này là ai trong truyện.
 6. isPerson luôn là true (chỉ trả về người).
 
@@ -1022,7 +1168,7 @@ Trả về ĐÚNG JSON thuần:
               person: true,
               kind: 'người',
               note: String(it.note || '').trim().slice(0, 140)
-            })).slice(0, 15);
+            })).slice(0, 20);
           if (items.length) return { items, ai: true };
         } catch (err) {}
       }
@@ -1047,7 +1193,7 @@ Trả về ĐÚNG JSON thuần:
         push(guess.person ? it : Object.assign({}, it, { person: false, kind: guess.kind }));
       });
       (names || []).forEach(n => push(Object.assign({ name: n }, scanGuessKind(text, n))));
-      return out.slice(0, 18);
+      return out.slice(0, 24);
     }
     let scanPickCtx = null;
     function openScanPicker(items, ctx) {
