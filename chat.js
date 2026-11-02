@@ -902,7 +902,19 @@ Trả về ĐÚNG JSON thuần, không markdown:
     function scanStoryCharNames(raw, existingNames) {
       const text = String(raw || '');
       if (!text.trim()) return [];
-      const existsArr = (existingNames || []).map(n => foldVi(n).replace(/\s+/g, ' ').trim()).filter(Boolean);
+      const existsArr = (existingNames || []).reduce((acc, n) => {
+        const s = String(n || '');
+        const outer = foldVi(s.replace(/[（(][^（()）\[\]]*[）)]/g, ' ').replace(/\s+/g, ' ').trim());
+        if (outer) acc.push(outer);
+        // Tên trong ngoặc của nhân vật đã có cũng là tên của họ
+        const reIn = /[（(]\s*([^（()）\[\]]+?)\s*[）)]/g;
+        let mIn;
+        while ((mIn = reIn.exec(s)) !== null) {
+          const k = foldVi(mIn[1].replace(/\s+/g, ' ').trim());
+          if (k) acc.push(k);
+        }
+        return acc;
+      }, []);
       const isDup = (k) => existsArr.some(e => k === e || (' ' + e + ' ').indexOf(' ' + k + ' ') >= 0 || (' ' + k + ' ').indexOf(' ' + e + ' ') >= 0);
       const tokens = [];
       const re = /[\p{L}][\p{L}'’]*|[^\s\p{L}]+/gu;
@@ -910,18 +922,62 @@ Trả về ĐÚNG JSON thuần, không markdown:
       while ((m = re.exec(text)) !== null) tokens.push({ w: m[0], i: m.index });
       const isWord = t => /^\p{L}/u.test(t.w);
       const isCap = t => /^\p{Lu}/u.test(t.w) && t.w.length > 1;
+
+      // Ngoặc ngay sau tên là tên gọi khác: "Tô Đát Kỷ (Hồ Tiên Nhi)" — nhận cả hai, tên ngoài là chính
+      const SCAN_ALIAS = new Map();     // khóa bí danh -> khóa tên chính
+      const SCAN_ALIAS_RAW = new Map(); // khóa tên chính -> bí danh gốc
+      const aliasRe = /([\p{L}][\p{L}'’]*(?:[ \t]+[\p{L}][\p{L}'’]*){0,3})[ \t]*[（(][ \t]*([^（()）\[\]]{1,50}?)[ \t]*[）)]/gu;
+      const aliasWords = (s) => String(s || '').trim().split(/\s+/).filter(Boolean);
+      const capsName = (ws) => ws.length > 0 && ws.length <= 4 && ws.every(w => /^\p{Lu}/u.test(w));
+      const lowName = (ws) => ws.length > 0 && ws.length <= 4 && ws.every(w => /^\p{Ll}/u.test(w));
+      let arm;
+      const aliasPairs = [];
+      while ((arm = aliasRe.exec(text)) !== null) {
+        const outer = arm[1].replace(/\s+/g, ' ').trim();
+        const inner = arm[2].replace(/\s+/g, ' ').trim();
+        if (/\d/.test(inner)) continue;
+        const iws = aliasWords(inner);
+        // Ngoặc viết thường chỉ là bí danh khi cả tên ngoài cũng viết thường;
+        // "Hạo Nam (chủ tiệm bánh)" vẫn là ghi chú
+        if (!capsName(iws) && !(lowName(iws) && lowName(aliasWords(outer)))) continue;
+        const ok = foldVi(outer), ik = foldVi(inner);
+        if (!ok || !ik || ik === ok) continue;
+        SCAN_ALIAS.set(ik, ok);
+        if (!SCAN_ALIAS_RAW.has(ok)) {
+          SCAN_ALIAS_RAW.set(ok, lowName(iws) ? iws.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : inner);
+        }
+        aliasPairs.push({ outer, ok, at: arm.index });
+      }
+
       const cands = new Map();
       const niceName = (ws) => ws.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       const put = (key, name, pos, flags) => {
         let c = cands.get(key);
-        if (!c) { c = { name: name, count: 0, action: false, title: false, dialog: false, low: false, first: pos }; cands.set(key, c); }
+        if (!c) { c = { name: name, count: 0, action: false, title: false, dialog: false, low: false, listed: false, first: pos }; cands.set(key, c); }
         else if (/^\p{Ll}/u.test(c.name) && /^\p{Lu}/u.test(name)) c.name = name;
         c.count++;
         if (flags && flags.action) c.action = true;
         if (flags && flags.title) c.title = true;
         if (flags && flags.dialog) c.dialog = true;
         if (flags && flags.low) c.low = true;
+        if (flags && flags.listed) c.listed = true;
       };
+      // Tên ngoài viết thường vẫn phải thành nhân vật chính: "tô đát kỷ (hồ tiên nhi)"
+      const aliasOuterOk = (outer) => {
+        const ws = outer.split(/\s+/).filter(Boolean);
+        if (!ws.length || ws.length > 4) return null;
+        const f = foldVi(ws[0]);
+        if (ws[0] === f && (SCAN_STOP.has(f) || SCAN_LSTOP.has(f) || SCAN_ADV.has(f) || SCAN_ACTION.has(f) || SCAN_LINK.has(f) || SCAN_PLACE_HEAD.has(f))) return null;
+        if (SCAN_LABEL.has(foldVi(ws.join(' '))) || SCAN_PLACES.has(foldVi(ws.join(' ')))) return null;
+        if (SCAN_TITLES.has(f) || (ws.length > 1 && SCAN_TITLES2.has(foldVi(ws[0] + ' ' + ws[1])))) return null;
+        return ws;
+      };
+      aliasPairs.forEach(p => {
+        if (/^\p{Lu}/u.test(p.outer)) return; // viết hoa đã được lượt 1 bắt
+        const ws = aliasOuterOk(p.outer);
+        if (!ws) return;
+        put(p.ok, niceName(ws), p.at, { title: true, listed: true });
+      });
       const lineHead = (before) => /(?:^|[\n\r])[ \t]*[-–—*•]?[ \t]*\[?[ \t]*$/.test(before);
       const titleBefore = (i) => {
         const a = tokens[i - 1], b = tokens[i - 2];
@@ -962,7 +1018,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
         while (tokens[k] && hops < 8) {
           if (!isWord(tokens[k])) {
             if (/^[.!?…]+$/.test(tokens[k].w)) return false;
-            afterPunct = true;
+            if (!/^[()[\]{}（）]+$/.test(tokens[k].w)) afterPunct = true;
             k++; hops++;
             continue;
           }
@@ -984,10 +1040,10 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const addListName = (ws, pos) => {
         const parts = ws.map(foldVi);
         if (!parts.length || parts.length > 3 || !/^\p{L}/u.test(ws[0])) return;
-        if (SCAN_STOP.has(parts[0]) || SCAN_PLACE_HEAD.has(parts[0])) return;
+        if ((!/^\p{Lu}/u.test(ws[0]) && SCAN_STOP.has(parts[0])) || SCAN_PLACE_HEAD.has(parts[0])) return;
         if (SCAN_LABEL.has(parts.join(' ')) || (parts.length === 1 && SCAN_LABEL_SINGLE.has(parts[0]))) return;
-        if (SCAN_PLACES.has(parts.join(' ')) || parts.some(p => SCAN_STRONG_NOUN.has(p))) return;
-        put(parts.join(' '), niceName(ws), pos, { title: true });
+        if (SCAN_PLACES.has(parts.join(' ')) || parts.some((p, i) => !/^\p{Lu}/u.test(ws[i]) && SCAN_STRONG_NOUN.has(p))) return;
+        put(parts.join(' '), niceName(ws), pos, { title: true, listed: true });
       };
 
       // 1) Cụm Viết Hoa: "Hạo Nam khẽ cười", "Cô giáo Minh Anh", "Hạo Nam:"
@@ -1073,17 +1129,28 @@ Trả về ĐÚNG JSON thuần, không markdown:
         } else if (!c.action && !c.dialog && !c.title && c.low && c.count < 2) {
           return;
         }
-        if (!c.action && !c.dialog && (SCAN_HEAD_NOUN.has(parts[0]) || parts.some(p => SCAN_STRONG_NOUN.has(p)))) return;
+        if (!c.listed && !c.action && !c.dialog && (SCAN_HEAD_NOUN.has(parts[0]) || parts.some(p => SCAN_STRONG_NOUN.has(p)))) return;
         pass.push(c);
       });
       const out = [];
+      const passKeys = new Set(pass.map(c => foldVi(c.name)));
+      // Gộp tên ngoài và tên trong ngoặc thành một chuỗi để so lồng nhau
+      const flat = (n) => ' ' + foldVi(String(n).replace(/[（()）\[\]]/g, ' ').replace(/\s+/g, ' ').trim()) + ' ';
+      // Bí danh (hay một phần bí danh) không thành nhân vật riêng khi tên chính đã có
+      const liveAlias = [];
+      SCAN_ALIAS.forEach((pk, ik) => { if (passKeys.has(pk)) liveAlias.push(ik); });
+      const inAliasOfPrimary = (cf) => liveAlias.some(ik => (' ' + ik + ' ').indexOf(cf) >= 0);
       pass.forEach(c => {
-        // Bỏ tên ngắn nằm trong một tên dài hơn ("Hạo Nam" khi đã có "Trần Hạo Nam")
-        const lname = ' ' + foldVi(c.name) + ' ';
-        const insideLonger = pass.some(d => d !== c && d.name.length > c.name.length && (' ' + foldVi(d.name) + ' ').indexOf(lname) >= 0);
-        if (insideLonger) return;
-        if (isDup(foldVi(c.name))) return;
-        if (out.length < 16) out.push(c.name);
+        const key = foldVi(c.name);
+        const cf = flat(c.name);
+        if (SCAN_ALIAS.has(key) && passKeys.has(SCAN_ALIAS.get(key))) return;
+        if (inAliasOfPrimary(cf)) return;
+        // Bỏ tên ngắn nằm trong một tên dài hơn ("Hạo Nam" khi đã có "Trần Hạo Nam",
+        // "Tiên Nhi" khi đã có "Tô Đát Kỷ (Hồ Tiên Nhi)")
+        if (pass.some(d => d !== c && flat(d.name) !== cf && flat(d.name).indexOf(cf) >= 0)) return;
+        if (isDup(key)) return;
+        const alt = SCAN_ALIAS_RAW.get(key);
+        if (out.length < 16) out.push(c.name + (alt ? ' (' + alt + ')' : ''));
       });
       return out;
     }
@@ -1096,8 +1163,14 @@ Trả về ĐÚNG JSON thuần, không markdown:
       if (!story || !names || !names.length) return [];
       if (!story.characters) story.characters = [];
       const added = [];
+      const pk = (s) => foldVi(String(s || '').replace(/[（(][^（()）\[\]]*[）)]/g, ' ').replace(/\s+/g, ' ').trim());
       names.forEach((n, idx) => {
-        if (story.characters.some(c => foldVi(c.name) === foldVi(n))) return;
+        const same = story.characters.find(c => pk(c.name) === pk(n));
+        if (same) {
+          // Đã có tên chính: bổ sung tên trong ngoặc nếu bản cũ chưa có, không đổi id/dữ liệu khác
+          if (!/[（(]/.test(same.name) && /[（(]/.test(n)) same.name = n;
+          return;
+        }
         story.characters.push(makeScannedChar(n, idx));
         added.push(n);
       });
@@ -1607,39 +1680,65 @@ ${out}`;
     // Xác định người nói: nhân vật trong truyện, nhiều người ("A&B"), hoặc nhân vật phụ có thoại
     // "Nguyễn Văn An" còn được gọi "Văn An", "An" — mọi cách gọi đều là cùng một nhân vật
     const NAME_PRONOUNS = new Set('anh em chi co chu bac ong ba no han ta minh ban thay cau mo'.split(' '));
+    // "Tô Đát Kỷ (Hồ Tiên Nhi)" → tên chính "Tô Đát Kỷ", tên gọi khác "Hồ Tiên Nhi".
+    // Nhận diện được cả hai tên nhưng luôn ưu tiên tên ngoài ngoặc.
+    function splitCharName(name) {
+      const raw = String(name || '').trim();
+      const alts = [];
+      const re = /[（(]\s*([^（()）\[\]]+?)\s*[）)]/g;
+      let m;
+      while ((m = re.exec(raw)) !== null) {
+        const t = m[1].replace(/\s+/g, ' ').trim();
+        if (t && !/\d/.test(t) && !NAME_PRONOUNS.has(foldVi(t))) alts.push(t);
+      }
+      const primary = raw.replace(/[（(][^（()）\[\]]*[）)]/g, ' ').replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+      return { primary: primary || raw.replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim(), alts };
+    }
     function charNameParts(name) {
-      return String(name || '').replace(/[\[\]]/g, ' ').trim().split(/\s+/).filter(Boolean);
+      return splitCharName(name).primary.split(/\s+/).filter(Boolean);
+    }
+    function aliasLabelsOf(s) {
+      const p = String(s || '').trim().split(/\s+/).filter(Boolean);
+      const out = [];
+      if (p.length >= 2) out.push(p.slice(1).join(' '));
+      if (p.length >= 3) out.push(p.slice(2).join(' '));
+      if (p.length) out.push(p[p.length - 1]);
+      if (p.length >= 3) out.push(p[0] + ' ' + p[p.length - 1]);
+      return out;
     }
     function charAliasLabels(name) {
       const p = charNameParts(name);
       if (!p.length) return [];
-      const out = [];
-      if (p.length >= 2) out.push(p.slice(1).join(' '));
-      if (p.length >= 3) out.push(p.slice(2).join(' '));
-      out.push(p[p.length - 1]);
-      if (p.length >= 3) out.push(p[0] + ' ' + p[p.length - 1]);
+      const out = [...aliasLabelsOf(p.join(' '))];
+      splitCharName(name).alts.forEach(a => { out.push(a); aliasLabelsOf(a).forEach(x => out.push(x)); });
       return [...new Set(out)].filter(x => x && !NAME_PRONOUNS.has(foldVi(x)));
     }
     function charAliases(name) {
       const full = foldVi(charNameParts(name).join(' '));
       return [...new Set([full, ...charAliasLabels(name).map(foldVi)])].filter(Boolean);
     }
+    function findCharByName(chars, label) {
+      const list = chars || [];
+      const rawKey = String(label || '').replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (!rawKey) return null;
+      const asRaw = (c) => String(c.name || '').replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      const exactFull = list.find(c => asRaw(c) === rawKey);
+      if (exactFull) return exactFull;
+      const key = foldVi(rawKey);
+      const exactPrimary = list.find(c => foldVi(charNameParts(c.name).join(' ')) === key);
+      if (exactPrimary) return exactPrimary;
+      const hits = list.filter(c => charAliases(c.name).includes(key));
+      return hits.length === 1 ? hits[0] : null;
+    }
 
     function resolveSpeakers(speakerRaw, restText, story) {
       if (!speakerRaw) return [];
       const chars = (story && story.characters) || [];
-      const mk = (c) => ({ id: c.id, name: c.name, avatar: c.avatar || DEFAULT_LOGO });
+      const mk = (c) => ({ id: c.id, name: splitCharName(c.name).primary, avatar: c.avatar || DEFAULT_LOGO });
       const norm = (s) => foldVi(String(s || '').replace(/[\[\]]/g, ' ').replace(/\s+/g, ' ').trim());
 
-      // Khớp họ tên đầy đủ hoặc bí danh; bí danh phải trỏ đúng 1 nhân vật để tránh nhầm người
-      const matchChar = (label) => {
-        const key = norm(label);
-        if (!key) return null;
-        const exact = chars.find(c => norm(c.name) === key);
-        if (exact) return exact;
-        const hits = chars.filter(c => charAliases(c.name).includes(key));
-        return hits.length === 1 ? hits[0] : null;
-      };
+      // Khớp họ tên đầy đủ, tên ngoài ngoặc hoặc bí danh; ưu tiên đúng tên chính trước
+      const matchChar = (label) => findCharByName(chars, label);
 
       const whole = matchChar(speakerRaw);
       if (whole) return [mk(whole)];
@@ -1964,9 +2063,10 @@ actDiv.innerText = actText;
       }
 
       let charsPrompt = ((story && story.characters) || []).map(c => {
-        const al = charAliasLabels(c.name);
-        const aliasNote = al.length ? ` (người chơi có thể gọi: ${al.join(', ')})` : '';
-        return `- ${c.name}${aliasNote}: ${c.personality}`;
+        const nm = splitCharName(c.name);
+        const al = [...new Set([...nm.alts, ...charAliasLabels(c.name)])];
+        const aliasNote = al.length ? ` (cùng một người, người chơi có thể gọi: ${al.join(', ')})` : '';
+        return `- ${nm.primary}${aliasNote}: ${c.personality}`;
       }).join('\n');
 
       const hintBlock = hintText ? `\n[GHI CHÚ HỆ THỐNG CHO LƯỢT NÀY]\n${hintText}\n` : '';
@@ -2012,6 +2112,7 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 
 [NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
 - Tên đầy đủ, tên riêng, tên gọi tắt và biệt danh của cùng một nhân vật đều là CÙNG MỘT NGƯỜI. Ví dụ nhân vật "Nguyễn Văn An" thì "Văn An", "An", "bạn An" đều là An.
+- Tên nằm trong ngoặc sau tên chính là tên gọi khác của CÙNG nhân vật đó (ví dụ "Tô Đát Kỷ (Hồ Tiên Nhi)" thì "Hồ Tiên Nhi" cũng là Tô Đát Kỷ). Khi viết dòng thoại, LUÔN dùng tên ngoài ngoặc làm tên chính.
 - Người chơi gọi nhân vật bằng bất kỳ cách nào ở trên → nhân vật đó là người xuất hiện, phản hồi, lên tiếng (dòng thoại ghi ĐÚNG tên đầy đủ trong danh sách, không ghi tên gọi tắt).
 - Người chơi nhắc tới nhân vật (kể cả gián tiếp qua đại từ, biệt danh) → hiểu là đang nói về nhân vật đó, không coi là người mới.
 - TUYỆT ĐỐI không tạo thêm nhân vật trùng hoặc gần giống một nhân vật đã có chỉ vì tên được gọi khác đi.
@@ -2198,8 +2299,7 @@ ${modeBlock}${hintBlock}
         const are = /\[\s*AFFECTION\s*[:：]\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/gi;
         let am;
         while ((am = are.exec(responseText)) !== null) {
-          const nm = am[1].trim().toLowerCase();
-          const ch = (story && story.characters) ? story.characters.find(c => (c.name || '').trim().toLowerCase() === nm) : null;
+          const ch = findCharByName((story && story.characters) || [], am[1]);
           if (!ch || affChanges.some(a => a.id === ch.id)) continue;
           let v = parseInt(am[2].replace(/[−–]/g, '-').replace(/\s/g, ''), 10);
           if (isNaN(v) || v === 0) continue;
