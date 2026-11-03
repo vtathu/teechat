@@ -45,6 +45,17 @@ function stripUserVoice(text, name) {
   const out = before || lines.filter((l, i) => !bad[i]).join('\n').trim();
   return out || text;
 }
+// Hồ sơ người chơi riêng của từng truyện; truyện chưa có thì lấy hồ sơ chung làm gốc
+function activeStoryPersona(story) {
+  const s = story || (window.state.stories || []).find(x => x.id === window.state.activeStoryId);
+  if (!s) return window.state.persona || {};
+  if (!s.persona || typeof s.persona !== 'object') {
+    const g = window.state.persona || {};
+    s.persona = { name: g.name || 'Bạn', avatar: g.avatar || '', memories: g.memories || '' };
+  }
+  return s.persona;
+}
+window.activeStoryPersona = activeStoryPersona;
 // ===================== CHẾ ĐỘ TRÒ CHUYỆN =====================
     function updateModeBanner() {
       const el = document.getElementById('mode-banner');
@@ -168,7 +179,7 @@ function stripUserVoice(text, name) {
         const activeChar = eventPickCharacter(chars, fullHistory);
         const charId = activeChar.id;
         const charName = activeChar.name;
-        const persona = window.state.persona || {};
+        const persona = activeStoryPersona(story);
         const userName = persona.name ? persona.name : 'Bạn';
         const cut = (s, n) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
 
@@ -637,6 +648,9 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme = { userBg: '#c1ebd9', userText: '#1b4332', aiBg: '#ffffff', aiText: '#333333', chatBgColor: '#e7f5ee', chatBgImg: '' };
       }
 
+      // Mỗi truyện có hồ sơ người chơi riêng; truyện cũ chưa có thì chép từ hồ sơ chung một lần
+      if (!story.persona) { activeStoryPersona(story); saveStorage(); }
+
       if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
         if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
@@ -711,6 +725,11 @@ Trả về ĐÚNG JSON thuần, không markdown:
         document.getElementById('cfg-chat-bg-img').value = story.theme.chatBgImg || '';
       }
 
+      const me = activeStoryPersona(story);
+      document.getElementById('cfg-per-name').value = me.name || '';
+      document.getElementById('cfg-per-avatar').value = me.avatar || '';
+      document.getElementById('cfg-per-memories').value = me.memories || '';
+
       switchConfigTab('story');
       openModal('modal-story-config');
     }
@@ -728,13 +747,17 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme.aiText = document.getElementById('cfg-ai-text').value;
         story.theme.chatBgColor = document.getElementById('cfg-chat-bg-color').value.trim() || '#e7f5ee';
         story.theme.chatBgImg = document.getElementById('cfg-chat-bg-img').value.trim();
+
+        const me = activeStoryPersona(story);
+        me.name = document.getElementById('cfg-per-name').value.trim() || 'Bạn';
+        me.avatar = document.getElementById('cfg-per-avatar').value.trim();
+        me.memories = document.getElementById('cfg-per-memories').value.trim();
         story.updatedAt = Date.now(); // để lúc gộp máy ↔ cloud biết bản truyện nào mới hơn
 
         saveStorage(); renderCharacterList();
         applyActiveStoryTheme();
+        if (typeof renderChatHistory === 'function') renderChatHistory();
         closeModal('modal-story-config');
-        // Sửa cốt truyện: AI đọc lại, chỉ mở bảng tick nếu tìm ra người mới
-        startCharScan({ story, text: story.setting + '\n' + story.openingScene });
       }
     }
 
@@ -746,7 +769,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (!story || !story.characters || story.characters.length === 0) {
         editingCharId = null;
-        container.innerHTML = '<div class="char-empty">Chưa có nhân vật nào trong truyện này.<br>Bấm "+ Thêm Nhân Vật" hoặc 🔍 quét tên từ cốt truyện.</div>';
+        container.innerHTML = '<div class="char-empty">Chưa có nhân vật nào trong truyện này.<br>Bấm "+ Thêm Nhân Vật" hoặc "🔍 Quét nhân vật" để lấy tên từ cốt truyện.</div>';
         renderCharEditorSheet(null);
         return;
       }
@@ -1303,8 +1326,8 @@ Trả về ĐÚNG JSON thuần:
       renderCharacterList();
       if (ctx.statusEl) {
         ctx.statusEl.innerText = added.length
-          ? 'Đã thêm: ' + added.join(', ') + '. Bấm vào nhân vật để thêm tính cách/avatar.'
-          : (picked.length ? 'Các nhân vật này đã có trong danh sách.' : 'Không thêm nhân vật nào.');
+          ? 'Đã thêm: ' + added.join(', ') + '. Bấm vào nhân vật để thêm tính cách và ảnh đại diện.'
+          : (picked.length ? 'Những người này đã có trong danh sách nhân vật.' : 'Không thêm nhân vật nào.');
       }
     }
     async function startCharScan(opts) {
@@ -1312,7 +1335,7 @@ Trả về ĐÚNG JSON thuần:
       if (!story) return;
       const status = opts.statusEl || null;
       const text = String(opts.text || '');
-      if (!text.trim()) { if (status) status.innerText = 'Chưa có cốt truyện để quét.'; return; }
+      if (!text.trim()) { if (status) status.innerText = 'Chưa có nội dung cốt truyện để quét.'; return; }
       const existing = (story.characters || []).map(c => c.name);
       const names = scanStoryCharNames(text, existing);
       if (status) status.innerText = 'Đang đọc cốt truyện...';
@@ -1374,7 +1397,7 @@ Trả về ĐÚNG JSON thuần:
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       const ch = story && story.characters ? story.characters.find(c => c.id === charId) : null;
       if (!ch) return;
-      const me = (window.state.persona && window.state.persona.name) || 'người chơi';
+      const me = activeStoryPersona(story).name || 'người chơi';
       const moveIn = !ch.livesWith;
       if (!confirm(moveIn ? `Cho ${ch.name} dọn vào ở chung nhà với ${me}?` : `Cho ${ch.name} dọn ra khỏi nhà?`)) return;
       ch.livesWith = moveIn;
@@ -1564,6 +1587,7 @@ ${out}`;
 
     function renderUserFormattedMessage(rawText, imgData, container, idx, ts) {
       const text = normQuotes(rawText);
+      const me = activeStoryPersona();
 
       const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
       if (userTransferMatch) {
@@ -1647,9 +1671,9 @@ ${out}`;
           const imgHtml = (k === lastDialogueIdx && imgData) ? `<img src="${imgData}" class="msg-img">` : '';
           const div = document.createElement('div'); div.className = 'chat-message user';
           div.innerHTML = `
-            <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+            <img src="${me.avatar || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
             <div class="msg-bubble-wrap">
-              <div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div>
+              <div class="msg-sender">${escapeHtml(me.name || 'Bạn')}</div>
               <div class="msg-bubble"><span class="dialogue-text">${escapeHtml(sg.text)}</span>${imgHtml}</div>${bar}
             </div>
           `;
@@ -1659,8 +1683,8 @@ ${out}`;
       if (filled.length === 0 && imgData) {
         const div = document.createElement('div'); div.className = 'chat-message user';
         div.innerHTML = `
-          <img src="${(window.state.persona && window.state.persona.avatar) || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
-          <div class="msg-bubble-wrap"><div class="msg-sender">${escapeHtml((window.state.persona && window.state.persona.name) || 'Bạn')}</div><div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
+          <img src="${me.avatar || DEFAULT_LOGO}" class="msg-avatar" onerror="this.src='${DEFAULT_LOGO}'">
+          <div class="msg-bubble-wrap"><div class="msg-sender">${escapeHtml(me.name || 'Bạn')}</div><div class="msg-bubble"><img src="${imgData}" class="msg-img"></div>
           <div class="msg-action-bar"><button class="action-text-btn" onclick="editMessage(${idx})">Sửa</button><button class="action-text-btn" onclick="deleteMessage(${idx})">Xóa</button></div></div>
         `;
         container.appendChild(div);
@@ -1743,7 +1767,7 @@ ${out}`;
       const whole = matchChar(speakerRaw);
       if (whole) return [mk(whole)];
 
-      const userName = norm((window.state.persona && window.state.persona.name) || '');
+      const userName = norm(activeStoryPersona(story).name || '');
       if (userName && norm(speakerRaw) === userName) return [];
 
       const q = normQuotes(restText);
@@ -1820,7 +1844,7 @@ ${out}`;
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection) {
       const barsBefore = container.querySelectorAll('.msg-action-bar').length;
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
-      fullText = stripUserVoice(cleanAiTags(fullText), window.state.persona && window.state.persona.name);
+      fullText = stripUserVoice(cleanAiTags(fullText), activeStoryPersona(story).name);
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -2031,6 +2055,7 @@ actDiv.innerText = actText;
 
       const storyId = window.state.activeStoryId;
       const story = window.state.stories.find(s => s.id === storyId);
+      const me = activeStoryPersona(story);
       if (!window.state.chatHistories[storyId]) window.state.chatHistories[storyId] = [];
 
       if (!window.state.apiKeys || window.state.apiKeys.length === 0) {
@@ -2079,7 +2104,7 @@ actDiv.innerText = actText;
       
       let cohabBlock = '';
       if (story && story.characters) {
-        const meN = (window.state.persona && window.state.persona.name) || 'người chơi';
+        const meN = me.name || 'người chơi';
         const inHome = story.characters.filter(c => c.livesWith), outHome = story.characters.filter(c => c.movedOut && !c.livesWith);
         if (inHome.length) cohabBlock += `[Ở CHUNG NHÀ - GHI NHỚ LÂU DÀI] ${inHome.map(c => c.name).join(', ')} đang SỐNG CHUNG NHÀ với "${meN}". Nhân vật nhớ rõ điều này trong mọi lượt: cùng một mái nhà, biết nhà cửa, đồ đạc, thói quen sinh hoạt chung (ăn uống, ngủ nghỉ, việc nhà, giờ giấc ra vào), không cư xử như người ở nơi khác hay mới đến lần đầu; cảnh trong nhà là bối cảnh mặc định khi phù hợp.\n`;
         if (outHome.length) cohabBlock += `${outHome.map(c => c.name).join(', ')} từng ở chung nhưng ĐÃ DỌN ĐI, hiện sống riêng (vẫn nhớ thời gian từng ở chung).\n`;
@@ -2108,7 +2133,7 @@ actDiv.innerText = actText;
 ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
 ${charAffectionSummary}${cohabBlock}${petMemBlock}
-5. Người tương tác: "${(window.state.persona && window.state.persona.name) || 'Thư'}" (${(window.state.persona && window.state.persona.memories) || ''}).
+5. Người tương tác: "${me.name || 'người chơi'}" (${me.memories || ''}).
 
 [NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
 - Tên đầy đủ, tên riêng, tên gọi tắt và biệt danh của cùng một nhân vật đều là CÙNG MỘT NGƯỜI. Ví dụ nhân vật "Nguyễn Văn An" thì "Văn An", "An", "bạn An" đều là An.
@@ -2122,10 +2147,10 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 - Nếu mối quan hệ là TRI KỶ / ANH EM / BẠN BÈ và Level cao: Nhân vật trở thành chỗ dựa vững chắc, sẵn sàng tâm sự, thấu hiểu, giúp đỡ nhiệt tình hết mình khi người chơi gặp khó khăn.
 
 [CẤM TUYỆT ĐỐI - LỖI NGHÊM TRỌNG]
-⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${(window.state.persona && window.state.persona.name) || 'Thư'}" (người chơi). Người chơi là người DUY NHẤT quyết định mình nói gì, làm gì, nghĩ gì.
+⛔ KHÔNG ĐƯỢC TỰ Ý VIẾT LỜI THOẠI, HÀNH ĐỘNG, CẢM XÚC HOẶC SUY NGHĨ CHO "${me.name || 'người chơi'}" (người chơi). Người chơi là người DUY NHẤT quyết định mình nói gì, làm gì, nghĩ gì.
 ⛔ KHÔNG ĐƯỢC sinh ra bất kỳ dòng nào bắt đầu bằng tên người dùng, kể cả dạng [Tên]: hay *Tên + hành động*. Khi đến lượt người dùng tương tác, PHẢI DỪNG LẠI NGAY LẬP TỨC.
 ⛔ Không viết câu kể người chơi đã nói/gật đầu/đáp/mỉm cười/cảm thấy/quyết định gì, cũng không "đoán trước" câu trả lời của người chơi. Chỉ được tả PHẢN ỨNG BÊN NGOÀI của nhân vật (ánh mắt, giọng điệu, cử chỉ của CHÍNH nhân vật) trước những gì người chơi ĐÃ viết trong lượt trước.
-⛔ TUYỆT ĐỐI không viết dòng nào có chủ ngữ là người chơi (ví dụ "${(window.state.persona && window.state.persona.name) || 'Thư'} nói...", "${(window.state.persona && window.state.persona.name) || 'Thư'} gật đầu...") và không đặt lời thoại, hành động, suy nghĩ của người chơi vào trong ngoặc kép hay dấu * của bất kỳ ai. Nếu cần nhắc đến người chơi, chỉ mô tả cái NHÂN VẬT nhìn thấy/nghe thấy từ những gì người chơi ĐÃ viết.
+⛔ TUYỆT ĐỐI không viết dòng nào có chủ ngữ là người chơi (ví dụ "${me.name || 'người chơi'} nói...", "${me.name || 'người chơi'} gật đầu...") và không đặt lời thoại, hành động, suy nghĩ của người chơi vào trong ngoặc kép hay dấu * của bất kỳ ai. Nếu cần nhắc đến người chơi, chỉ mô tả cái NHÂN VẬT nhìn thấy/nghe thấy từ những gì người chơi ĐÃ viết.
 ⛔ Mỗi lượt kết thúc bằng lời nói hoặc hành động của NHÂN VẬT (có thể là một câu hỏi, một lời mời) để trao lượt lại cho người chơi, không viết tiếp diễn biến sau đó.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
@@ -2289,7 +2314,7 @@ ${modeBlock}${hintBlock}
           const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
           if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
         }
-        const cleaned = stripUserVoice(cleanAiTags(responseText), window.state.persona && window.state.persona.name);
+        const cleaned = stripUserVoice(cleanAiTags(responseText), me.name);
 
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
@@ -2347,12 +2372,6 @@ ${modeBlock}${hintBlock}
       saveKeys(window.state.apiKeys);
       window.state.currentModel = document.getElementById('cfg-model-select').value.trim() || 'gemini-2.5-flash';
       saveStorage(); closeModal('modal-settings'); alert('Đã lưu!');
-    }
-    function savePersona() {
-      window.state.persona.name = document.getElementById('per-name').value;
-      window.state.persona.avatar = document.getElementById('per-avatar').value;
-      window.state.persona.memories = document.getElementById('per-memories').value;
-      saveStorage(); closeModal('modal-persona'); alert('Đã lưu!');
     }
     function exportToFile() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getSyncableState(), null, 2));

@@ -766,7 +766,8 @@
         inv.splice(itemIdx, 1);
       }
 
-      const userName = (window.state && window.state.persona && window.state.persona.name) ? window.state.persona.name : 'Bạn';
+      const giftPersona = (typeof window.activeStoryPersona === 'function' ? window.activeStoryPersona() : null) || (window.state && window.state.persona) || {};
+      const userName = giftPersona.name || 'Bạn';
       const results = [];
       const hints = [];
 
@@ -877,11 +878,6 @@
 
       document.getElementById('cfg-api-keys').value = (window.state.apiKeys || []).join('\n');
       document.getElementById('cfg-model-select').value = window.state.currentModel;
-      if (window.state.persona) {
-        document.getElementById('per-name').value = window.state.persona.name || '';
-        document.getElementById('per-avatar').value = window.state.persona.avatar || '';
-        document.getElementById('per-memories').value = window.state.persona.memories || '';
-      }
 
       try { window.__lastSig = stateSig(); } catch (e) {}
       applyActiveStoryTheme();
@@ -935,10 +931,12 @@
       document.getElementById('cfg-tab-view-story').classList.add('hidden');
       document.getElementById('cfg-tab-view-theme').classList.add('hidden');
       document.getElementById('cfg-tab-view-chars').classList.add('hidden');
+      document.getElementById('cfg-tab-view-user').classList.add('hidden');
 
       document.getElementById('cfg-tab-btn-story').classList.remove('active');
       document.getElementById('cfg-tab-btn-theme').classList.remove('active');
       document.getElementById('cfg-tab-btn-chars').classList.remove('active');
+      document.getElementById('cfg-tab-btn-user').classList.remove('active');
 
       if (tabName === 'story') {
         document.getElementById('cfg-tab-view-story').classList.remove('hidden');
@@ -950,5 +948,8 @@
         document.getElementById('cfg-tab-view-chars').classList.remove('hidden');
         document.getElementById('cfg-tab-btn-chars').classList.add('active');
         renderCharacterList();
+      } else if (tabName === 'user') {
+        document.getElementById('cfg-tab-view-user').classList.remove('hidden');
+        document.getElementById('cfg-tab-btn-user').classList.add('active');
       }
     }

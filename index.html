@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=52" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=52"></noscript>
+  <link rel="stylesheet" href="style.css?v=55" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=55"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -131,7 +131,6 @@
       </div>
       <div style="display: flex; gap: 3px;">
         <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-auth')">☁️ Cloud</button>
-        <button class="btn btn-outline" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-persona')">🪪 User</button>
         <button class="btn" style="padding: 4px 6px; font-size: 0.7rem;" onclick="openModal('modal-settings')">⚙️ Cài đặt</button>
       </div>
     </div>
@@ -635,6 +634,7 @@
         <button class="modal-tab-btn active" id="cfg-tab-btn-story" onclick="switchConfigTab('story')">📖 Cốt Truyện</button>
         <button class="modal-tab-btn" id="cfg-tab-btn-theme" onclick="switchConfigTab('theme')">🎨 Giao Diện</button>
         <button class="modal-tab-btn" id="cfg-tab-btn-chars" onclick="switchConfigTab('chars')">👥 Nhân Vật</button>
+        <button class="modal-tab-btn" id="cfg-tab-btn-user" onclick="switchConfigTab('user')">👤 Người Dùng</button>
       </div>
 
       <div id="cfg-tab-view-story" style="display: flex; flex-direction: column; gap: 12px;">
@@ -663,19 +663,19 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
           <div class="form-group">
-            <label>Bong Bóng User:</label>
+            <label>Bong bóng của bạn:</label>
             <input type="color" id="cfg-user-bg" value="#c1ebd9" style="height:36px; padding:2px; width:100%;">
           </div>
           <div class="form-group">
-            <label>Chữ User:</label>
+            <label>Chữ của bạn:</label>
             <input type="color" id="cfg-user-text" value="#1b4332" style="height:36px; padding:2px; width:100%;">
           </div>
           <div class="form-group">
-            <label>Bong Bóng AI:</label>
+            <label>Bong bóng nhân vật:</label>
             <input type="color" id="cfg-ai-bg" value="#ffffff" style="height:36px; padding:2px; width:100%;">
           </div>
           <div class="form-group">
-            <label>Chữ AI:</label>
+            <label>Chữ nhân vật:</label>
             <input type="color" id="cfg-ai-text" value="#333333" style="height:36px; padding:2px; width:100%;">
           </div>
         </div>
@@ -701,6 +701,26 @@
           <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem; flex-shrink: 0;" onclick="openAddCharModal()">+ Thêm Nhân Vật</button>
         </div>
         <div id="character-list-container" class="char-list"></div>
+      </div>
+
+      <div id="cfg-tab-view-user" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="form-group">
+          <label>Tên của bạn:</label>
+          <input type="text" id="cfg-per-name" placeholder="Tên bạn muốn được gọi">
+        </div>
+        <div class="form-group">
+          <label>Ảnh đại diện:</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="cfg-per-avatar" placeholder="URL ảnh..." style="flex: 1;">
+            <button class="btn btn-outline" type="button" onclick="document.getElementById('cfg-per-file-input').click()">📁 Chọn ảnh</button>
+          </div>
+          <input type="file" id="cfg-per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'cfg-per-avatar')">
+        </div>
+        <div class="form-group">
+          <label>Sở thích và điều cần nhớ:</label>
+          <textarea id="cfg-per-memories" rows="4" placeholder="Ví dụ: thích cà phê sữa, sợ bóng tối, làm nghề tự do..."></textarea>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--muted); line-height: 1.5;">Mỗi truyện lưu một hồ sơ riêng, nên mỗi truyện bạn có thể nhập vai một người khác nhau.</div>
       </div>
 
       <button class="btn" style="margin-top: 10px; width:100%; font-size:0.85rem; padding:8px;" onclick="saveStorySettings()">💾 Lưu Thay Đổi</button>
@@ -774,11 +794,11 @@
         <h3>🔍 Nhân Vật Trong Cốt Truyện</h3>
         <button class="btn btn-outline" onclick="closeModal('modal-scan-pick')">✖</button>
       </div>
-      <div style="font-size: 0.78rem; color: #718096; margin-bottom: 8px; line-height: 1.4;">AI đọc cốt truyện và chỉ lọc ra những tên là người. Tick chọn người muốn thêm — bỏ tick nếu không phải nhân vật bạn cần.</div>
+      <div style="font-size: 0.78rem; color: #718096; margin-bottom: 8px; line-height: 1.4;">AI đọc cốt truyện và chỉ lọc ra những tên là người. Đánh dấu những người bạn muốn thêm; bỏ đánh dấu nếu không phải nhân vật bạn cần.</div>
       <div id="scan-pick-list" style="flex: 1; min-height: 0; overflow-y: auto;"></div>
       <div style="display: flex; gap: 8px; margin-top: 8px;">
-        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-scan-pick')">Huỷ</button>
-        <button class="btn btn-pink" style="flex: 1;" onclick="confirmScanPick()">Thêm Đã Chọn</button>
+        <button class="btn btn-outline" style="flex: 1;" onclick="closeModal('modal-scan-pick')">Hủy</button>
+        <button class="btn btn-pink" style="flex: 1;" onclick="confirmScanPick()">Thêm người đã chọn</button>
       </div>
     </div>
   </div>
@@ -838,32 +858,6 @@
     </div>
   </div>
 
-  <div id="modal-persona" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>👤 Hồ Sơ Người Dùng</h3>
-        <button class="btn btn-outline" onclick="closeModal('modal-persona')">✖</button>
-      </div>
-      <div class="form-group">
-        <label>Tên Của Bạn:</label>
-        <input type="text" id="per-name" value="Thư">
-      </div>
-      <div class="form-group">
-        <label>Avatar Của Bạn:</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="per-avatar" placeholder="URL ảnh..." style="flex: 1;">
-          <button class="btn btn-outline" type="button" onclick="document.getElementById('per-file-input').click()">📁 Chọn ảnh</button>
-        </div>
-        <input type="file" id="per-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'per-avatar')">
-      </div>
-      <div class="form-group">
-        <label>Sở Thích & Điều Cần Nhớ:</label>
-        <textarea id="per-memories" rows="3"></textarea>
-      </div>
-      <button class="btn" onclick="savePersona()">Lưu Hồ Sơ</button>
-    </div>
-  </div>
-
   <div id="modal-auth" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -911,16 +905,16 @@
   <script type="module" src="firebase.js?v=6"></script>
   <script src="core.js?v=1"></script>
   <script src="data-shop.js?v=7"></script>
-  <script src="shop.js?v=17"></script>
+  <script src="shop.js?v=18"></script>
   <script src="jobs.js?v=16"></script>
   <script src="craft.js?v=4"></script>
   <script src="quests.js?v=2"></script>
   <script src="pets.js?v=22"></script>
-  <script src="chat.js?v=18"></script>
+  <script src="chat.js?v=19"></script>
   <script src="ui.js?v=5"></script>
   <script src="audio.js?v=6"></script>
   <script src="play.js?v=6"></script>
-  <script src="farm.js?v=27"></script>
+  <script src="farm.js?v=32"></script>
   <script src="biz.js?v=8"></script>
   <script src="push.js?v=1"></script>
 </body>

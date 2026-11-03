@@ -155,6 +155,40 @@
   };
   // thứ tự trưng bày: kế toán đứng trước CSKH, mở dần theo cấp
   const BUILD_ORDER = ['kho', 'nha', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
+  // ---- ảnh nông trại: công nhân, luống cây, công trình ----
+  const FARM_IMG = 'img/farm/';
+  const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '.png');
+  const CROP_IMGS = { empty: FARM_IMG + 'plot-empty.png', sprout: FARM_IMG + 'plot-sprout.png', rau: FARM_IMG + 'crop-rau.png', ngo: FARM_IMG + 'crop-ngo.png', ca: FARM_IMG + 'crop-ca.png', dua: FARM_IMG + 'crop-dua.png' };
+  // mỗi loại có 2 kiểu luống: cây đang lớn (sắp chín) và cây chín
+  const CROP_STAGES = {
+    rau: { young: 'crop-rau-young', ripe: 'crop-bapcai' },
+    ngo: { young: 'crop-ngo-young', ripe: 'crop-ngo' },
+    ca: { young: 'crop-ca-young', ripe: 'crop-ca' },
+    dua: { young: 'crop-dua-young', ripe: 'crop-dua' }
+  };
+  // công trình theo 3 bậc: cấp 1-2, 3-5, 6-8
+  const BLD_TIERS = {
+    kho: ['bld-kho-1', 'bld-kho-2', 'bld-kho-3'],
+    nha: ['bld-nha', 'bld-ketoan', 'bld-giamdoc'],
+    donggoi: ['bld-donggoi-1', 'bld-kho-blue', 'bld-cskh'],
+    giaohang: ['bld-donggoi-2', 'bld-nha-cu', 'bld-giaohang']
+  };
+  const bldImg = (key, lv) => {
+    const arr = BLD_TIERS[key];
+    if (!arr) return '';
+    const l = lv || 1;
+    return FARM_IMG + arr[l >= 6 ? 2 : l >= 3 ? 1 : 0] + '.png';
+  };
+  const farmerImg = (id) => FARMER_IMGS[hashNum(id) % FARMER_IMGS.length];
+  const isFieldWorker = (w) => w.role === 'vuon' || w.role === 'donggoi';
+  const plotImg = (p, pct, ready) => {
+    if (!p) return CROP_IMGS.empty;
+    const st = CROP_STAGES[p.crop];
+    if (!st) return CROP_IMGS.sprout;
+    if (ready) return FARM_IMG + st.ripe + '.png';
+    if (pct < 0.4) return CROP_IMGS.sprout;
+    return FARM_IMG + st.young + '.png';
+  };
   const LEVEL_TITLES = [[1, 'Vườn nhà'], [3, 'Trang trại nhỏ'], [5, 'Trang trại lớn'], [7, 'Hợp tác xã'], [9, 'Tổng công ty thu mua']];
   function levelTitle(lv) {
     let out = LEVEL_TITLES[0][1];
@@ -2381,7 +2415,7 @@
     seedDrag = { crop: cropId, ox: e.clientX, oy: e.clientY, moved: false, last: plotSel };
     seedGhostEl = document.createElement('div');
     seedGhostEl.className = 'fg-seed-ghost';
-    seedGhostEl.textContent = cropOf(cropId).e;
+    seedGhostEl.innerHTML = '<img src="' + (CROP_IMGS[cropId] || '') + '" alt="">';
     seedGhostEl.style.left = e.clientX + 'px';
     seedGhostEl.style.top = e.clientY + 'px';
     document.body.appendChild(seedGhostEl);
@@ -2712,11 +2746,12 @@
       const onLift = lift && lift.k === inst.id;
       const at = onLift ? { c: lift.c, r: lift.r } : inst;
       const z = 100 + (at.r + sz[1]) * TILE + (onLift ? 60 : 0);
-      blds += '<button class="fg-bld' + (onLift ? ' lift' + (lift.ok ? '' : ' bad') : '') + '" data-bld="' + inst.id + '" data-key="' + inst.key + '"'
+      const img = bldImg(inst.key, inst.lv);
+      blds += '<button class="fg-bld' + (img ? ' pic ' + (sz[0] * sz[1] >= 4 ? 'sz2' : 'sz1') : ' deco' + (sz[0] * sz[1] >= 4 ? ' big' : '')) + (img && (inst.face === 1 || inst.face === 3) ? ' flip' : '') + (onLift ? ' lift' + (lift.ok ? '' : ' bad') : '') + '" data-bld="' + inst.id + '" data-key="' + inst.key + '"'
         + ' style="left:' + at.c * TILE + 'px;top:' + at.r * TILE + 'px;width:' + (sz[0] * TILE - 4) + 'px;height:' + (sz[1] * TILE - 4) + 'px;z-index:' + z + '"'
         + ' onpointerdown="FarmGame.bldPress(event,\'' + inst.id + '\')" onclick="FarmGame.bldTap(\'' + inst.id + '\')">'
-        + '<span class="fg-bld-door f' + bldFaceV(inst.face) + '"></span>'
-        + '<span class="fg-bld-e">' + b.e + '</span><span class="fg-bld-lb">' + b.s + '</span>'
+        + (img ? '<img class="fg-bld-img" src="' + img + '" alt="" draggable="false">' : '<span class="fg-bld-door f' + bldFaceV(inst.face) + '"></span><span class="fg-bld-e">' + b.e + '</span>')
+        + '<span class="fg-bld-lb">' + b.s + '</span>'
         + '<span class="fg-bld-lv">C' + inst.lv + '</span>'
         + (ev ? '<b class="fg-bld-warn">⚠️</b>' : '') + '</button>';
     });
@@ -2727,8 +2762,9 @@
       const st = 'left:' + rct.x + 'px;top:' + rct.y + 'px;width:' + rct.w + 'px;height:' + rct.h + 'px;';
       const p = f.plots[i];
       if (!p) {
-        plots += '<button class="fg-plot empty" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
-          + '<span class="fg-p-e">🌱</span><span class="fg-p-lb">Trồng</span></button>';
+        plots += '<button class="fg-plot empty pic" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
+          + '<img class="fg-p-img" src="' + CROP_IMGS.empty + '" alt="" draggable="false">'
+          + '<span class="fg-p-lb">Trồng</span></button>';
         continue;
       }
       const crop = cropOf(p.crop);
@@ -2740,8 +2776,8 @@
       const hint = ready ? '🧺 Thu'
         : secs >= 60 ? Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2)
           : secs + 's';
-      plots += '<button class="fg-plot' + (ready ? ' ready' : '') + '" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
-        + '<span class="fg-p-e">' + crop.e + '</span>'
+      plots += '<button class="fg-plot pic' + (ready ? ' ready' : '') + '" style="' + st + '" onclick="FarmGame.openPlot(' + i + ')">'
+        + '<img class="fg-p-img" src="' + plotImg(p, gt > 0 ? el / gt : 1, ready) + '" alt="" draggable="false">'
         + (p.lv > 1 ? '<span class="fg-p-lv">C' + p.lv + '</span>' : '')
         + (pestVisible ? '<span class="fg-pest" onclick="event.stopPropagation();FarmGame.sprayPlot(' + i + ')">' + (p.bug || '🐛') + '</span>' : '')
         + (!p.watered && !waterOff && !ready ? '<span class="fg-thirst">💧</span>' : '')
@@ -2758,7 +2794,7 @@
           const lv = seedLv(f, c.id);
           return '<button class="fg-ps' + ((f.seeds[c.id] || 0) > 0 ? '' : ' off') + '"'
             + ' onpointerdown="FarmGame.seedGrab(event,\'' + c.id + '\')">'
-            + '<span class="fg-ps-e">' + c.e + '</span><b>' + (f.seeds[c.id] || 0) + '</b>'
+            + '<img class="fg-ps-img" src="' + (CROP_IMGS[c.id] || '') + '" alt="" draggable="false"><b>' + (f.seeds[c.id] || 0) + '</b>'
             + (lv > 1 ? '<i class="fg-ps-lv">C' + lv + '</i>' : '') + '</button>';
         }).join('');
       } else if (plotElapsed(p, now) >= plotGrowTime(p)) {
@@ -2787,7 +2823,9 @@
         + (w.__say ? '<div class="fg-say">' + esc(w.__say) + '</div>' : '')
         + carry
         + ((w.morale ?? 70) < 35 ? '<span class="fg-w-mood">' + mood[1] + '</span>' : '')
-        + '<span class="fg-w-e">' + w.emoji + '</span>'
+        + (isFieldWorker(w)
+          ? '<img class="fg-w-img" src="' + farmerImg(w.id) + '" alt="" draggable="false">'
+          : '<span class="fg-w-e">' + w.emoji + '</span>')
         + (w.post ? '<span class="fg-w-post">' + BUILDINGS[w.post].e + '</span>' : '')
         + '</div>';
     });
