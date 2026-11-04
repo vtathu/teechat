@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=56" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=56"></noscript>
+  <link rel="stylesheet" href="style.css?v=58" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=58"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -782,6 +782,15 @@
         <input type="file" id="char-file-input" accept="image/*" style="display:none;" onchange="handleImageUpload(event, 'char-avatar')">
       </div>
       <div class="form-group">
+        <label>Ảnh tách nền riêng (tùy chọn):</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="char-cutout" placeholder="Để trống để tự tách nền từ avatar..." style="flex: 1;">
+          <button class="btn btn-outline" type="button" onclick="document.getElementById('char-cutout-file-input').click()">📁 Chọn PNG</button>
+        </div>
+        <input type="file" id="char-cutout-file-input" accept="image/png,image/webp,image/*" style="display:none;" onchange="handleCutoutUpload(event)">
+        <small style="color:#718096;">Để trống, ứng dụng tự tách nền từ avatar; vẫn có thể chọn PNG riêng.</small>
+      </div>
+      <div class="form-group">
         <label>Tính Cách & Xưng Hô:</label>
         <textarea id="char-personality" rows="3" placeholder="Lạnh lùng, xưng hô Anh - Thư..."></textarea>
       </div>
@@ -913,10 +922,10 @@
   <script src="shop.js?v=18"></script>
   <script src="jobs.js?v=16"></script>
   <script src="craft.js?v=4"></script>
-  <script src="themes.js?v=1"></script>
-  <script src="quests.js?v=3"></script>
+  <script src="themes.js?v=3"></script>
+  <script src="quests.js?v=4"></script>
   <script src="pets.js?v=22"></script>
-  <script src="chat.js?v=21"></script>
+  <script src="chat.js?v=22"></script>
   <script src="ui.js?v=6"></script>
   <script src="audio.js?v=6"></script>
   <script src="play.js?v=6"></script>

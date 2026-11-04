@@ -277,6 +277,390 @@ Object.keys(CHAT_THEMES).forEach(k => {
 });
 window.CHAT_THEMES = CHAT_THEMES;
 
+// Hiệu ứng sân khấu theo không khí hoạt động
+const THEME_EFFECT = {
+  daily: 'sparks', work: 'sparks', mystery: 'sparks',
+  adventure: 'fireworks', night: 'stars', date: 'petals', confess: 'petals'
+};
+
+// Tự gán một hoạt động riêng cho nhân vật dựa trên tính cách/lời mở đầu,
+// không cho người chơi chọn tay. Kết quả lưu vào nhân vật nên ổn định sau này.
+const ACTIVITY_RULES = [
+  ['confess', /tỏ tình|thầm thương|thầm thích|đơn phương|crush|yêu đơn phương/i],
+  ['date', /hẹn hò|tình cảm|yêu|thích|ngọt ngào|dịu dàng|lãng mạn/i],
+  ['adventure', /phiêu lưu|giang hồ|kiếm khách|hiệp khách|mạo hiểm|du hành|thám hiểm|rừng|núi|biển|sa mạc/i],
+  ['mystery', /điều tra|thám tử|bí ẩn|manh mối|vụ án|bí mật|huyền bí|ma|quái/i],
+  ['work', /công việc|làm việc|ca làm|nhân viên|quản lý|đồng nghiệp|quán|cửa hàng|văn phòng|bác sĩ|y tá|giáo viên/i],
+  ['night', /tâm sự|đêm|khó ngủ|nỗi lòng|cô đơn|ít nói|lạnh lùng/i],
+  ['daily', /đời thường|nấu ăn|chợ|bếp|gia đình|hàng xóm|dọn dẹp/i]
+];
+
+function themeHash(str) {
+  let h = 0;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function themeActivityIdFor(char, story) {
+  if (!char) return 'daily';
+  const own = [char.personality, char.firstMsg].filter(Boolean).join(' ');
+  for (const [id, re] of ACTIVITY_RULES) {
+    if (re.test(own)) return id;
+  }
+  // Không đủ dấu hiệu: chọn ổn định trong nhóm hoạt động không thiên về tình cảm
+  const pool = ['daily', 'work', 'mystery', 'adventure'];
+  return pool[themeHash(char.id || char.name || 'x') % pool.length];
+}
+
+// ===== Ảnh nhân vật: tự tách nền từ avatar + ảnh sân khấu do AI vẽ =====
+const THEME_CUTOUT_CACHE = new Map();
+const THEME_CUTOUT_QUEUE = new Map();
+const THEME_ART_JOB = { charId: '' };
+const THEME_IMAGE_MODELS = ['gemini-nano-banana-2.1', 'gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
+
+function themeAvatarKey(char) {
+  const src = String((char && char.avatar) || '');
+  return `${(char && char.id) || ''}:${src.length}:${themeHash(src)}`;
+}
+
+function themeStageArt(char) {
+  const art = char && char.stageArt;
+  if (!art) return '';
+  if (typeof art === 'string') return art;
+  if (!art.url) return '';
+  if (art.activityId && char.activityId && art.activityId !== char.activityId) return '';
+  return art.url;
+}
+
+function themeAutoCutout(char) {
+  return THEME_CUTOUT_CACHE.get(themeAvatarKey(char)) || '';
+}
+
+function themeCharArt(char) {
+  return themeStageArt(char) || (char && char.cutout) || themeAutoCutout(char) || '';
+}
+
+function themeHasApiKey() {
+  return (window.state.apiKeys || []).some(k => String(k || '').trim());
+}
+
+function themeArtBusy(char) {
+  return !!(char && THEME_ART_JOB.charId === char.id);
+}
+
+function themeBuildCutout(img) {
+  const max = 560;
+  const ratio = Math.min(1, max / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * ratio));
+  const h = Math.max(1, Math.round(img.height * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, w, h);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const px = imageData.data;
+
+  const border = [];
+  const step = Math.max(1, Math.round((w + h) / 260));
+  const push = (x, y) => {
+    const i = (y * w + x) * 4;
+    border.push([px[i], px[i + 1], px[i + 2]]);
+  };
+  for (let x = 0; x < w; x += step) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y += step) { push(0, y); push(w - 1, y); }
+  if (border.length < 8) return '';
+
+  const median = (idx) => {
+    const list = border.map(v => v[idx]).sort((a, b) => a - b);
+    return list[Math.floor(list.length / 2)];
+  };
+  const br = median(0), bg = median(1), bb = median(2);
+  const dist = (r, g, b) => Math.sqrt((r - br) ** 2 + (g - bg) ** 2 + (b - bb) ** 2);
+  const borderDist = border.map(v => dist(v[0], v[1], v[2])).sort((a, b) => a - b);
+  const p70 = borderDist[Math.floor(borderDist.length * 0.7)];
+  // Nền quá rối thì bỏ cuộc, để avatar gốc hiển thị thay vì cắt lem
+  if (p70 > 60) return '';
+  const tol = Math.max(34, Math.min(78, p70 + 16));
+
+  const removed = new Uint8Array(w * h);
+  const stack = [];
+  const consider = (idx) => {
+    if (removed[idx]) return;
+    const i = idx * 4;
+    if (px[i + 3] > 10 && dist(px[i], px[i + 1], px[i + 2]) < tol) {
+      removed[idx] = 1;
+      stack.push(idx);
+    }
+  };
+  for (let x = 0; x < w; x++) { consider(x); consider((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { consider(y * w); consider(y * w + w - 1); }
+  while (stack.length) {
+    const idx = stack.pop();
+    const x = idx % w, y = (idx / w) | 0;
+    if (x > 0) consider(idx - 1);
+    if (x < w - 1) consider(idx + 1);
+    if (y > 0) consider(idx - w);
+    if (y < h - 1) consider(idx + w);
+  }
+
+  let removedCount = 0;
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (removed[idx]) { removedCount++; continue; }
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (removedCount < w * h * 0.05 || removedCount > w * h * 0.92) return '';
+  const bw = maxX - minX + 1, bh = maxY - minY + 1;
+  if (bw < w * 0.08 || bh < h * 0.08) return '';
+
+  // Làm mềm viền: pixel giáp nền được giảm alpha theo khoảng cách màu
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (removed[idx]) { px[idx * 4 + 3] = 0; continue; }
+      const edge = (x > 0 && removed[idx - 1]) || (x < w - 1 && removed[idx + 1]) ||
+        (y > 0 && removed[idx - w]) || (y < h - 1 && removed[idx + w]);
+      if (edge) {
+        const i = idx * 4;
+        const d = dist(px[i], px[i + 1], px[i + 2]);
+        px[i + 3] = Math.max(24, Math.min(255, Math.round(255 * Math.max(0, (d - tol * 0.45) / (tol * 1.1)))));
+      }
+    }
+  }
+
+  const padX = Math.round(bw * 0.03), padY = Math.round(bh * 0.02);
+  const cropX = Math.max(0, minX - padX), cropY = Math.max(0, minY - padY);
+  const cropW = Math.min(w - cropX, bw + padX * 2), cropH = Math.min(h - cropY, bh + padY * 2);
+  const out = document.createElement('canvas');
+  out.width = cropW; out.height = cropH;
+  const octx = out.getContext('2d');
+  const outData = octx.createImageData(cropW, cropH);
+  for (let y = 0; y < cropH; y++) {
+    const from = ((cropY + y) * w + cropX) * 4;
+    const to = y * cropW * 4;
+    outData.data.set(px.subarray(from, from + cropW * 4), to);
+  }
+  octx.putImageData(outData, 0, 0);
+  return out.toDataURL('image/png');
+}
+
+function themeMakeCutout(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try { resolve(themeBuildCutout(img) || ''); } catch (e) { resolve(''); }
+    };
+    img.onerror = () => resolve('');
+    img.src = src;
+  });
+}
+
+function themeEnsureAutoCutout(char, onReady) {
+  if (!char || char.cutout || !char.avatar || String(char.avatar).indexOf('data:image/') !== 0) return;
+  const key = themeAvatarKey(char);
+  if (THEME_CUTOUT_CACHE.has(key)) { onReady(THEME_CUTOUT_CACHE.get(key)); return; }
+  if (THEME_CUTOUT_QUEUE.has(key)) { THEME_CUTOUT_QUEUE.get(key).push(onReady); return; }
+  const waiters = [onReady];
+  THEME_CUTOUT_QUEUE.set(key, waiters);
+  themeMakeCutout(char.avatar).then(url => {
+    THEME_CUTOUT_QUEUE.delete(key);
+    if (url) THEME_CUTOUT_CACHE.set(key, url);
+    waiters.forEach(fn => { try { fn(url); } catch (e) {} });
+  });
+}
+
+function themeArtPrompt(story, char, theme) {
+  const setting = String((story && story.setting) || '').trim();
+  return [
+    'Vertical 9:16 cinematic webtoon illustration for a mobile visual-novel stage.',
+    `Character: ${char.name}. Personality: ${char.personality || 'natural and expressive'}.`,
+    `Story setting: ${setting || 'a warm everyday world'}.`,
+    `Activity scene: ${theme.name} - ${theme.tagline}.`,
+    'Draw the character full body or three-quarter body, standing on the right side of the frame, looking toward the viewer, with a pose and expression that fit the personality and the activity.',
+    'Keep the face, hairstyle, skin tone, body type and outfit consistent with the reference image if one is provided.',
+    'Warm cinematic lighting, detailed environment, polished webtoon art, high detail.',
+    'Leave the lower third darker and less busy for a dialogue panel overlay.',
+    'No text, no watermark, no speech bubbles, no comic panels, no borders, no UI elements.'
+  ].join(' ');
+}
+
+function themeBlobBase64(blob) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = String(reader.result || '');
+      resolve(s.indexOf(',') >= 0 ? s.slice(s.indexOf(',') + 1) : '');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function themeImageInline(src) {
+  const s = String(src || '');
+  const m = s.match(/^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i);
+  if (m) return { mime_type: m[1], data: m[2] };
+  if (!/^https?:/i.test(s)) return null;
+  try {
+    const res = await fetch(s);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!/^image\//.test(blob.type)) return null;
+    const data = await themeBlobBase64(blob);
+    return data ? { mime_type: blob.type, data } : null;
+  } catch (e) { return null; }
+}
+
+async function themeRequestArt(key, prompt, image) {
+  let last = '';
+  for (const model of THEME_IMAGE_MODELS) {
+    try {
+      const input = [{ type: 'text', text: prompt }];
+      if (image) input.push({ type: 'image', mime_type: image.mime_type, data: image.data });
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': key,
+          'Api-Revision': '2026-05-20'
+        },
+        body: JSON.stringify({
+          model,
+          input,
+          response_format: { type: 'image', mime_type: 'image/jpeg', aspect_ratio: '9:16', image_size: '1K' }
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const out = data.output_image || (Array.isArray(data.outputs) ? data.outputs.find(o => o && (o.type === 'image' || o.data)) : null);
+        if (out && out.data) {
+          const mime = out.mime_type || out.mimeType || 'image/jpeg';
+          return { dataUrl: `data:${mime};base64,${out.data}`, model };
+        }
+        last = 'API không trả về ảnh';
+      } else {
+        last = (data.error && data.error.message) || ('HTTP ' + res.status);
+      }
+    } catch (e) { last = e.message; }
+  }
+
+  // Key cũ chỉ hỗ trợ model ảnh qua generateContent
+  for (const model of ['gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview']) {
+    try {
+      const parts = [{ text: prompt }];
+      if (image) parts.push({ inline_data: { mime_type: image.mime_type, data: image.data } });
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '9:16' } }
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const partsOut = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+        const part = partsOut.find(p => p && (p.inlineData || p.inline_data));
+        if (part) {
+          const inline = part.inlineData || part.inline_data;
+          const mime = inline.mimeType || inline.mime_type || 'image/png';
+          return { dataUrl: `data:${mime};base64,${inline.data}`, model };
+        }
+        last = 'API không trả về ảnh';
+      } else {
+        last = (data.error && data.error.message) || ('HTTP ' + res.status);
+      }
+    } catch (e) { last = e.message; }
+  }
+  throw new Error(last || 'Không tạo được ảnh');
+}
+
+function themeFitArt(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const maxW = 900, maxH = 1350;
+        const ratio = Math.min(1, maxW / img.width, maxH / img.height);
+        const w = Math.max(1, Math.round(img.width * ratio));
+        const h = Math.max(1, Math.round(img.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#141020';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      } catch (e) { resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function generateThemeArt() {
+  if (THEME_ART_JOB.charId) return;
+  const story = ensureThemeStory(window.state.stories.find(s => s.id === window.state.activeStoryId));
+  if (!story) return;
+  const session = story.themeSession;
+  const char = session
+    ? (story.characters || []).find(c => c.id === session.charId)
+    : themeSelectedChar(story);
+  if (!char) return;
+  const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES.daily;
+  const keys = (window.state.apiKeys || [])
+    .map(k => String(k).trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+  if (!keys.length) {
+    alert('Chưa có API key để tạo ảnh. Thêm key trong ⚙️ Cài Đặt.');
+    return;
+  }
+
+  THEME_ART_JOB.charId = char.id;
+  renderThemeTab();
+  try {
+    const image = await themeImageInline(char.avatar);
+    const prompt = themeArtPrompt(story, char, theme);
+    let result = null, lastErr = null;
+    for (const key of keys) {
+      try {
+        result = await themeRequestArt(key, prompt, image);
+        if (result) break;
+      } catch (e) { lastErr = e; }
+    }
+    if (!result) throw lastErr || new Error('Không tạo được ảnh');
+    const url = await themeFitArt(result.dataUrl);
+    char.stageArt = { url, activityId: char.activityId, at: Date.now(), model: result.model || '' };
+    saveStorage();
+  } catch (e) {
+    alert('Không tạo được ảnh: ' + String((e && e.message) || e).slice(0, 180));
+  } finally {
+    THEME_ART_JOB.charId = '';
+    renderThemeTab();
+  }
+}
+
+function themeFxHtml(kind) {
+  let spans = '';
+  if (kind === 'petals') {
+    for (let i = 0; i < 12; i++) spans += `<i class="fx-petal" style="left:${(i * 8 + 5) % 100}%;animation-delay:${(i % 6) * 0.8}s;animation-duration:${5 + (i % 4)}s"></i>`;
+  } else if (kind === 'fireworks') {
+    for (let i = 0; i < 3; i++) spans += `<i class="fx-burst" style="left:${20 + i * 30}%;top:${18 + (i % 2) * 12}%;animation-delay:${i * 1.1}s"></i>`;
+  } else if (kind === 'stars') {
+    for (let i = 0; i < 16; i++) spans += `<i class="fx-star" style="left:${(i * 6 + 3) % 100}%;top:${(i * 13) % 60}%;animation-delay:${(i % 7) * 0.5}s"></i>`;
+  } else {
+    for (let i = 0; i < 10; i++) spans += `<i class="fx-spark" style="left:${(i * 9 + 4) % 100}%;top:${(i * 17 + 10) % 70}%;animation-delay:${(i % 5) * 0.6}s"></i>`;
+  }
+  return `<div class="activity-fx" aria-hidden="true">${spans}</div>`;
+}
+
 function themeTodayKey() {
   return new Date().toDateString();
 }
@@ -285,11 +669,22 @@ function ensureThemeStory(story) {
   if (!story) return null;
   if (!story.themeMemories || !Array.isArray(story.themeMemories)) story.themeMemories = [];
   if (!story.themeRuns || typeof story.themeRuns !== 'object') story.themeRuns = {};
+  if (!story.activityUnlocks || typeof story.activityUnlocks !== 'object') story.activityUnlocks = {};
   if (!story.characters) story.characters = [];
   const un = window.state.unlockedModes || {};
   let changed = false;
   story.characters.forEach(c => {
-    if (un[c.id] && un[c.id].call && !un[c.id].adventure) { un[c.id].adventure = true; changed = true; }
+    // Mỗi nhân vật có một hoạt động riêng, gán một lần rồi giữ nguyên
+    if (!c.activityId || !CHAT_THEMES[c.activityId]) {
+      c.activityId = themeActivityIdFor(c, story);
+      changed = true;
+    }
+    if (un[c.id]) {
+      if (un[c.id].call && !un[c.id].adventure) { un[c.id].adventure = true; changed = true; }
+      // Save cũ đã mở khóa bằng nhiệm vụ -> chuyển thành mở sớm hoạt động riêng
+      const hadLegacy = Object.keys(un[c.id]).some(k => un[c.id][k] === true);
+      if (hadLegacy && !story.activityUnlocks[c.id]) { story.activityUnlocks[c.id] = true; changed = true; }
+    }
   });
   const am = window.state.activeMode && window.state.activeMode[story.id];
   if (am && am.mode === 'call') { delete window.state.activeMode[story.id]; changed = true; }
@@ -314,11 +709,12 @@ function themePlayerName(story) {
   return (!n || /^bạn$/i.test(n)) ? 'bạn' : n;
 }
 
-function themeIsUnlocked(theme, char) {
+function themeIsUnlocked(theme, char, story) {
   if (!theme || !char) return false;
-  if (theme.open) return true;
-  const un = (window.state.unlockedModes || {})[char.id] || {};
-  return !!un[theme.id];
+  if (themeCharLevel(char.id) >= theme.minLv) return true;
+  if (story && story.activityUnlocks && story.activityUnlocks[char.id]) return true;
+  const legacy = (window.state.unlockedModes || {})[char.id] || {};
+  return !!(legacy[theme.id] || (char.activityId && legacy[char.activityId]));
 }
 
 function themeRewardHint(t) {
@@ -355,14 +751,16 @@ function selectThemeChar(charId) {
 function startThemeActivity(themeId) {
   const story = ensureThemeStory(window.state.stories.find(s => s.id === window.state.activeStoryId));
   if (!story) return;
-  const theme = CHAT_THEMES[themeId];
   const char = themeSelectedChar(story);
-  if (!theme || !char) return;
-  if (!themeIsUnlocked(theme, char) || themeCharLevel(char.id) < theme.minLv) return;
-  if (story.themeSession && !confirm('Bạn đang có một hoạt động dở. Bắt đầu chủ đề mới sẽ bỏ hoạt động đó. Tiếp tục?')) return;
+  if (!char) return;
+  // Chỉ có một hoạt động riêng cho mỗi nhân vật; tham số themeId chỉ để tương thích lời gọi cũ
+  const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES[themeId];
+  if (!theme) return;
+  if (!themeIsUnlocked(theme, char, story)) return;
+  if (story.themeSession && !confirm('Bạn đang có một hoạt động dở. Bắt đầu hoạt động mới sẽ bỏ hoạt động đó. Tiếp tục?')) return;
   window.__themeShowHome = false;
   story.themeLastResult = null;
-  story.themeSession = { themeId, charId: char.id, step: 0, score: 0, picks: [], startedAt: Date.now() };
+  story.themeSession = { themeId: theme.id, charId: char.id, step: 0, score: 0, picks: [], startedAt: Date.now() };
   saveStorage();
   renderThemeTab();
 }
@@ -384,6 +782,29 @@ function themeChoose(optionIndex) {
     line: option.line(char.name, me)
   });
   session.score += option.tone === 'good' ? 2 : (option.tone === 'mid' ? 1 : 0);
+  session.step += 1;
+  if (session.step >= theme.steps.length) finishThemeActivity(story, theme, char, session);
+  else { saveStorage(); renderThemeTab(); }
+}
+
+// Người chơi tự soạn câu trả lời thay vì chọn câu mẫu
+function themeFreeReply() {
+  const story = ensureThemeStory(window.state.stories.find(s => s.id === window.state.activeStoryId));
+  const session = story && story.themeSession;
+  if (!story || !session) return;
+  const input = document.getElementById('activity-free-input');
+  const text = String((input && input.value) || '').trim().slice(0, 200);
+  if (!text) return;
+  const theme = CHAT_THEMES[session.themeId];
+  const char = (story.characters || []).find(c => c.id === session.charId);
+  if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
+  const me = themePlayerName(story);
+  session.picks.push({
+    label: text,
+    tone: 'mid',
+    line: `${me} nói: "${text}". ${char.name} nghe trọn câu rồi mới đáp lại.`
+  });
+  session.score += 1;
   session.step += 1;
   if (session.step >= theme.steps.length) finishThemeActivity(story, theme, char, session);
   else { saveStorage(); renderThemeTab(); }
@@ -495,22 +916,40 @@ function renderThemeHome(story) {
     </button>`;
   }).join('');
 
-  const cards = THEME_ORDER.map(id => {
-    const t = CHAT_THEMES[id];
-    if (!t) return '';
-    const unlocked = themeIsUnlocked(t, char);
-    const lvOk = themeCharLevel(char.id) >= t.minLv;
-    const locked = !unlocked || !lvOk;
-    const note = !unlocked ? 'Mở bằng nhiệm vụ' : (!lvOk ? `Cần Lv.${t.minLv}` : '');
-    const done = !locked && story.themeRuns[t.id] === today;
-    const onclick = locked ? '' : `onclick="startThemeActivity('${t.id}')"`;
-    return `<div class="theme-card ${locked ? 'locked' : ''}" ${onclick}>
-      <div class="theme-card-top"><span class="theme-card-icon">${t.icon}</span><span class="theme-card-name">${t.name}</span></div>
-      <div class="theme-card-tag">${t.tagline}</div>
-      <div class="theme-card-meta"><span>${t.minLv > 1 ? `Lv.${t.minLv} · ` : ''}${themeRewardHint(t)}</span>${done ? '<span class="theme-done">✓ đã nhận thưởng hôm nay</span>' : ''}</div>
-      ${locked ? `<div class="theme-lock">🔒 ${note}</div>` : ''}
+  const theme = char ? (CHAT_THEMES[char.activityId] || CHAT_THEMES.daily) : null;
+  let card = '';
+  if (theme) {
+    const lv = themeCharLevel(char.id);
+    const unlocked = themeIsUnlocked(theme, char, story);
+    const done = story.themeRuns[theme.id] === today;
+    const pct = Math.min(100, Math.round(lv / Math.max(1, theme.minLv) * 100));
+    const aiArt = themeStageArt(char);
+    const art = themeCharArt(char) || char.avatar;
+    const busy = themeArtBusy(char);
+    const canAi = themeHasApiKey();
+    card = `<div class="activity-home ${unlocked ? '' : 'locked'} ${aiArt ? 'has-scene' : ''}">
+      <div class="activity-home-art">
+        ${art ? `<img data-theme-art="${escapeHtml(char.id)}" src="${escapeHtml(art)}" alt="${escapeHtml(char.name)}">` : `<span class="activity-home-glyph">${theme.icon}</span>`}
+        <span class="activity-home-badge">${theme.icon}</span>
+      </div>
+      <div class="activity-home-body">
+        <div class="activity-home-name">${theme.name}</div>
+        <div class="activity-home-tag">${theme.tagline} · ${escapeHtml(char.name)}</div>
+        <div class="activity-home-meta">${theme.minLv > 1 ? `Mốc Lv.${theme.minLv} · ` : ''}${themeRewardHint(theme)}</div>
+        ${unlocked
+          ? `<button class="btn btn-pink activity-start" onclick="startThemeActivity()">▶ Bắt đầu hoạt động</button>
+             ${done ? '<div class="activity-done">✓ Hôm nay đã nhận thưởng · chơi lại vẫn ghi ký ức</div>' : ''}`
+          : `<div class="activity-lock">
+               <div class="activity-lock-line">🔒 Mở ở Lv.${theme.minLv} · hiện Lv.${lv}</div>
+               <div class="activity-lock-bar"><span style="width:${pct}%"></span></div>
+               <div class="activity-lock-note">Hoặc mở sớm bằng quà nhiệm vụ dành cho ${escapeHtml(char.name)}.</div>
+             </div>`}
+        ${canAi ? `<div class="activity-art-tools">
+          <button class="btn btn-outline activity-ai-btn" onclick="generateThemeArt()" ${busy ? 'disabled' : ''}>${busy ? '⏳ Đang vẽ...' : (aiArt ? '✨ Vẽ lại dáng' : '✨ Tạo dáng AI')}</button>
+        </div>` : ''}
+      </div>
     </div>`;
-  }).join('');
+  }
 
   const mems = story.themeMemories.slice(-4).reverse().map(m => {
     const t = CHAT_THEMES[m.themeId];
@@ -519,8 +958,8 @@ function renderThemeHome(story) {
 
   root.innerHTML = `
     <div class="theme-hero">
-      <div class="theme-hero-title">🎭 Chủ Đề</div>
-      <div class="theme-hero-sub">Chọn nhân vật và một hoạt động. Những gì xảy ra ở đây sẽ được nhân vật nhớ trong trò chuyện.</div>
+      <div class="theme-hero-title">🎭 Hoạt động riêng</div>
+      <div class="theme-hero-sub">Mỗi nhân vật có một hoạt động riêng, mở theo cấp thân mật hoặc quà nhiệm vụ. Những gì xảy ra ở đây sẽ được nhân vật nhớ trong trò chuyện.</div>
     </div>
     <div class="theme-chars">${charChips}</div>
     ${sessionTheme ? `<div class="theme-resume">
@@ -530,12 +969,20 @@ function renderThemeHome(story) {
         <button class="btn btn-outline" onclick="themeAbandonSession()">Bỏ</button>
       </div>
     </div>` : ''}
-    <div class="theme-grid">${cards}</div>
+    ${card}
     <div class="theme-mem">
       <div class="theme-mem-title">Ký ức hoạt động gần đây</div>
-      ${mems || '<div class="theme-mem-empty">Chưa có hoạt động nào. Chọn một chủ đề để bắt đầu.</div>'}
+      ${mems || '<div class="theme-mem-empty">Chưa có hoạt động nào. Bắt đầu hoạt động của nhân vật để tạo ký ức đầu tiên.</div>'}
     </div>
   `;
+
+  if (char && !themeStageArt(char) && !char.cutout) {
+    themeEnsureAutoCutout(char, url => {
+      if (!url) return;
+      const img = Array.from(root.querySelectorAll('[data-theme-art]')).find(x => x.getAttribute('data-theme-art') === char.id);
+      if (img) img.src = url;
+    });
+  }
 }
 
 function renderThemeSession(story) {
@@ -547,19 +994,50 @@ function renderThemeSession(story) {
   const step = theme.steps[session.step];
   if (!step) { finishThemeActivity(story, theme, char, session); return; }
   const me = themePlayerName(story);
-  const picks = session.picks.map(p => `<div class="theme-pick-line ${p.tone}">${escapeHtml(p.line)}</div>`).join('');
-  const options = step.options.map((o, i) => `<button class="theme-choice" onclick="themeChoose(${i})">${escapeHtml(o.label)}</button>`).join('');
+  const effect = THEME_EFFECT[theme.id] || 'sparks';
+  const aiArt = themeStageArt(char);
+  const art = themeCharArt(char) || char.avatar;
+  const busy = themeArtBusy(char);
+  const canAi = themeHasApiKey();
+  const picks = session.picks.map(p => `<div class="activity-log-line ${p.tone}">${escapeHtml(p.line)}</div>`).join('');
+  const options = step.options.map((o, i) => `<button class="activity-choice" onclick="themeChoose(${i})">${escapeHtml(o.label)}</button>`).join('');
+  const pct = Math.round(session.step / theme.steps.length * 100);
   root.innerHTML = `
-    <div class="theme-session-head">
-      <button class="btn btn-outline" onclick="themeBackToHome()">← Đổi chủ đề</button>
-      <span class="theme-session-title">${theme.icon} ${theme.name} · ${escapeHtml(char.name)}</span>
+    <div class="activity-stage fx-${effect} ${aiArt ? 'has-scene' : ''}">
+      ${aiArt ? `<img class="activity-scene" src="${escapeHtml(aiArt)}" alt="">` : ''}
+      ${aiArt ? '<div class="activity-scene-shade"></div>' : ''}
+      ${themeFxHtml(effect)}
+      <div class="activity-stage-head">
+        <button class="activity-back" onclick="themeBackToHome()">←</button>
+        <div class="activity-stage-title">${theme.icon} ${theme.name}</div>
+        ${canAi ? `<button class="activity-ai-mini" title="Tạo dáng AI" onclick="generateThemeArt()" ${busy ? 'disabled' : ''}>${busy ? '⏳' : '✨'}</button>` : ''}
+        <div class="activity-stage-step">${session.step + 1}/${theme.steps.length}</div>
+      </div>
+      <div class="activity-progress"><span style="width:${pct}%"></span></div>
+      ${aiArt ? '' : `<div class="activity-art">
+        ${art ? `<img data-theme-art="${escapeHtml(char.id)}" src="${escapeHtml(art)}" alt="${escapeHtml(char.name)}">` : `<span class="activity-art-glyph">${theme.icon}</span>`}
+      </div>`}
+      ${picks ? `<div class="activity-log">${picks}</div>` : ''}
+      <div class="activity-dialogue">
+        <div class="activity-speaker">${escapeHtml(char.name)}</div>
+        <div class="activity-line">${escapeHtml(step.text(char.name, me))}</div>
+      </div>
+      <div class="activity-choices">${options}</div>
+      <div class="activity-free">
+        <input id="activity-free-input" type="text" maxlength="200" placeholder="Hoặc tự soạn câu trả lời..." onkeydown="if(event.key==='Enter'){event.preventDefault();themeFreeReply();}">
+        <button class="btn btn-pink" onclick="themeFreeReply()">Gửi</button>
+      </div>
+      <button class="activity-abandon" onclick="themeAbandonSession()">Bỏ hoạt động</button>
     </div>
-    <div class="theme-progress"><span style="width:${Math.round((session.step) / theme.steps.length * 100)}%"></span></div>
-    <div class="theme-step-label">Bước ${session.step + 1}/${theme.steps.length}</div>
-    ${picks ? `<div class="theme-picks">${picks}</div>` : ''}
-    <div class="theme-scene">${escapeHtml(step.text(char.name, me))}</div>
-    <div class="theme-choices">${options}</div>
   `;
+
+  if (!aiArt && !char.cutout) {
+    themeEnsureAutoCutout(char, url => {
+      if (!url) return;
+      const img = Array.from(root.querySelectorAll('[data-theme-art]')).find(x => x.getAttribute('data-theme-art') === char.id);
+      if (img) img.src = url;
+    });
+  }
 }
 
 function renderThemeResult(story) {
@@ -568,9 +1046,14 @@ function renderThemeResult(story) {
   const theme = CHAT_THEMES[r.themeId];
   const char = (story.characters || []).find(c => c.id === r.charId);
   if (!theme || !char) { story.themeLastResult = null; saveStorage(); renderThemeTab(); return; }
-  const rewards = r.rewards.length ? r.rewards.join(' · ') : (r.repeat ? 'Hôm nay đã nhận thưởng cho chủ đề này, lần này chỉ ghi ký ức.' : 'Không có phần thưởng.');
+  const rewards = r.rewards.length ? r.rewards.join(' · ') : (r.repeat ? 'Hôm nay đã nhận thưởng cho hoạt động này, lần này chỉ ghi ký ức.' : 'Không có phần thưởng.');
+  const effect = r.tier === 2 ? 'fireworks' : (r.tier === 0 ? 'sparks' : (THEME_EFFECT[theme.id] || 'sparks'));
+  const aiArt = themeStageArt(char);
+  const art = themeCharArt(char) || char.avatar;
   root.innerHTML = `
     <div class="theme-result tier-${r.tier}">
+      <div class="theme-result-fx">${themeFxHtml(effect)}</div>
+      ${aiArt ? `<img class="theme-result-art is-scene" src="${escapeHtml(aiArt)}" alt="">` : (art ? `<img class="theme-result-art" src="${escapeHtml(art)}" alt="">` : '')}
       <div class="theme-result-icon">${themeTierIcon(r.tier)}</div>
       <div class="theme-result-title">${themeTierLabel(r.tier)}</div>
       <div class="theme-result-sub">${theme.icon} ${theme.name} · ${escapeHtml(char.name)}</div>
@@ -578,7 +1061,7 @@ function renderThemeResult(story) {
       <div class="theme-result-rewards">${rewards}</div>
       <div class="theme-result-actions">
         <button class="btn btn-pink" onclick="switchStoryTab('chat')">💬 Về trò chuyện</button>
-        <button class="btn btn-outline" onclick="closeThemeResult()">Chủ đề khác</button>
+        <button class="btn btn-outline" onclick="closeThemeResult()">Hoạt động khác</button>
       </div>
     </div>
   `;
@@ -587,7 +1070,10 @@ function renderThemeResult(story) {
 window.renderThemeTab = renderThemeTab;
 window.startThemeActivity = startThemeActivity;
 window.themeChoose = themeChoose;
+window.themeFreeReply = themeFreeReply;
 window.selectThemeChar = selectThemeChar;
 window.themeBackToHome = themeBackToHome;
 window.themeAbandonSession = themeAbandonSession;
 window.closeThemeResult = closeThemeResult;
+window.generateThemeArt = generateThemeArt;
+window.themeMakeCutout = themeMakeCutout;

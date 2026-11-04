@@ -91,10 +91,7 @@
         return `${tierObj.icon} Box ${tierObj.label}${r.n > 1 ? ' ×' + r.n : ''} (chủ đề ngẫu nhiên)`;
       }
       if (r.type === 'aff') return `❤️ +${r.pts} thân mật`;
-      if (r.type === 'unlock') {
-        const mObj = MODES[r.mode] || { icon: '🔓', name: r.mode, minLv: 1 };
-        return `🔓 Mở khóa ${mObj.icon} ${mObj.name} (nhân vật cần Lv.${mObj.minLv})`;
-      }
+      if (r.type === 'unlock') return '🔓 Mở sớm hoạt động riêng của nhân vật được chọn';
       return '';
     }
     function missionRowHtml(kind, def) {
@@ -139,15 +136,17 @@
 
       const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       if (story && typeof ensureThemeStory === 'function') ensureThemeStory(story);
-      const un = window.state.unlockedModes || {};
       const mrows = [];
       ((story && story.characters) || []).forEach(c => {
-        const list = Object.keys(MODES).filter(k => un[c.id] && un[c.id][k]).map(k => `${MODES[k].icon} ${MODES[k].name}`);
-        mrows.push(`<div style="font-size:0.85rem;"><b>${typeof escapeHtml === 'function' ? escapeHtml(c.name) : c.name}</b>: ${list.length ? list.join(', ') : '<span style="color:#888;">chưa mở chế độ nào</span>'}</div>`);
+        const t = CHAT_THEMES[c.activityId];
+        if (!t) return;
+        const unlocked = themeIsUnlocked(t, c, story);
+        const state = unlocked ? '<span style="color:var(--app-dark-green);">đã mở</span>' : `<span style="color:#888;">mở ở Lv.${t.minLv}</span>`;
+        mrows.push(`<div style="font-size:0.85rem;"><b>${typeof escapeHtml === 'function' ? escapeHtml(c.name) : c.name}</b>: ${t.icon} ${t.name} · ${state}</div>`);
       });
       const modesEl = document.getElementById('mission-modes');
       if (modesEl) {
-        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Chọn hoạt động ở tab 🎭 Chủ Đề trong màn trò chuyện.</div>';
+        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoạt động riêng nằm ở tab 🎭 Chủ Đề trong màn trò chuyện.</div>';
       }
     }
 
@@ -191,13 +190,7 @@
       const ch = story && charId && story.characters ? story.characters.find(c => c.id === charId) : null;
 
       for (const r of def.reward) {
-        if (r.type === 'unlock') {
-          if (!ch) return;
-          const lv = ((window.state.affectionLevels || {})[ch.id] || { level: 1 }).level;
-          const modeInfo = MODES[r.mode];
-          if (lv < modeInfo.minLv) return alert(`${ch.name} mới Lv.${lv}, cần Lv.${modeInfo.minLv} để mở khóa "${modeInfo.name}". Hãy tăng thân mật (tặng quà, trò chuyện) rồi nhận lại, hoặc chọn nhân vật khác.`);
-          if (window.state.unlockedModes && window.state.unlockedModes[ch.id] && window.state.unlockedModes[ch.id][r.mode]) return alert(`${ch.name} đã mở khóa chế độ này rồi. Hãy chọn nhân vật khác!`);
-        }
+        if (r.type === 'unlock' && !ch) return;
       }
 
       const got = [];
@@ -214,11 +207,14 @@
           if (typeof addAffectionPoints === 'function') addAffectionPoints(ch.id, r.pts);
           got.push(`❤️ Thân mật với ${ch.name} tăng`);
         } else if (r.type === 'unlock' && ch) {
-          if (!window.state.unlockedModes) window.state.unlockedModes = {};
-          if (!window.state.unlockedModes[ch.id]) window.state.unlockedModes[ch.id] = {};
-          window.state.unlockedModes[ch.id][r.mode] = true;
-          const modeInfo = MODES[r.mode];
-          got.push(`🔓 ${ch.name} mở khóa ${modeInfo.icon} ${modeInfo.name}`);
+          if (!story.activityUnlocks) story.activityUnlocks = {};
+          const theme = CHAT_THEMES[ch.activityId] || CHAT_THEMES.daily;
+          if (story.activityUnlocks[ch.id]) {
+            got.push(`🔓 ${ch.name} đã mở hoạt động ${theme.icon} ${theme.name} từ trước`);
+          } else {
+            story.activityUnlocks[ch.id] = true;
+            got.push(`🔓 ${ch.name} mở khóa ${theme.icon} ${theme.name}`);
+          }
         }
       });
 

@@ -599,6 +599,30 @@ Trả về ĐÚNG JSON thuần, không markdown:
       }
     }
 
+    // Ảnh tách nền phải giữ nguyên độ trong suốt nên xuất PNG, không tô nền trắng
+    function handleCutoutUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const target = document.getElementById('char-cutout');
+        if (!target) return;
+        const original = e.target.result;
+        const img = new Image();
+        img.onload = function() {
+          try {
+            const max = 640; const ratio = Math.min(1, max / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * ratio)); const h = Math.max(1, Math.round(img.height * ratio));
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            target.value = canvas.toDataURL('image/png');
+          } catch (err) { target.value = original; }
+        };
+        img.src = original;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function renderStoryList() {
       const container = document.getElementById('story-list');
       container.innerHTML = '';
@@ -668,6 +692,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
       if (!story.theme) {
         story.theme = { userBg: '#c1ebd9', userText: '#1b4332', aiBg: '#ffffff', aiText: '#333333', chatBgColor: '#e7f5ee', chatBgImg: '' };
       }
+      if (typeof ensureThemeStory === 'function') ensureThemeStory(story);
 
       // Mỗi truyện có hồ sơ người chơi riêng; truyện cũ chưa có thì chép từ hồ sơ chung một lần
       if (!story.persona) { activeStoryPersona(story); saveStorage(); }
@@ -1390,6 +1415,7 @@ Trả về ĐÚNG JSON thuần:
       document.getElementById('char-modal-title').innerText = '🎭 Thêm Nhân Vật';
       document.getElementById('char-edit-id').value = '';
       document.getElementById('char-name').value = ''; document.getElementById('char-avatar').value = '';
+      const cut = document.getElementById('char-cutout'); if (cut) cut.value = '';
       document.getElementById('char-personality').value = ''; document.getElementById('char-first-msg').value = '';
       openModal('modal-char');
     }
@@ -1401,6 +1427,7 @@ Trả về ĐÚNG JSON thuần:
       document.getElementById('char-modal-title').innerText = '✏️ Sửa';
       document.getElementById('char-edit-id').value = char.id;
       document.getElementById('char-name').value = char.name; document.getElementById('char-avatar').value = char.avatar || '';
+      const cut = document.getElementById('char-cutout'); if (cut) cut.value = char.cutout || '';
       document.getElementById('char-personality').value = char.personality || ''; document.getElementById('char-first-msg').value = char.firstMsg || '';
       openModal('modal-char');
     }
@@ -1413,14 +1440,16 @@ Trả về ĐÚNG JSON thuần:
       const avatar = document.getElementById('char-avatar').value.trim();
       const personality = document.getElementById('char-personality').value.trim();
       const firstMsg = document.getElementById('char-first-msg').value.trim();
+      const cutoutEl = document.getElementById('char-cutout');
+      const cutout = cutoutEl ? cutoutEl.value.trim() : '';
       if (!name) return alert('Nhập tên nhân vật!');
 
       if (charId) {
         const c = story.characters.find(x => x.id === charId);
-        if (c) { c.name = name; c.avatar = avatar || DEFAULT_LOGO; c.personality = personality; c.firstMsg = firstMsg; }
+        if (c) { c.name = name; c.avatar = avatar || DEFAULT_LOGO; c.personality = personality; c.firstMsg = firstMsg; c.cutout = cutout; }
       } else {
         if (!story.characters) story.characters = [];
-        story.characters.push({ id: 'char-' + Date.now(), name, avatar: avatar || DEFAULT_LOGO, personality, firstMsg });
+        story.characters.push({ id: 'char-' + Date.now(), name, avatar: avatar || DEFAULT_LOGO, personality, firstMsg, cutout });
       }
       story.updatedAt = Date.now();
       saveStorage(); renderCharacterList(); closeModal('modal-char');

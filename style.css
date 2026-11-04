@@ -1011,3 +1011,92 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .theme-chars { flex-shrink: 0; }
     .theme-session-head { flex-wrap: wrap; }
     .theme-session-title { flex: 1 1 140px; white-space: normal; line-height: 1.3; }
+
+    /* ===== Hoạt động riêng theo nhân vật ===== */
+    .activity-home { display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; border: 2px solid var(--app-pink); background: var(--surface); box-shadow: 0 10px 24px rgba(213, 63, 140, 0.12); }
+    .activity-home.locked { border-color: var(--border); box-shadow: none; }
+    .activity-home-art { position: relative; display: flex; align-items: flex-end; justify-content: center; height: 158px; background: linear-gradient(160deg, #fde7f1 0%, #e8f7ef 60%, #dcefff 100%); overflow: hidden; }
+    .activity-home-art img { max-height: 150px; max-width: 78%; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(80, 50, 90, 0.22)); animation: activity-bob 4s ease-in-out infinite; }
+    .activity-home-glyph { font-size: 3.4rem; margin-bottom: 24px; }
+    .activity-home-badge { position: absolute; left: 12px; top: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255, 255, 255, 0.85); font-size: 1.1rem; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12); }
+    .activity-home-body { display: flex; flex-direction: column; gap: 6px; padding: 13px 14px 15px; }
+    .activity-home-name { font-family: var(--font-heading); font-size: 1.2rem; color: var(--app-dark-green); }
+    .activity-home-tag { font-size: 0.76rem; color: var(--text-2); line-height: 1.45; }
+    .activity-home-meta { font-size: 0.72rem; color: var(--muted); }
+    .activity-start { margin-top: 4px; }
+    .activity-art-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+    .activity-ai-btn { font-size: 0.72rem; padding: 7px 11px; align-self: flex-start; }
+    .activity-home.has-scene .activity-home-art { height: 210px; background: #141020; }
+    .activity-home.has-scene .activity-home-art img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; object-position: 50% 18%; filter: none; animation: scene-drift 16s ease-in-out infinite alternate; }
+    .activity-home.has-scene .activity-home-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(20, 16, 32, 0.6)); pointer-events: none; }
+    .activity-home.has-scene .activity-home-badge { z-index: 2; }
+    .activity-done { font-size: 0.7rem; color: var(--app-dark-green); background: var(--surface-2); border-radius: 10px; padding: 6px 9px; text-align: center; }
+    .activity-lock { display: flex; flex-direction: column; gap: 6px; margin-top: 3px; padding: 10px 11px; border-radius: 13px; background: var(--surface-2); }
+    .activity-lock-line { font-size: 0.78rem; font-weight: bold; color: var(--text); }
+    .activity-lock-bar { height: 8px; border-radius: 6px; background: var(--border); overflow: hidden; }
+    .activity-lock-bar span { display: block; height: 100%; background: var(--app-pink); }
+    .activity-lock-note { font-size: 0.68rem; color: var(--muted); line-height: 1.4; }
+
+    .activity-stage { position: relative; display: flex; flex-direction: column; gap: 9px; min-height: calc(100vh - 235px); padding: 12px; border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, #2c2542 0%, #211b33 55%, #171226 100%); box-shadow: 0 14px 30px rgba(20, 10, 40, 0.35); }
+    .activity-stage.fx-petals { background: linear-gradient(180deg, #3a2440 0%, #2a1a33 60%, #1c1226 100%); }
+    .activity-stage.fx-stars { background: linear-gradient(180deg, #1d2440 0%, #151a33 60%, #0d0f21 100%); }
+    .activity-stage.fx-fireworks { background: linear-gradient(180deg, #241d40 0%, #191433 60%, #100c22 100%); }
+    .activity-stage.fx-sparks { background: linear-gradient(180deg, #25333a 0%, #1a262d 60%, #111a1f 100%); }
+    .activity-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    .activity-stage > *:not(.activity-fx) { position: relative; z-index: 1; }
+    .activity-stage.has-scene > .activity-scene { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; animation: scene-drift 20s ease-in-out infinite alternate; }
+    .activity-stage.has-scene > .activity-scene-shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(9, 7, 18, 0.62) 0%, rgba(9, 7, 18, 0.22) 14%, rgba(9, 7, 18, 0) 34%, rgba(9, 7, 18, 0.42) 60%, rgba(9, 7, 18, 0.9) 84%, rgba(9, 7, 18, 0.96) 100%); pointer-events: none; }
+    .activity-stage.has-scene .activity-stage-head { text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65); }
+    .activity-stage.has-scene > *:not(.activity-fx):not(.activity-scene):not(.activity-scene-shade) { z-index: 2; }
+    .activity-stage.has-scene > .activity-fx { z-index: 3; opacity: 0.85; }
+    .activity-stage-head { display: flex; align-items: center; gap: 9px; color: #fff; }
+    .activity-ai-mini { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 0.95rem; cursor: pointer; }
+    .activity-ai-mini:disabled { opacity: 0.6; }
+    .activity-back { width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 1rem; cursor: pointer; }
+    .activity-stage-title { flex: 1; font-size: 0.88rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-stage-step { font-size: 0.7rem; color: rgba(255, 255, 255, 0.75); }
+    .activity-progress { height: 6px; border-radius: 5px; background: rgba(255, 255, 255, 0.18); overflow: hidden; }
+    .activity-progress span { display: block; height: 100%; background: linear-gradient(90deg, #ff9ec4, #ffd166); transition: width 0.25s; }
+    .activity-art { display: flex; align-items: flex-end; justify-content: center; min-height: 168px; padding-top: 4px; }
+    .activity-art img { max-height: 34vh; max-width: 88%; object-fit: contain; filter: drop-shadow(0 20px 26px rgba(0, 0, 0, 0.45)); animation: activity-bob 3.6s ease-in-out infinite; }
+    .activity-art-glyph { font-size: 4.4rem; margin-bottom: 22px; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4)); }
+    .activity-log { display: flex; flex-direction: column; gap: 5px; max-height: 96px; overflow-y: auto; padding-right: 2px; }
+    .activity-log-line { padding: 6px 9px; border-radius: 9px; border-left: 3px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.88); font-size: 0.72rem; line-height: 1.4; }
+    .activity-log-line.good { border-left-color: #7fe0b0; }
+    .activity-log-line.mid { border-left-color: #ffd166; }
+    .activity-log-line.bad { border-left-color: #ff8f8f; }
+    .activity-dialogue { margin-top: auto; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.94); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25); }
+    .activity-speaker { font-size: 0.74rem; font-weight: bold; color: #b83280; margin-bottom: 3px; }
+    .activity-line { font-size: 0.9rem; line-height: 1.6; color: #2d2438; }
+    .activity-choices { display: flex; flex-direction: column; gap: 7px; }
+    .activity-choice { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.14); color: #fff; font-family: inherit; font-size: 0.8rem; line-height: 1.4; text-align: left; cursor: pointer; }
+    .activity-choice:active { background: rgba(255, 255, 255, 0.26); transform: scale(0.99); }
+    .activity-free { display: flex; gap: 7px; align-items: center; }
+    .activity-free input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.32); background: rgba(0, 0, 0, 0.25); color: #fff; font-family: inherit; font-size: 0.8rem; }
+    .activity-free input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .activity-free .btn { flex-shrink: 0; padding: 9px 14px; }
+    .activity-abandon { align-self: center; margin-top: 2px; border: none; background: none; color: rgba(255, 255, 255, 0.55); font-family: inherit; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
+
+    .fx-petal { position: absolute; top: -8%; width: 10px; height: 14px; border-radius: 60% 0 60% 0; background: linear-gradient(135deg, #ffc2d6, #ff8fb3); animation: fx-fall linear infinite; }
+    .fx-star { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 7px 1px rgba(255, 255, 255, 0.8); animation: fx-twinkle 2.4s ease-in-out infinite; }
+    .fx-spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffe9a8; box-shadow: 0 0 8px 2px rgba(255, 216, 120, 0.7); animation: fx-twinkle 1.9s ease-in-out infinite; }
+    .fx-burst { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 226, 150, 0.95) 0 6%, rgba(255, 150, 90, 0.55) 16%, rgba(255, 120, 160, 0.28) 32%, transparent 62%); opacity: 0; animation: fx-burst 2.8s ease-out infinite; }
+    @keyframes fx-fall { 0% { transform: translateY(-10%) rotate(0deg); opacity: 0; } 12% { opacity: 0.9; } 100% { transform: translateY(105vh) rotate(320deg); opacity: 0; } }
+    @keyframes fx-twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.4); } }
+    @keyframes fx-burst { 0% { transform: scale(0.12); opacity: 0; } 12% { opacity: 1; } 58% { opacity: 0.75; } 100% { transform: scale(1.5); opacity: 0; } }
+    @keyframes activity-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    .theme-result { position: relative; overflow: hidden; }
+    .theme-result-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .theme-result > *:not(.theme-result-fx) { position: relative; z-index: 1; }
+    .theme-result-art { max-height: 150px; max-width: 70%; object-fit: contain; filter: drop-shadow(0 12px 16px rgba(80, 50, 90, 0.25)); }
+    .theme-result-art.is-scene { width: 100%; max-width: 100%; height: 190px; max-height: none; object-fit: cover; object-position: 50% 20%; border-radius: 16px; filter: none; }
+
+    @keyframes scene-drift {
+      0% { transform: scale(1.02) translateY(0); }
+      100% { transform: scale(1.08) translateY(-1.5%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .activity-fx i, .activity-art img, .activity-home-art img, .activity-scene { animation: none !important; }
+    }
