@@ -449,7 +449,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
           const story = window.state.stories.find(s => s.id === storyId);
           window.state.chatHistories[storyId] = [];
           if (story) {
-            if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
+            if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene, opening: true });
             else if (story.characters && story.characters[0] && story.characters[0].firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
           }
           saveStorage();
@@ -674,7 +674,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
 
       if (!window.state.chatHistories[storyId]) {
         window.state.chatHistories[storyId] = [];
-        if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene });
+        if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene, opening: true });
         else if (story.characters && story.characters[0] && story.characters[0].firstMsg) window.state.chatHistories[storyId].push({ sender: 'ai', text: story.characters[0].firstMsg });
       }
 
@@ -758,8 +758,21 @@ Trả về ĐÚNG JSON thuần, không markdown:
     function saveStorySettings() {
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (story) {
+        const oldOpening = story.openingScene || '';
+        const newOpening = document.getElementById('story-opening-input').value.trim();
         story.setting = document.getElementById('story-setting-input').value.trim();
-        story.openingScene = document.getElementById('story-opening-input').value.trim();
+        story.openingScene = newOpening;
+        // Đồng bộ tin mở đầu trong lịch sử chat khi người chơi sửa lại cảnh mở đầu
+        if (newOpening !== oldOpening) {
+          const hist = (window.state.chatHistories || {})[window.state.activeStoryId];
+          if (hist) {
+            const isOpening = hist.length && isOpeningSceneMessage(hist[0], 0, { openingScene: oldOpening });
+            if (isOpening) {
+              if (newOpening) { hist[0].text = newOpening; hist[0].opening = true; }
+              else hist.shift();
+            }
+          }
+        }
         
         if (!story.theme) story.theme = {};
         story.theme.userBg = document.getElementById('cfg-user-bg').value;
@@ -1436,6 +1449,43 @@ Trả về ĐÚNG JSON thuần:
       }
     }
 
+    // Cảnh mở đầu do người chơi nhập cũng có thể chứa thoại "..." và hành động *...*,
+    // nên phải vẽ bằng bộ phân tích tin nhắn thay vì in thô như tin system.
+    function isOpeningSceneMessage(msg, idx, story) {
+      if (!msg || msg.sender !== 'system' || msg.event) return false;
+      if (msg.opening) return true;
+      // Save cũ chưa có cờ opening: nhận diện đúng tin đầu tiên trùng nội dung cảnh mở đầu
+      return idx === 0 && !!story && !!story.openingScene &&
+        String(msg.text || '').trim() === String(story.openingScene || '').trim();
+    }
+
+    function renderOpeningScene(text, story, container) {
+      const lines = String(text || '').split('\n').filter(l => l.trim() !== '');
+      const wrap = document.createElement('div');
+      wrap.className = 'opening-scene';
+      const speakerRe = /^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/;
+      lines.forEach(line => {
+        const cm = line.match(speakerRe);
+        const speakers = cm ? resolveSpeakers(cm[1].trim(), (cm[2] || '').trim(), story) : [];
+        if (!speakers.length) {
+          const div = document.createElement('div');
+          div.className = 'narrative-block ai-action';
+          div.innerText = line.replace(/\*/g, '').trim();
+          if (div.innerText) wrap.appendChild(div);
+          return;
+        }
+        const tmp = document.createElement('div');
+        parseAndRenderAiMessage(line, story, tmp, -1, null, null);
+        Array.from(tmp.childNodes).forEach(node => {
+          if (node.nodeType !== 1) return;
+          if (node.classList.contains('msg-action-bar')) return;
+          node.querySelectorAll('.msg-action-bar').forEach(b => b.remove());
+          wrap.appendChild(node);
+        });
+      });
+      container.appendChild(wrap);
+    }
+
     function renderChatHistory() {
       updateModeBanner();
       const container = document.getElementById('chat-history');
@@ -1444,7 +1494,9 @@ Trả về ĐÚNG JSON thuần:
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
 
       history.forEach((msg, idx) => {
-        if (msg.sender === 'system') {
+        if (isOpeningSceneMessage(msg, idx, story)) {
+          renderOpeningScene(msg.text, story, container);
+        } else if (msg.sender === 'system') {
           const div = document.createElement('div'); 
           div.className = 'narrative-block system-action'; 
           div.innerText = naturalizeEventText(msg.noClean ? String(msg.text || '') : cleanAiTags(msg.text)).replace(/[\[\]\*\"]/g, '').trim(); 
