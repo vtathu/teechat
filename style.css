@@ -1100,3 +1100,14 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     @media (prefers-reduced-motion: reduce) {
       .activity-fx i, .activity-art img, .activity-home-art img, .activity-scene { animation: none !important; }
     }
+
+    /* ===== Lớp phủ hoạt động + hộp chọn Dùng/Cất ===== */
+    #activity-overlay { position: fixed; inset: 0; z-index: 96; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(15, 9, 24, 0.62); backdrop-filter: blur(4px); }
+    #activity-overlay.hidden { display: none; }
+    #activity-overlay > .theme-scroll { width: 100%; max-width: 440px; max-height: 94vh; padding: 0; background: transparent; border-radius: 22px; }
+    body.activity-open { overflow: hidden; }
+    .activity-reward-line { font-size: 0.82rem; color: var(--text); line-height: 1.5; }
+    .activity-reward-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; border: 2px solid var(--app-pink); background: var(--surface-2); }
+    .activity-reward-name { font-size: 0.86rem; font-weight: bold; color: var(--app-dark-green); }
+    .activity-reward-name span { display: block; margin-top: 2px; font-size: 0.72rem; font-weight: normal; color: var(--muted); }
+    .activity-reward-actions { display: flex; gap: 8px; flex-wrap: wrap; }

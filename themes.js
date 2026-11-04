@@ -685,6 +685,13 @@ function ensureThemeStory(story) {
       const hadLegacy = Object.keys(un[c.id]).some(k => un[c.id][k] === true);
       if (hadLegacy && !story.activityUnlocks[c.id]) { story.activityUnlocks[c.id] = true; changed = true; }
     }
+    // Đủ cấp hoặc đã mở từ trước thì cấp phiếu vào túi một lần, không tự mở hoạt động
+    const theme = CHAT_THEMES[c.activityId];
+    if (theme && themeIsUnlocked(theme, c, story)) {
+      const before = (window.state.inventory || []).length;
+      themeGrantActivityItem(story, c);
+      if ((window.state.inventory || []).length !== before) changed = true;
+    }
   });
   const am = window.state.activeMode && window.state.activeMode[story.id];
   if (am && am.mode === 'call') { delete window.state.activeMode[story.id]; changed = true; }
@@ -715,6 +722,93 @@ function themeIsUnlocked(theme, char, story) {
   if (story && story.activityUnlocks && story.activityUnlocks[char.id]) return true;
   const legacy = (window.state.unlockedModes || {})[char.id] || {};
   return !!(legacy[theme.id] || (char.activityId && legacy[char.activityId]));
+}
+
+// Hoạt động là một phiếu nằm trong túi: nhận từ nhiệm vụ hoặc đủ cấp thân mật,
+// chỉ mở khi người chơi bấm Dùng. Phiếu giữ lại để chơi lại các ngày sau.
+function themeActivityItemFor(story, char) {
+  if (!story || !char) return null;
+  return (window.state.inventory || []).find(it =>
+    it && it.cat === 'activity' && it.storyId === story.id && it.charId === char.id) || null;
+}
+
+function themeGrantActivityItem(story, char) {
+  if (!story || !char) return null;
+  const existing = themeActivityItemFor(story, char);
+  if (existing) return existing;
+  const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES.daily;
+  if (!window.state.inventory) window.state.inventory = [];
+  const item = {
+    uniqueId: 'act-' + char.id + '-' + Date.now(),
+    cat: 'activity',
+    name: `Phiếu hoạt động: ${theme.icon} ${theme.name}`,
+    desc: `${theme.tagline} · ${char.name} · ${story.title || ''}`,
+    storyId: story.id,
+    charId: char.id,
+    themeId: theme.id,
+    qty: 1,
+    paid: 0
+  };
+  window.state.inventory.push(item);
+  return item;
+}
+
+function themeOpenOverlay() {
+  const ov = document.getElementById('activity-overlay');
+  if (!ov) return;
+  ov.classList.remove('hidden');
+  document.body.classList.add('activity-open');
+}
+
+function themeCloseOverlay() {
+  const ov = document.getElementById('activity-overlay');
+  if (ov) ov.classList.add('hidden');
+  document.body.classList.remove('activity-open');
+}
+
+function useActivityItem(uid) {
+  const item = (window.state.inventory || []).find(it => it && it.cat === 'activity' && it.uniqueId === uid);
+  if (!item) return;
+  const story = (window.state.stories || []).find(s => s.id === item.storyId);
+  if (!story) return alert('Truyện của phiếu hoạt động này không còn trong danh sách.');
+  if (typeof openStoryDetail === 'function') openStoryDetail(story.id);
+  const char = (story.characters || []).find(c => c.id === item.charId);
+  if (!char) return alert('Nhân vật của phiếu hoạt động này không còn trong truyện.');
+  ensureThemeStory(story);
+  const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES[item.themeId] || CHAT_THEMES.daily;
+  story.themeCharId = char.id;
+  if (!story.activityUnlocks) story.activityUnlocks = {};
+  story.activityUnlocks[char.id] = true;
+  if (!story.themeSession) {
+    story.themeLastResult = null;
+    story.themeSession = { themeId: theme.id, charId: char.id, step: 0, score: 0, picks: [], startedAt: Date.now() };
+  }
+  window.__themeShowHome = false;
+  if (typeof saveStorage === 'function') saveStorage();
+  themeOpenOverlay();
+  renderThemeTab();
+  if (typeof closeModal === 'function') closeModal('modal-activity-reward');
+}
+
+function themeShowRewardItems(got, items) {
+  const body = document.getElementById('activity-reward-body');
+  if (!body || !items || !items.length) return false;
+  body.innerHTML = (got || []).map(t => `<div class="activity-reward-line">${escapeHtml(t)}</div>`).join('') +
+    items.map(it => `<div class="activity-reward-item">
+      <div class="activity-reward-name">${escapeHtml(it.name)}<span>${escapeHtml(it.desc)}</span></div>
+      <div class="activity-reward-actions">
+        <button class="btn btn-pink" onclick="themeUseGrantedItem('${it.uniqueId}')">▶ Dùng</button>
+        <button class="btn btn-outline" onclick="closeModal('modal-activity-reward')">Cất vào túi</button>
+      </div>
+    </div>`).join('');
+  if (typeof openModal !== 'function') return false;
+  openModal('modal-activity-reward');
+  return true;
+}
+
+function themeUseGrantedItem(uid) {
+  if (typeof closeModal === 'function') closeModal('modal-activity-reward');
+  useActivityItem(uid);
 }
 
 function themeRewardHint(t) {
@@ -874,6 +968,7 @@ function themeAbandonSession() {
   story.themeSession = null;
   saveStorage();
   window.__themeShowHome = true;
+  themeCloseOverlay();
   renderThemeTab();
 }
 
@@ -883,7 +978,7 @@ function closeThemeResult() {
   story.themeLastResult = null;
   window.__themeShowHome = true;
   saveStorage();
-  renderThemeTab();
+  themeCloseOverlay();
 }
 
 function renderThemeTab() {
@@ -893,7 +988,7 @@ function renderThemeTab() {
   if (!story) { root.innerHTML = '<div class="theme-empty">Chưa chọn truyện.</div>'; return; }
   const chars = story.characters || [];
   if (!chars.length) {
-    root.innerHTML = '<div class="theme-empty">Truyện chưa có nhân vật nào. Thêm nhân vật trong ⚙️ Cài Đặt để mở chủ đề.</div>';
+    root.innerHTML = '<div class="theme-empty">Truyện chưa có nhân vật nào. Thêm nhân vật trong ⚙️ Cài Đặt để nhận phiếu hoạt động.</div>';
     return;
   }
   if (story.themeLastResult) { renderThemeResult(story); return; }
@@ -1008,7 +1103,7 @@ function renderThemeSession(story) {
       ${aiArt ? '<div class="activity-scene-shade"></div>' : ''}
       ${themeFxHtml(effect)}
       <div class="activity-stage-head">
-        <button class="activity-back" onclick="themeBackToHome()">←</button>
+        <button class="activity-back" onclick="themeCloseOverlay()">←</button>
         <div class="activity-stage-title">${theme.icon} ${theme.name}</div>
         ${canAi ? `<button class="activity-ai-mini" title="Tạo dáng AI" onclick="generateThemeArt()" ${busy ? 'disabled' : ''}>${busy ? '⏳' : '✨'}</button>` : ''}
         <div class="activity-stage-step">${session.step + 1}/${theme.steps.length}</div>
@@ -1060,8 +1155,7 @@ function renderThemeResult(story) {
       <div class="theme-result-memory">${escapeHtml(r.memory)}</div>
       <div class="theme-result-rewards">${rewards}</div>
       <div class="theme-result-actions">
-        <button class="btn btn-pink" onclick="switchStoryTab('chat')">💬 Về trò chuyện</button>
-        <button class="btn btn-outline" onclick="closeThemeResult()">Hoạt động khác</button>
+        <button class="btn btn-pink" onclick="themeCloseOverlay()">💬 Về trò chuyện</button>
       </div>
     </div>
   `;
@@ -1077,3 +1171,10 @@ window.themeAbandonSession = themeAbandonSession;
 window.closeThemeResult = closeThemeResult;
 window.generateThemeArt = generateThemeArt;
 window.themeMakeCutout = themeMakeCutout;
+window.themeOpenOverlay = themeOpenOverlay;
+window.themeCloseOverlay = themeCloseOverlay;
+window.useActivityItem = useActivityItem;
+window.themeGrantActivityItem = themeGrantActivityItem;
+window.themeActivityItemFor = themeActivityItemFor;
+window.themeShowRewardItems = themeShowRewardItems;
+window.themeUseGrantedItem = themeUseGrantedItem;

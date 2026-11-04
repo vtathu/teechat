@@ -99,20 +99,14 @@
       if (sid && stories().some(s => s.id === sid) && typeof window.openStoryDetail === 'function') { closeAllFs(); window.openStoryDetail(sid); return; }
     }
     closeAllFs();
-    const chatView = $('subview-chat'), themeView = $('subview-theme');
-    const chatBtn = $('tab-btn-chat'), themeBtn = $('tab-btn-theme');
+    const chatView = $('subview-chat');
     if (tab === 'theme') {
-      if (chatView) chatView.classList.add('hidden');
-      if (themeView) themeView.classList.remove('hidden');
-      if (chatBtn) chatBtn.classList.remove('active');
-      if (themeBtn) themeBtn.classList.add('active');
+      if (typeof window.themeOpenOverlay === 'function') window.themeOpenOverlay();
       if (typeof window.renderThemeTab === 'function') window.renderThemeTab();
       return;
     }
-    if (themeView) themeView.classList.add('hidden');
+    if (typeof window.themeCloseOverlay === 'function') window.themeCloseOverlay();
     if (chatView) chatView.classList.remove('hidden');
-    if (themeBtn) themeBtn.classList.remove('active');
-    if (chatBtn) chatBtn.classList.add('active');
     setTimeout(() => { const c = $('chat-history'); if (c) c.scrollTop = c.scrollHeight; }, 60);
   };
   window.switchLifeSub = function (name) {
@@ -333,14 +327,18 @@
 
     const items = (S().inventory || []).filter(o => o && o.kind !== 'craft' && !isPetObj(o) && !(typeof isEstateObj === 'function' && isEstateObj(o)));
     const hasHouse = estates().length > 0;
-    gen.innerHTML = (items.length ? items.map(o => {
+    const actRows = items.filter(o => o.cat === 'activity').map(o => `<div class="bag-row"><div class="nm">${esc(o.name)}
+      <div style="font-size:.72rem;color:#718096;margin-top:2px;">${esc(o.desc || '')}</div></div><div class="bt">
+      <button class="btn btn-pink" onclick="UI.useActivity('${o.uniqueId}')">▶ Dùng</button>
+    </div></div>`).join('');
+    gen.innerHTML = actRows + (items.filter(o => o.cat !== 'activity').map(o => {
       const unit = sellUnit(o), qty = o.qty || 1;
       return `<div class="bag-row"><div class="nm">${esc(o.name)}</div><div class="bt">
         <button class="btn btn-pink" onclick="UI.gift('${o.uniqueId}')">🎁 Tặng</button>
         ${unit > 0 ? `<button class="btn btn-outline" onclick="UI.sell('${o.uniqueId}',false)">💰 Bán ${short(unit)}</button>` : ''}
         ${unit > 0 && qty > 1 ? `<button class="btn btn-outline" onclick="UI.sell('${o.uniqueId}',true)">Bán hết</button>` : ''}
       </div></div>`;
-    }).join('') : '<div class="life-card" style="text-align:center;color:#888;font-size:.82rem;">Túi đồ chung đang trống. Ghé 🛍️ Teemall mua sắm nhé!</div>') +
+    }).join('')) + (!items.length ? '<div class="life-card" style="text-align:center;color:#888;font-size:.82rem;">Túi đồ chung đang trống. Ghé 🛍️ Teemall mua sắm nhé!</div>' : '') +
       (hasHouse ? '<div style="font-size:.74rem;color:#718096;text-align:center;">🏠 Nhà đất xem ở Cuộc Sống → Nhà (cho thuê, ở chung).</div>' : '');
 
     const pets = (S().inventory || []).filter(isPetObj);
@@ -373,6 +371,7 @@
     petSub: (s) => { petSub = s; renderMall(); },
     openMall: (m) => { mallMode = m || 'gen'; openFs('mall'); renderMall(); },
     bagTab: (n) => { bagTabName = n; applyBagTab(); renderBagLists(); },
+    useActivity: (uid) => { if (typeof window.useActivityItem === 'function') window.useActivityItem(uid); },
     gift: (uid) => window.openSelectCharGiftModal(uid),
     sell: sellGeneral,
     pickStory: (i) => {

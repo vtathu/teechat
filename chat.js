@@ -2247,7 +2247,7 @@ actDiv.innerText = actText;
           try { d = new Date(m.ts).toLocaleDateString('vi-VN') + ': '; } catch (e) {}
           return `- ${d}${m.text}`;
         });
-        themeMemBlock = `[KÝ ỨC HOẠT ĐỘNG CHỦ ĐỀ - SỰ THẬT ĐÃ XẢY RA] Những hoạt động dưới đây đã thật sự diễn ra giữa người chơi và nhân vật ở tab Chủ Đề. Nhân vật nhớ rõ, có thể nhắc lại tự nhiên khi phù hợp, không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
+        themeMemBlock = `[KÝ ỨC HOẠT ĐỘNG CHỦ ĐỀ - SỰ THẬT ĐÃ XẢY RA] Những hoạt động dưới đây đã thật sự diễn ra giữa người chơi và nhân vật trong hoạt động riêng. Nhân vật nhớ rõ, có thể nhắc lại tự nhiên khi phù hợp, không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
       }
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]

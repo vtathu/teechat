@@ -91,7 +91,7 @@
         return `${tierObj.icon} Box ${tierObj.label}${r.n > 1 ? ' ×' + r.n : ''} (chủ đề ngẫu nhiên)`;
       }
       if (r.type === 'aff') return `❤️ +${r.pts} thân mật`;
-      if (r.type === 'unlock') return '🔓 Mở sớm hoạt động riêng của nhân vật được chọn';
+      if (r.type === 'unlock') return '🎭 Phiếu hoạt động riêng của nhân vật được chọn (vào Túi)';
       return '';
     }
     function missionRowHtml(kind, def) {
@@ -146,7 +146,7 @@
       });
       const modesEl = document.getElementById('mission-modes');
       if (modesEl) {
-        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Hoạt động riêng nằm ở tab 🎭 Chủ Đề trong màn trò chuyện.</div>';
+        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Phiếu hoạt động nằm trong 🎒 Túi, bấm Dùng để mở.</div>';
       }
     }
 
@@ -194,6 +194,7 @@
       }
 
       const got = [];
+      const newActivityItems = [];
       def.reward.forEach(r => {
         if (r.type === 'box') {
           for (let k = 0; k < (r.n || 1); k++) {
@@ -209,11 +210,14 @@
         } else if (r.type === 'unlock' && ch) {
           if (!story.activityUnlocks) story.activityUnlocks = {};
           const theme = CHAT_THEMES[ch.activityId] || CHAT_THEMES.daily;
-          if (story.activityUnlocks[ch.id]) {
-            got.push(`🔓 ${ch.name} đã mở hoạt động ${theme.icon} ${theme.name} từ trước`);
+          const hadItem = typeof themeActivityItemFor === 'function' ? themeActivityItemFor(story, ch) : null;
+          const item = typeof themeGrantActivityItem === 'function' ? themeGrantActivityItem(story, ch) : null;
+          story.activityUnlocks[ch.id] = true;
+          if (hadItem) {
+            got.push(`🎭 ${ch.name} đã có phiếu ${theme.icon} ${theme.name} trong túi`);
           } else {
-            story.activityUnlocks[ch.id] = true;
-            got.push(`🔓 ${ch.name} mở khóa ${theme.icon} ${theme.name}`);
+            got.push(`🎭 ${ch.name} nhận phiếu ${theme.icon} ${theme.name}`);
+            if (item) newActivityItems.push(item);
           }
         }
       });
@@ -224,5 +228,6 @@
       if (typeof saveStorage === 'function') saveStorage();
       if (typeof closeModal === 'function') closeModal('modal-mission-char');
       renderMissionTab();
+      if (newActivityItems.length && typeof themeShowRewardItems === 'function' && themeShowRewardItems(got, newActivityItems)) return;
       alert('🎉 Nhận thưởng!\n' + got.join('\n'));
     }
