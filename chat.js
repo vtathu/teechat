@@ -141,6 +141,23 @@ window.activeStoryPersona = activeStoryPersona;
     // ⚡ SỰ KIỆN NGẪU NHIÊN: tự nhớ truyện + nhân vật, tạo sự kiện đúng lịch sử chat và thân phận nhân vật
     const STORY_EVENT_MIN_MSGS = 4;
 
+    // Nhịp drama dùng chung cho chat kể chuyện và sự kiện "Có biến": cách nhau 20-30 lượt người chơi
+    function storyUserTurns(storyId) {
+      const list = (window.state.chatHistories || {})[storyId] || [];
+      return list.filter(m => m && m.sender === 'user').length;
+    }
+    function storyDramaGap(story) {
+      return (story && story.dramaGap) || 24;
+    }
+    function storyDramaDue(story, userTurns) {
+      return userTurns - ((story && story.lastDramaTurn) || 0) >= storyDramaGap(story);
+    }
+    function markStoryDrama(story, userTurns) {
+      if (!story) return;
+      story.lastDramaTurn = userTurns;
+      story.dramaGap = 20 + Math.floor(Math.random() * 11);
+    }
+
     // Chọn nhân vật đang "có mặt" trong mạch chat gần nhất (ai vừa nói nhiều/gần đây thì dễ được chọn hơn)
     function eventPickCharacter(chars, history) {
       const recent = history.slice(-14);
@@ -161,7 +178,6 @@ window.activeStoryPersona = activeStoryPersona;
 
     async function maybeTriggerRandomEvent() {
       if (eventBusy) return;
-      if (Math.random() > 0.2) return;
       if (!(window.state.apiKeys || []).length) return;
 
       const storyId = window.state.activeStoryId;
@@ -173,6 +189,13 @@ window.activeStoryPersona = activeStoryPersona;
       const fullHistory = ((window.state.chatHistories && window.state.chatHistories[storyId]) || []).filter(m => m && (m.ts || m.event));
       const realMsgs = fullHistory.filter(m => m.sender === 'user' || m.sender === 'ai');
       if (realMsgs.length < STORY_EVENT_MIN_MSGS) return;
+
+      // Drama thưa: chỉ nổ sau 20-30 lượt người chơi kể từ lần biến cố gần nhất
+      const userTurns = storyUserTurns(storyId);
+      if (!storyDramaDue(story, userTurns)) return;
+      if (Math.random() > 0.45) return;
+      markStoryDrama(story, userTurns);
+      saveStorage();
 
       eventBusy = true;
       try {
@@ -412,9 +435,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
 
     function handlePlusAction(action) {
       togglePlusMenu();
-      if (action === 'mode') {
-        openModeModal();
-      } else if (action === 'transfer') {
+      if (action === 'transfer') {
         openTransferModal();
       } else if (action === 'gift') {
         openGiftModal();
@@ -2101,7 +2122,20 @@ actDiv.innerText = actText;
         const modeChar = story && story.characters ? story.characters.find(c => c.id === activeModeNow.charId) : null;
         if (modeChar) modeBlock = `\n[CHẾ ĐỘ TRÒ CHUYỆN ĐANG BẬT]\n${MODES[activeModeNow.mode].prompt(modeChar.name)}\n`;
       }
-      
+
+      // Đã lâu chưa có biến cố: gợi ý AI thêm một tình huống căng thẳng nhỏ ngay trong cảnh hiện tại
+      let dramaBlock = '';
+      if (!modeBlock) {
+        const userTurns = storyUserTurns(storyId);
+        if (story && storyDramaDue(story, userTurns)) {
+          markStoryDrama(story, userTurns);
+          saveStorage();
+          dramaBlock = `\n[NHỊP TRUYỆN - ĐÃ LÂU CHƯA CÓ BIẾN]
+Đã nhiều lượt trôi qua yên ả. Ở lượt này, hãy để một tình huống căng thẳng nhỏ nảy ra NGAY TRONG cảnh hiện tại: một câu nói chạm lòng, một hiểu lầm, một người quen cũ thoáng xuất hiện, một tin nhắn hoặc cuộc gọi bất ngờ, hay một trở ngại khiến nhân vật phải phản ứng. Giữ đúng bối cảnh, tính cách và mạch truyện; không nhảy thời gian, không thêm biến cố lớn không thể đảo ngược, không giải quyết mâu thuẫn ngay trong lượt này. Chỉ mở ra rồi dừng ở khoảnh khắc căng thẳng để người chơi quyết định.
+`;
+        }
+      }
+
       let cohabBlock = '';
       if (story && story.characters) {
         const meN = me.name || 'người chơi';
@@ -2125,6 +2159,15 @@ actDiv.innerText = actText;
         });
         if (lines.length) petMemBlock = `[KÝ ỨC VỀ THÚ CƯNG VÀ CHUYẾN ĐI DẠO - SỰ THẬT ĐÃ XẢY RA] Những chuyện dưới đây thật sự đã xảy ra khi người chơi dắt thú đi dạo (không tự động hiện trong khung chat). Nhân vật biết rõ, có thể nhắc lại tự nhiên khi phù hợp, nhất là khi thú bị thương hoặc gặp chuyện, nhưng không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
       }
+      let themeMemBlock = '';
+      if (story && Array.isArray(story.themeMemories) && story.themeMemories.length) {
+        const lines = story.themeMemories.slice(-6).map(m => {
+          let d = '';
+          try { d = new Date(m.ts).toLocaleDateString('vi-VN') + ': '; } catch (e) {}
+          return `- ${d}${m.text}`;
+        });
+        themeMemBlock = `[KÝ ỨC HOẠT ĐỘNG CHỦ ĐỀ - SỰ THẬT ĐÃ XẢY RA] Những hoạt động dưới đây đã thật sự diễn ra giữa người chơi và nhân vật ở tab Chủ Đề. Nhân vật nhớ rõ, có thể nhắc lại tự nhiên khi phù hợp, không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
+      }
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -2132,7 +2175,7 @@ actDiv.innerText = actText;
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
-${charAffectionSummary}${cohabBlock}${petMemBlock}
+${charAffectionSummary}${cohabBlock}${petMemBlock}${themeMemBlock}
 5. Người tương tác: "${me.name || 'người chơi'}" (${me.memories || ''}).
 
 [NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
@@ -2154,9 +2197,11 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 ⛔ Mỗi lượt kết thúc bằng lời nói hoặc hành động của NHÂN VẬT (có thể là một câu hỏi, một lời mời) để trao lượt lại cho người chơi, không viết tiếp diễn biến sau đó.
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
-- QUY TẮC THỜI GIAN: ĐƯỢC PHÉP chuyển/nhảy thời gian (sang buổi sau, hôm sau, vài ngày sau...) khi mạch truyện hợp lý, nhưng phải nói rõ mốc thời gian mới và không bỏ qua phản ứng hay hậu quả của những gì vừa xảy ra.
-- CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ tiến triển một bước nhỏ, hợp lý.
-- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước RẤT nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có. Không đổi hướng đột ngột, TRỪ KHI người chơi chủ động đổi hướng. Diễn biến chậm rãi như thời gian thật không được lướt quá nhanh đến hết cốt truyện. chỉ có người chơi quyết định đến cảnh nào, còn lại chỉ trao đổi để chi tiết hoá tình tiết tại đó thôi
+- DIỄN BIẾN CHI TIẾT & ĐẬM CHẤT DRAMA: Mỗi lượt chỉ tập trung vào khoảnh khắc hiện tại nhưng phải kể thật sâu: tả cụ thể không gian, âm thanh, ánh sáng, nét mặt, hơi thở, cử chỉ và cảm xúc ẩn sau hành động. Trong mỗi lượt phải có ít nhất một lớp căng thẳng nhỏ (một ánh mắt né tránh, một câu nói hai nghĩa, một khoảng lặng khó xử, một chi tiết bất an) để diễn biến có sức nặng chứ không phẳng. Lời thoại đúng khẩu khí, có thể cộc hoặc mềm, nhưng phải để lộ thái độ. Không gói nhiều sự việc vào một lượt; độ dài đủ để tả kỹ khoảnh khắc, không lan man.
+- TUYỆT ĐỐI KHÔNG TUA TRUYỆN: Không tự chuyển sang "một lúc sau", "hôm sau", "vài ngày sau", "cuối cùng" hay tóm tắt nhiều sự việc để đi nhanh. Chỉ khi người chơi chủ động nhắc tới thời điểm hoặc cảnh khác thì mới theo, và vẫn kể chậm từng nhịp ở cảnh mới.
+- KHÔNG TỰ ĐẨY SANG TÌNH HUỐNG MỚI: Để người chơi quyết định bước tiếp theo. Lượt trả lời dừng ở một khoảng lặng tự nhiên (một câu hỏi, ánh mắt chờ, một hành động dở dang), không tự giải quyết mâu thuẫn vừa mở và không tự thêm biến cố lớn.
+- CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ mở thêm một chi tiết nhỏ, hợp lý.
+- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước RẤT nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có. Không đổi hướng đột ngột, TRỪ KHI người chơi chủ động đổi hướng. Diễn biến chậm rãi như thời gian thật, không được lướt quá nhanh đến hết cốt truyện: chỉ người chơi quyết định đến cảnh nào, còn lại chỉ trao đổi để chi tiết hoá tình tiết tại đó.
 - ƯU TIÊN DIỄN BIẾN HIỆN TẠI: Cốt truyện là nền tảng phải bám sát để giữ đúng thế giới và nhân vật, nhưng khi người chơi tự biến tấu thêm tình tiết, thay đổi chi tiết nhỏ hay đẩy câu chuyện sang hướng mới thì DIỄN BIẾN HIỆN TẠI do người chơi tạo ra là sự thật mới và được ưu tiên.
   + Tiếp nhận thay đổi đó một cách tự nhiên, có phản ứng hợp lý, không phủ định, không kéo câu chuyện quay lại đoạn cũ, không nhắc "theo cốt truyện thì..." hay tỏ ra khó chịu.
   + Khéo léo dung hoà: giữ được tinh thần, bối cảnh và tính cách nhân vật của cốt truyện, đồng thời nối phần người chơi vừa thêm vào cho liền mạch, như thể cốt truyện vốn đã đi theo hướng đó.
@@ -2206,7 +2251,7 @@ ${charAffectionSummary}${cohabBlock}${petMemBlock}
 - Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
 - Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
 - Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Tuyệt đối KHÔNG viết số điểm thân mật (+2, -1...) hay chữ "thân mật" kèm số ở bất kỳ chỗ nào khác trong câu trả lời, chỉ dùng đúng định dạng thẻ này. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
-${modeBlock}${hintBlock}
+${dramaBlock}${modeBlock}${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
       let contents = [];

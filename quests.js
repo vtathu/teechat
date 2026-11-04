@@ -1,11 +1,5 @@
 // ===================== NHIỆM VỤ =====================
-    const MODES = {
-      call: { icon: '📞', name: 'Gọi thoại', minLv: 3, prompt: (n) => `[CHẾ ĐỘ: GỌI THOẠI] Cuộc trò chuyện đang diễn ra qua một cuộc gọi điện thoại giữa "${n}" và người chơi. Hai người KHÔNG ở cùng một chỗ: chỉ miêu tả giọng nói, hơi thở, âm thanh xung quanh và nơi "${n}" đang ở, không có tiếp xúc cơ thể. Cách nói chuyện tự nhiên theo tính cách và độ thân mật hiện tại.` },
-      date: { icon: '💞', name: 'Hẹn hò', minLv: 8, prompt: (n) => `[CHẾ ĐỘ: HẸN HÒ] Đây là buổi hẹn riêng giữa "${n}" và người chơi tại một địa điểm phù hợp bối cảnh. Miêu tả không khí, hoạt động hai người cùng làm, cử chỉ ngọt ngào ở mức phù hợp độ thân mật; để người chơi chủ động chọn bước tiếp theo, không tự quyết thay họ.` },
-      night: { icon: '🌙', name: 'Tâm sự đêm khuya', minLv: 12, prompt: (n) => `[CHẾ ĐỘ: TÂM SỰ ĐÊM KHUYA] Đêm khuya yên tĩnh, "${n}" mở lòng chia sẻ suy nghĩ, nỗi lo, mong muốn với người chơi và lắng nghe thật sâu. Giọng chậm, ấm. Chỉ nói những điều hợp lý với thiết lập nhân vật và những gì đã xảy ra, không bịa thêm biến cố lớn mới.` },
-      confess: { icon: '💌', name: 'Tỏ tình', minLv: 20, prompt: (n) => `[CHẾ ĐỘ: TỎ TÌNH] Đây là khoảnh khắc thổ lộ tình cảm giữa "${n}" và người chơi. Phản ứng của "${n}" phải dựa trên tính cách và độ thân mật thật sự: có thể đồng ý, ngập ngừng hay từ chối. Không tự quyết định thay người chơi.` }
-    };
-
+    // Bộ chủ đề hoạt động nằm trong themes.js (nạp trước file này).
     const MISSION_DAILY = [
       { id: 'd_work', name: 'Qua 10 màn công việc', metric: 'workLevels', target: 10, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
       { id: 'd_workbest', name: 'Đạt màn 8 trong một ca làm', metric: 'workBest', target: 8, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
@@ -30,7 +24,7 @@
       { id: 'd_lv8', name: 'Tạo một món cấp 8 trở lên', metric: 'craftBest', target: 8, reward: [{ type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
     ];
     const MISSION_MILESTONE = [
-      { id: 'm_call', name: 'Qua tổng cộng 30 màn công việc', metric: 'workLevels', target: 30, reward: [{ type: 'unlock', mode: 'call' }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'm_call', name: 'Qua tổng cộng 30 màn công việc', metric: 'workLevels', target: 30, reward: [{ type: 'unlock', mode: 'adventure' }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
       { id: 'm_gift', name: 'Tặng quà tổng cộng 10 lần', metric: 'gifts', target: 10, reward: [{ type: 'aff', pts: 10 }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
       { id: 'm_date', name: 'Giao tổng cộng 8 đơn hàng thủ công', metric: 'orders', target: 8, reward: [{ type: 'unlock', mode: 'date' }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
       { id: 'm_chat', name: 'Gửi tổng cộng 150 tin nhắn', metric: 'chats', target: 150, reward: [{ type: 'aff', pts: 8 }] },
@@ -144,6 +138,7 @@
       }
 
       const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
+      if (story && typeof ensureThemeStory === 'function') ensureThemeStory(story);
       const un = window.state.unlockedModes || {};
       const mrows = [];
       ((story && story.characters) || []).forEach(c => {
@@ -152,7 +147,7 @@
       });
       const modesEl = document.getElementById('mission-modes');
       if (modesEl) {
-        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Bật chế độ bằng nút ➕ → 🎭 Chế độ trong màn trò chuyện.</div>';
+        modesEl.innerHTML = (mrows.join('') || '<div style="font-size:0.8rem;color:#888;">Truyện chưa có nhân vật.</div>') + '<div style="font-size:0.75rem;color:#718096;margin-top:4px;">Chọn hoạt động ở tab 🎭 Chủ Đề trong màn trò chuyện.</div>';
       }
     }
 

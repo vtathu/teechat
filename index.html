@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=55" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=55"></noscript>
+  <link rel="stylesheet" href="style.css?v=56" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=56"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -160,6 +160,11 @@
       <button class="btn btn-pink" style="padding: 4px 10px; font-size: 0.75rem;" onclick="openStoryConfigModal()">⚙️ Cài Đặt</button>
     </div>
 
+    <div class="story-tabs">
+      <button id="tab-btn-chat" class="story-tab active" onclick="switchStoryTab('chat')">💬 Trò chuyện</button>
+      <button id="tab-btn-theme" class="story-tab" onclick="switchStoryTab('theme')">🎭 Chủ đề</button>
+    </div>
+
     <div id="subview-chat" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
       <div id="mode-banner" class="hidden" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 12px;background:#fff0f3;border-bottom:1px solid var(--app-pink);font-size:0.8rem;color:#b83280;font-weight:bold;"></div>
       <div class="chat-history" id="chat-history"></div>
@@ -189,10 +194,6 @@
           <span class="plus-item-icon">၊|,||၊</span>
           <span>Gửi Voice</span>
         </div>
-        <div class="plus-item" onclick="handlePlusAction('mode')">
-          <span class="plus-item-icon">🎭</span>
-          <span>Chế Độ</span>
-        </div>
         <div class="plus-item" onclick="handlePlusAction('redo')">
           <span class="plus-item-icon">↺</span>
           <span>Làm Lại</span>
@@ -204,6 +205,10 @@
         <input type="text" id="user-input" placeholder="Nhập lời thoại hoặc hành động..." onkeypress="handleKeyPress(event)" oninput="this.scrollLeft = this.scrollWidth;">
         <button class="btn btn-pink" onclick="sendMessage()">➤ Gửi</button>
       </div>
+    </div>
+
+    <div id="subview-theme" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="theme-scroll" id="theme-body"></div>
     </div>
   </div>
 
@@ -322,7 +327,7 @@
         <div id="mission-daily" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
       <div class="life-card">
-        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🔓 Chế Độ Trò Chuyện Đã Mở</h3>
+        <h3 style="color: var(--app-dark-green); font-size: 1.05rem;">🎭 Chủ Đề Đã Mở</h3>
         <div id="mission-modes" style="display: flex; flex-direction: column; gap: 4px;"></div>
       </div>
     </div>
@@ -908,10 +913,11 @@
   <script src="shop.js?v=18"></script>
   <script src="jobs.js?v=16"></script>
   <script src="craft.js?v=4"></script>
-  <script src="quests.js?v=2"></script>
+  <script src="themes.js?v=1"></script>
+  <script src="quests.js?v=3"></script>
   <script src="pets.js?v=22"></script>
-  <script src="chat.js?v=19"></script>
-  <script src="ui.js?v=5"></script>
+  <script src="chat.js?v=20"></script>
+  <script src="ui.js?v=6"></script>
   <script src="audio.js?v=6"></script>
   <script src="play.js?v=6"></script>
   <script src="farm.js?v=32"></script>

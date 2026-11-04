@@ -99,7 +99,20 @@
       if (sid && stories().some(s => s.id === sid) && typeof window.openStoryDetail === 'function') { closeAllFs(); window.openStoryDetail(sid); return; }
     }
     closeAllFs();
-    const chatView = $('subview-chat'); if (chatView) chatView.classList.remove('hidden');
+    const chatView = $('subview-chat'), themeView = $('subview-theme');
+    const chatBtn = $('tab-btn-chat'), themeBtn = $('tab-btn-theme');
+    if (tab === 'theme') {
+      if (chatView) chatView.classList.add('hidden');
+      if (themeView) themeView.classList.remove('hidden');
+      if (chatBtn) chatBtn.classList.remove('active');
+      if (themeBtn) themeBtn.classList.add('active');
+      if (typeof window.renderThemeTab === 'function') window.renderThemeTab();
+      return;
+    }
+    if (themeView) themeView.classList.add('hidden');
+    if (chatView) chatView.classList.remove('hidden');
+    if (themeBtn) themeBtn.classList.remove('active');
+    if (chatBtn) chatBtn.classList.add('active');
     setTimeout(() => { const c = $('chat-history'); if (c) c.scrollTop = c.scrollHeight; }, 60);
   };
   window.switchLifeSub = function (name) {
