@@ -2,7 +2,7 @@
 function cleanAiTags(t) {
   return (t || '')
     .replace(/[\[\(（][^\[\]()（）\n]{0,40}?[+\-−–]\s*\d+\s*(?:điểm\s*)?(?:thân mật|tình cảm|hảo cảm|affection|love)[^\[\]()（）\n]{0,10}[\]\)）]/gi, '')
-    .replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION)\s*[:：][\s\S]*?\]/gi, '')
+    .replace(/\[\s*(SYSTEM_TRANSFER|ACTION|EVENT|STATE|AFFECTION|BEAT)\s*[:：][\s\S]*?\]/gi, '')
     .replace(/\[?\s*AFFECTION\s*[:：][^\n]*/gi, '')
     .replace(/\[?[^\[\]\n|:]{1,40}\|\s*[+\-−–]\s*\d+\s*\]?/g, '')
     .replace(/[❤💕💗💖💘]\uFE0F?\s*[+\-−–]\s*\d+(?:\s*(?:điểm|pts?))?/g, '')
@@ -156,6 +156,201 @@ window.activeStoryPersona = activeStoryPersona;
       if (!story) return;
       story.lastDramaTurn = userTurns;
       story.dramaGap = 20 + Math.floor(Math.random() * 11);
+    }
+
+    // ===================== DÀN Ý TRUYỆN: MỐC + NHỊP KHAI THÁC =====================
+    // Mỗi mốc phải được người chơi khai thác đủ lâu trước khi mở mốc kế; người chơi luôn có quyền tua.
+    const STORY_BEAT_MIN_TURNS = 10;
+    const STORY_BEAT_MAX_TURNS = 20;
+    const STORY_BEAT_SKIP_RE = /(tua|bỏ qua|bỏ đoạn|bỏ cảnh|chuyển cảnh|sang cảnh|qua cảnh|tới cảnh|sang đoạn|tới đoạn|đi thẳng tới|tiếp phần|sang phần|sang hồi|nhanh lên)/i;
+    const beatsBusy = new Set();
+    const beatsAttemptAt = new Map();
+    const beatsExtendAt = new Map();
+
+    function storyBeatSkipSignal(text) { return STORY_BEAT_SKIP_RE.test(String(text || '')); }
+
+    function parseBeatArray(raw) {
+      const t = String(raw || '').replace(/```[a-z]*/gi, '').replace(/```/g, '').trim();
+      const s = t.indexOf('['), e = t.lastIndexOf(']');
+      if (s < 0 || e <= s) return [];
+      try {
+        const arr = JSON.parse(t.slice(s, e + 1));
+        return (Array.isArray(arr) ? arr : [])
+          .map(x => (typeof x === 'string' ? x : (x && x.text) || ''))
+          .map(x => x.replace(/\s+/g, ' ').trim())
+          .filter(x => x.length >= 4)
+          .slice(0, 12);
+      } catch (err) { return []; }
+    }
+
+    // Tách dàn ý một lần duy nhất cho mỗi truyện; lỗi thì để lần mở sau thử lại
+    async function ensureStoryBeats(story) {
+      if (!story || Array.isArray(story.beats) || beatsBusy.has(story.id)) return;
+      const keys = (window.state.apiKeys || []).map(k => String(k).trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      if (!keys.length) return;
+      if (!String(story.setting || '').trim() && !String(story.openingScene || '').trim()) return;
+      if (Date.now() - (beatsAttemptAt.get(story.id) || 0) < 10 * 60 * 1000) return;
+      beatsAttemptAt.set(story.id, Date.now());
+      beatsBusy.add(story.id);
+      try {
+        const chars = (story.characters || []).map(c => `- ${c.name}: ${c.personality || ''}`).join('\n');
+        const recent = ((window.state.chatHistories || {})[story.id] || [])
+          .filter(m => m && (m.sender === 'user' || m.sender === 'ai'))
+          .slice(-8)
+          .map(m => `${m.sender === 'user' ? 'Người chơi' : 'Nhân vật'}: ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 200)}`)
+          .join('\n');
+        const prompt = `Bạn là biên tập viên truyện. Chia cốt truyện dưới đây thành các MỐC DIỄN BIẾN ngắn, theo đúng thứ tự sẽ xảy ra khi người chơi trò chuyện với nhân vật.
+
+[BỐI CẢNH]
+${String(story.setting || '').slice(0, 1200) || '(không có)'}
+
+[CẢNH MỞ ĐẦU]
+${String(story.openingScene || '').slice(0, 800) || '(không có)'}
+
+[NHÂN VẬT]
+${chars || '(chưa có)'}
+${recent ? `
+[DIỄN BIẾN HIỆN TẠI - ĐÂY LÀ NƠI CÂU CHUYỆN ĐANG DỪNG]
+${recent}
+` : ''}
+[QUY TẮC]
+- Từ 5 đến 10 mốc, mỗi mốc MỘT câu ngắn dưới 120 ký tự, nói rõ việc gì xảy ra ở mốc đó.
+- ${recent ? 'Mốc đầu tiên phải là việc ĐANG diễn ra tại điểm dừng trên, không quay lại cảnh mở đầu; các mốc sau nối tiếp từ đó.' : 'Mốc đầu tiên trùng với cảnh mở đầu; các mốc sau nối tiếp tự nhiên, cảm xúc và mâu thuẫn tăng dần.'}
+- Bám đúng bối cảnh và tính cách nhân vật; không thêm nhân vật, quan hệ hay tình tiết lớn không có trong hồ sơ.
+- Không ghi số thứ tự, không giải thích, không thêm chữ nào ngoài mảng JSON.
+Trả về đúng mảng JSON các chuỗi, ví dụ: ["...", "..."]`;
+        const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+        for (const key of keys) {
+          const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 45000);
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+              body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, responseMimeType: 'application/json' } }),
+              signal: ctl.signal
+            });
+            const data = await res.json().catch(() => ({}));
+            clearTimeout(tm);
+            if (!res.ok) continue;
+            const arr = parseBeatArray((data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join(''));
+            if (arr.length >= 3) {
+              story.beats = arr;
+              story.beatIndex = 0;
+              story.beatStartTurn = storyUserTurns(story.id);
+              if (!Array.isArray(story.beatLog)) story.beatLog = [];
+              saveStorage();
+              return;
+            }
+          } catch (err) { clearTimeout(tm); }
+        }
+      } finally { beatsBusy.delete(story.id); }
+    }
+
+    // Hết dàn ý mà người chơi vẫn đi tiếp: tự sinh thêm mốc nối đúng mạch, im lặng
+    async function extendStoryBeats(story) {
+      if (!story || beatsBusy.has(story.id)) return;
+      if (!Array.isArray(story.beats) || (story.beatIndex || 0) < story.beats.length) return;
+      const keys = (window.state.apiKeys || []).map(k => String(k).trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      if (!keys.length) return;
+      if (Date.now() - (beatsExtendAt.get(story.id) || 0) < 2 * 60 * 1000) return;
+      beatsExtendAt.set(story.id, Date.now());
+      beatsBusy.add(story.id);
+      try {
+        const recent = ((window.state.chatHistories || {})[story.id] || [])
+          .filter(m => m && (m.sender === 'user' || m.sender === 'ai'))
+          .slice(-10)
+          .map(m => `${m.sender === 'user' ? 'Người chơi' : 'Nhân vật'}: ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 220)}`)
+          .join('\n');
+        const done = (story.beatLog || []).slice(-8).map(b => `- ${b}`).join('\n') || '- (chưa có)';
+        const chars = (story.characters || []).map(c => `- ${c.name}: ${c.personality || ''}`).join('\n');
+        const prompt = `Bạn là biên tập viên tiếp nối truyện. Truyện đã đi hết dàn ý cũ nhưng người chơi vẫn muốn kể tiếp. Hãy sinh các MỐC DIỄN BIẾN tiếp theo.
+
+[BỐI CẢNH]
+${String(story.setting || '').slice(0, 1000) || '(không có)'}
+
+[NHÂN VẬT]
+${chars || '(chưa có)'}
+
+[CÁC MỐC ĐÃ QUA]
+${done}
+
+[DIỄN BIẾN GẦN NHẤT]
+${recent || '(chưa có)'}
+
+[QUY TẮC]
+- Sinh 2 hoặc 3 mốc, mỗi mốc MỘT câu ngắn dưới 120 ký tự, nối tiếp đúng diễn biến gần nhất và tính cách nhân vật.
+- Không lặp lại mốc đã qua, không mâu thuẫn với những gì đã xảy ra, không thêm nhân vật/quan hệ mới, không tạo biến cố lớn không thể đảo ngược.
+- Chỉ trả về mảng JSON các chuỗi, không giải thích.`;
+        const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+        for (const key of keys) {
+          const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 45000);
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+              body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, responseMimeType: 'application/json' } }),
+              signal: ctl.signal
+            });
+            const data = await res.json().catch(() => ({}));
+            clearTimeout(tm);
+            if (!res.ok) continue;
+            const arr = parseBeatArray((data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')).slice(0, 3);
+            if (arr.length) {
+              story.beats = story.beats.concat(arr);
+              saveStorage();
+              return;
+            }
+          } catch (err) { clearTimeout(tm); }
+        }
+      } finally { beatsBusy.delete(story.id); }
+    }
+
+    // Đóng mốc hiện tại, ghi tóm tắt và bắt đầu đếm lượt cho mốc mới
+    function applyStoryBeat(story, recap) {
+      if (!story || !Array.isArray(story.beats) || !story.beats.length) return false;
+      const idx = Math.max(0, Math.min(story.beatIndex || 0, story.beats.length - 1));
+      const note = String(recap || '').replace(/\s+/g, ' ').trim() || story.beats[idx];
+      story.beatLog = (Array.isArray(story.beatLog) ? story.beatLog : []).concat([note]).slice(-12);
+      story.beatIndex = idx + 1;
+      story.beatStartTurn = storyUserTurns(story.id);
+      saveStorage();
+      if (story.beatIndex >= story.beats.length) extendStoryBeats(story);
+      return true;
+    }
+
+    // Khối dàn ý đưa vào system prompt (ẩn hoàn toàn với người chơi)
+    function storyBeatsBlock(story, userTurns) {
+      if (!story || !Array.isArray(story.beats) || !story.beats.length) return '';
+      const total = story.beats.length;
+      const idx = story.beatIndex || 0;
+      if (idx >= total) {
+        return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]\n- Dàn ý đã mở sang phần mới. Tiếp tục kể tự nhiên theo hướng mới, giữ đúng bối cảnh và tính cách nhân vật; chưa cần đóng mốc mới.\n`;
+      }
+      const turns = Math.max(0, userTurns - (story.beatStartTurn || 0));
+      const past = (story.beatLog || []).slice(-6);
+      const pastText = past.length ? past.map(b => `- ${b}`).join('\n') : '- (chưa qua mốc nào)';
+      const upcoming = story.beats.slice(idx + 1, idx + 3);
+      const upText = upcoming.length ? upcoming.map(b => `- ${b}`).join('\n') : '- (mốc cuối, nếu người chơi đi tiếp thì tự nối mạch mới)';
+      let pace;
+      if (turns < STORY_BEAT_MIN_TURNS) {
+        pace = `Mốc này mới được ${turns} lượt người chơi: TUYỆT ĐỐI giữ trong mốc hiện tại, chỉ đào sâu chi tiết, cảm xúc, phản ứng và hậu quả nhỏ. KHÔNG mở mốc mới, không nhắc tới mốc sau, không tua thời gian.`;
+      } else if (turns <= STORY_BEAT_MAX_TURNS) {
+        pace = `Mốc này đã được ${turns} lượt người chơi: đã đủ dày. CHỈ khi người chơi ngỏ ý muốn đi tiếp mới được chuyển sang mốc mới; nếu họ còn muốn quanh lại chi tiết này thì tiếp tục đào sâu.`;
+      } else {
+        pace = `Mốc này đã được ${turns} lượt người chơi: rất đủ. Có thể chủ động mời người chơi tiến tới mốc kế bằng một câu hỏi/hành động tự nhiên, nhưng vẫn chờ người chơi đồng ý mới thật sự chuyển.`;
+      }
+      return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]
+- Mốc hiện tại (${idx + 1}/${total}): ${story.beats[idx]}
+- Số lượt người chơi đã chat trong mốc này: ${turns}
+- Các mốc đã qua (tóm tắt):
+${pastText}
+- Hướng tới:
+${upText}
+[NHỊP MỐC TRUYỆN]
+- ${pace}
+- Người chơi luôn có quyền tua: nếu họ chủ động nói muốn bỏ qua/chuyển cảnh/đi tới việc khác, theo ngay và kể mốc mới, kể cả khi mốc hiện tại chưa đủ ${STORY_BEAT_MIN_TURNS} lượt.
+- Khi thật sự chuyển sang mốc mới, thêm đúng một thẻ ở cuối câu trả lời: [BEAT: một câu ngắn tóm tắt việc đã xảy ra ở mốc vừa qua]. Chưa chuyển thì KHÔNG thêm thẻ. Không viết thẻ này ở bất kỳ chỗ nào khác.
+- Không kể lại dàn ý, không nói "mốc", "chương", "phần" với người chơi.
+- Nếu mốc hiện tại đã là mốc cuối và người chơi muốn đi tiếp, tự viết tiếp tự nhiên theo hướng mới phù hợp, không dừng lại, không báo hết truyện.
+`;
     }
 
     // Chọn nhân vật đang "có mặt" trong mạch chat gần nhất (ai vừa nói nhiều/gần đây thì dễ được chọn hơn)
@@ -693,6 +888,10 @@ Trả về ĐÚNG JSON thuần, không markdown:
         story.theme = { userBg: '#c1ebd9', userText: '#1b4332', aiBg: '#ffffff', aiText: '#333333', chatBgColor: '#e7f5ee', chatBgImg: '' };
       }
       if (typeof ensureThemeStory === 'function') ensureThemeStory(story);
+      try {
+        if (!Array.isArray(story.beats)) ensureStoryBeats(story);
+        else if ((story.beatIndex || 0) >= story.beats.length) extendStoryBeats(story);
+      } catch (e) {}
 
       // Mỗi truyện có hồ sơ người chơi riêng; truyện cũ chưa có thì chép từ hồ sơ chung một lần
       if (!story.persona) { activeStoryPersona(story); saveStorage(); }
@@ -1626,7 +1825,7 @@ ${out}`;
           const raw = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').replace(/```[a-z]*/gi, '').replace(/```/g, '').trim();
           const fixed = scrubAiText(raw).text;
           if (!fixed || fixed.length < out.length * 0.55 || fixed.length > out.length * 1.8) continue;
-          if (['[SYSTEM_TRANSFER', '[AFFECTION'].some(tg => out.indexOf(tg) >= 0 && fixed.indexOf(tg) < 0)) continue;
+          if (['[SYSTEM_TRANSFER', '[AFFECTION', '[BEAT'].some(tg => out.indexOf(tg) >= 0 && fixed.indexOf(tg) < 0)) continue;
           return fixed;
         } catch (e) { clearTimeout(tm); }
       }
@@ -2217,6 +2416,13 @@ actDiv.innerText = actText;
         }
       }
 
+      // Dàn ý truyện: đảm bảo có mốc, và nối thêm nếu đã đi hết
+      if (story) {
+        if (!Array.isArray(story.beats)) ensureStoryBeats(story);
+        else if ((story.beatIndex || 0) >= story.beats.length) extendStoryBeats(story);
+      }
+      const beatsBlock = storyBeatsBlock(story, storyUserTurns(storyId));
+
       let cohabBlock = '';
       if (story && story.characters) {
         const meN = me.name || 'người chơi';
@@ -2258,7 +2464,7 @@ ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
 ${charAffectionSummary}${cohabBlock}${petMemBlock}${themeMemBlock}
 5. Người tương tác: "${me.name || 'người chơi'}" (${me.memories || ''}).
-
+${beatsBlock}
 [NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
 - Tên đầy đủ, tên riêng, tên gọi tắt và biệt danh của cùng một nhân vật đều là CÙNG MỘT NGƯỜI. Ví dụ nhân vật "Nguyễn Văn An" thì "Văn An", "An", "bạn An" đều là An.
 - Tên nằm trong ngoặc sau tên chính là tên gọi khác của CÙNG nhân vật đó (ví dụ "Tô Đát Kỷ (Hồ Tiên Nhi)" thì "Hồ Tiên Nhi" cũng là Tô Đát Kỷ). Khi viết dòng thoại, LUÔN dùng tên ngoài ngoặc làm tên chính.
@@ -2460,6 +2666,13 @@ ${dramaBlock}${modeBlock}${hintBlock}
           affChanges.push({ id: ch.id, name: ch.name, pts: v });
         }
         affChanges.forEach(a => addAffectionPoints(a.id, a.pts));
+
+        // MỐC TRUYỆN: AI đóng mốc bằng thẻ ẩn [BEAT: ...]; người chơi chủ động tua thì hệ thống tự đóng
+        const beatTag = /\[\s*BEAT\s*[:：]\s*([^\]]{0,240})\]?/i.exec(responseText);
+        if (!isRegen && story && Array.isArray(story.beats) && story.beats.length) {
+          const userSkip = !isAutoPlay && !!text && storyBeatSkipSignal(text);
+          if (beatTag || userSkip) applyStoryBeat(story, beatTag ? beatTag[1] : '');
+        }
 
         const aiMsg = { sender: 'ai', text: cleaned, ts: Date.now() };
         if (transfers.length) aiMsg.transfers = transfers;
