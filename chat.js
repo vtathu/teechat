@@ -331,11 +331,11 @@ ${recent || '(chưa có)'}
       const upText = upcoming.length ? upcoming.map(b => `- ${b}`).join('\n') : '- (mốc cuối, nếu người chơi đi tiếp thì tự nối mạch mới)';
       let pace;
       if (turns < STORY_BEAT_MIN_TURNS) {
-        pace = `Mốc này mới được ${turns} lượt người chơi: TUYỆT ĐỐI giữ trong mốc hiện tại, chỉ đào sâu chi tiết, cảm xúc, phản ứng và hậu quả nhỏ. KHÔNG mở mốc mới, không nhắc tới mốc sau, không tua thời gian.`;
+        pace = `Mốc này mới được ${turns} lượt người chơi: ưu tiên đào sâu mốc hiện tại, nhưng nếu người chơi kéo sang một chi tiết khác trong cùng mạch thì theo tự nhiên ngay, đừng kéo họ lại. Chưa cần mở mốc mới, không nhắc tới mốc sau, không tua thời gian.`;
       } else if (turns <= STORY_BEAT_MAX_TURNS) {
-        pace = `Mốc này đã được ${turns} lượt người chơi: đã đủ dày. CHỈ khi người chơi ngỏ ý muốn đi tiếp mới được chuyển sang mốc mới; nếu họ còn muốn quanh lại chi tiết này thì tiếp tục đào sâu.`;
+        pace = `Mốc này đã được ${turns} lượt người chơi: đã đủ dày. Khi người chơi có vẻ muốn sang một chi tiết khác, chuyển nhẹ nhàng ngay, không bắt họ nói rõ; nếu họ còn muốn quanh lại chi tiết này thì tiếp tục đào sâu.`;
       } else {
-        pace = `Mốc này đã được ${turns} lượt người chơi: rất đủ. Có thể chủ động mời người chơi tiến tới mốc kế bằng một câu hỏi/hành động tự nhiên, nhưng vẫn chờ người chơi đồng ý mới thật sự chuyển.`;
+        pace = `Mốc này đã được ${turns} lượt người chơi: rất đủ. Có thể chủ động mời người chơi tiến tới mốc kế bằng một câu hỏi/hành động tự nhiên, nhưng nếu họ muốn dừng ở chi tiết khác thì cứ theo họ.`;
       }
       return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]
 - Mốc hiện tại (${idx + 1}/${total}): ${story.beats[idx]}
@@ -346,7 +346,7 @@ ${pastText}
 ${upText}
 [NHỊP MỐC TRUYỆN]
 - ${pace}
-- Người chơi luôn có quyền tua: nếu họ chủ động nói muốn bỏ qua/chuyển cảnh/đi tới việc khác, theo ngay và kể mốc mới, kể cả khi mốc hiện tại chưa đủ ${STORY_BEAT_MIN_TURNS} lượt.
+- Người chơi luôn có quyền tua: nếu họ chủ động nói muốn bỏ qua/chuyển cảnh/đi tới việc khác, theo ngay và kể mốc mới, kể cả khi mốc hiện tại chưa đủ ${STORY_BEAT_MIN_TURNS} lượt. Kể cả khi họ chỉ khẽ chuyển sang một chi tiết nhỏ trong cùng cảnh, cũng theo ngay, không bắt họ nói rõ là muốn chuyển cảnh.
 - Khi thật sự chuyển sang mốc mới, thêm đúng một thẻ ở cuối câu trả lời: [BEAT: một câu ngắn tóm tắt việc đã xảy ra ở mốc vừa qua]. Chưa chuyển thì KHÔNG thêm thẻ. Không viết thẻ này ở bất kỳ chỗ nào khác.
 - Không kể lại dàn ý, không nói "mốc", "chương", "phần" với người chơi.
 - Nếu mốc hiện tại đã là mốc cuối và người chơi muốn đi tiếp, tự viết tiếp tự nhiên theo hướng mới phù hợp, không dừng lại, không báo hết truyện.
@@ -2489,10 +2489,10 @@ ${beatsBlock}
 
 [NGUYÊN TẮC QUAN TRỌNG & CHỐNG SAI LỆCH]
 - DIỄN BIẾN CHI TIẾT & ĐẬM CHẤT DRAMA: Mỗi lượt chỉ tập trung vào khoảnh khắc hiện tại nhưng phải kể thật sâu: tả cụ thể không gian, âm thanh, ánh sáng, nét mặt, hơi thở, cử chỉ và cảm xúc ẩn sau hành động. Trong mỗi lượt phải có ít nhất một lớp căng thẳng nhỏ (một ánh mắt né tránh, một câu nói hai nghĩa, một khoảng lặng khó xử, một chi tiết bất an) để diễn biến có sức nặng chứ không phẳng. Lời thoại đúng khẩu khí, có thể cộc hoặc mềm, nhưng phải để lộ thái độ. Không gói nhiều sự việc vào một lượt; độ dài đủ để tả kỹ khoảnh khắc, không lan man.
-- TUYỆT ĐỐI KHÔNG TUA TRUYỆN: Không tự chuyển sang "một lúc sau", "hôm sau", "vài ngày sau", "cuối cùng" hay tóm tắt nhiều sự việc để đi nhanh. Chỉ khi người chơi chủ động nhắc tới thời điểm hoặc cảnh khác thì mới theo, và vẫn kể chậm từng nhịp ở cảnh mới.
-- KHÔNG TỰ ĐẨY SANG TÌNH HUỐNG MỚI: Để người chơi quyết định bước tiếp theo. Lượt trả lời dừng ở một khoảng lặng tự nhiên (một câu hỏi, ánh mắt chờ, một hành động dở dang), không tự giải quyết mâu thuẫn vừa mở và không tự thêm biến cố lớn.
+- KHÔNG TỰ TUA TRUYỆN: Đừng tự nhảy sang "một lúc sau", "hôm sau", "vài ngày sau", "cuối cùng" hay tóm tắt nhiều sự việc để đi nhanh. Nhưng khi người chơi nhắc tới thời điểm, cảnh khác, hoặc chỉ khẽ nghiêng sang một chi tiết mới, hãy theo tự nhiên ngay — không bắt họ phải nói rõ là muốn chuyển cảnh; vẫn kể chậm từng nhịp ở cảnh mới.
+- KHÔNG TỰ ĐẨY SANG BIẾN CỐ LỚN: Để người chơi quyết định bước tiếp theo. Lượt trả lời dừng ở một khoảng lặng tự nhiên (một câu hỏi, ánh mắt chờ, một hành động dở dang), không tự giải quyết mâu thuẫn vừa mở và không tự thêm biến cố lớn. Vẫn có thể tự nhiên gợi một chi tiết nhỏ mới trong cùng cảnh để cuộc trò chuyện không bị bí.
 - CẤM BỊA ĐẶT: Chỉ những gì ĐÃ XUẤT HIỆN trong lịch sử chat mới là sự thật đã xảy ra. Phần "Bối cảnh kịch bản" chỉ là thiết lập/hướng đi, KHÔNG phải sự kiện đã xảy ra. Tuyệt đối không tự bịa hoặc nhớ nhầm những sự kiện, mối quan hệ, chi tiết lớn chưa từng diễn ra (như có con, mang thai, kết hôn, qua đời, mất trí nhớ, tai nạn...) và không tiết lộ trước tình tiết tương lai. Người chơi chưa dẫn tới thì chưa xảy ra. Mỗi lượt chỉ mở thêm một chi tiết nhỏ, hợp lý.
-- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước RẤT nhỏ ĐÚNG HƯỚNG cốt truyện, không lạc đề, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có. Không đổi hướng đột ngột, TRỪ KHI người chơi chủ động đổi hướng. Diễn biến chậm rãi như thời gian thật, không được lướt quá nhanh đến hết cốt truyện: chỉ người chơi quyết định đến cảnh nào, còn lại chỉ trao đổi để chi tiết hoá tình tiết tại đó.
+- BÁM SÁT CỐT TRUYỆN & NHÂN VẬT: Mọi diễn biến, lời thoại đúng tính cách, xưng hô cố định. Luôn đối chiếu với bối cảnh kịch bản, cảnh mở đầu và những gì đã diễn ra trong lịch sử chat; mỗi lượt đẩy truyện tiến một bước nhỏ theo hướng cốt truyện, không tự thêm nhân vật hay tình tiết mâu thuẫn với những gì đã có. Khi người chơi muốn rẽ sang một chi tiết khác, chuyển hướng nhẹ nhàng ngay theo ý họ, không cần chờ đủ nhịp hay bắt họ nói rõ; chỉ không tự đổi hướng đột ngột khi người chơi chưa hề gợi tới. Diễn biến chậm rãi như thời gian thật, không lướt quá nhanh đến hết cốt truyện: người chơi quyết định đến cảnh nào, còn lại chỉ trao đổi để chi tiết hoá tình tiết tại đó.
 - ƯU TIÊN DIỄN BIẾN HIỆN TẠI: Cốt truyện là nền tảng phải bám sát để giữ đúng thế giới và nhân vật, nhưng khi người chơi tự biến tấu thêm tình tiết, thay đổi chi tiết nhỏ hay đẩy câu chuyện sang hướng mới thì DIỄN BIẾN HIỆN TẠI do người chơi tạo ra là sự thật mới và được ưu tiên.
   + Tiếp nhận thay đổi đó một cách tự nhiên, có phản ứng hợp lý, không phủ định, không kéo câu chuyện quay lại đoạn cũ, không nhắc "theo cốt truyện thì..." hay tỏ ra khó chịu.
   + Khéo léo dung hoà: giữ được tinh thần, bối cảnh và tính cách nhân vật của cốt truyện, đồng thời nối phần người chơi vừa thêm vào cho liền mạch, như thể cốt truyện vốn đã đi theo hướng đó.

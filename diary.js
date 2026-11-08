@@ -187,8 +187,90 @@ function diaryActivityPrompt(story, theme, char, session, memory) {
 - Chỉ trả về các đoạn nhật ký, không thêm lời dẫn.`;
 }
 
-function diaryGiftPrompt(story, char, itemName, shared, names) {
+// ---- Nhật ký theo ngày: ghi lại đoạn chat từ đầu ngày tới lúc này ----
+function diaryChatText(m) {
+  let t = String((m && m.text) || '')
+    .replace(/\[USER_TRANSFER:[^\]]*\]/gi, '')
+    .replace(/\[SYSTEM_TRANSFER:[^\]]*\]/gi, '');
+  if (typeof cleanAiTags === 'function') t = cleanAiTags(t);
+  return t.replace(/\s+/g, ' ').trim();
+}
+
+function diaryChatQuote(t) {
+  let s = String(t || '').replace(/^\s*\[[^\]]{1,40}\]\s*[:：]?\s*/, '').replace(/[*_~"“”]/g, '').replace(/^[:：\s]+/, '').replace(/\s+/g, ' ').trim();
+  if (s.length > 110) s = s.slice(0, 110).trim() + '…';
+  return s;
+}
+
+function diaryChatTranscript(story, char, msgs) {
   const me = diaryPlayerRef(story);
+  return msgs.map(m => {
+    const t = diaryChatText(m);
+    if (!t) return m.img ? `${m.sender === 'user' ? me : char.name}: (một tấm ảnh)` : '';
+    if (m.sender === 'user') return `${me}: ${t}`;
+    return /^\s*\[[^\]]{1,40}\]/.test(t) ? t : `${char.name}: ${t}`;
+  }).filter(Boolean).join('\n');
+}
+
+function diaryChatPrompt(story, char, transcript) {
+  const me = diaryPlayerRef(story);
+  return `Bạn viết nhật ký thay cho một nhân vật trong câu chuyện đời thường. Nhân vật tự ghi lại chuyện trò đã diễn ra trong ngày hôm nay.
+
+[NGƯỜI VIẾT] ${diaryCharLine(char)}
+[NGƯỜI NÓI CHUYỆN CÙNG] ${me}
+[CHUYỆN ĐÃ XẢY RA HÔM NAY - TỪ ĐẦU NGÀY]
+${transcript}
+
+[QUY TẮC]
+- Kể lại trung thực chuyện đã xảy ra trong ngày đúng thứ tự từ lúc bắt đầu tới lúc kết thúc, giữ đúng chi tiết quan trọng; không thêm chuyện không có trong đoạn chat.
+- Ngôi thứ nhất, nhân vật xưng "mình", gọi người kia là "${me}" hoặc "cậu ấy". Viết như tự nhủ, không phải kể cho ai nghe.
+- Viết thành 2-3 đoạn ngắn liền nhau, cách nhau một dòng trống: đoạn đầu là lúc câu chuyện bắt đầu, đoạn sau là cảm xúc lúc nhớ lại hoặc chuyện lúc về.
+- Câu ngắn, đời thường, có một chi tiết nhỏ đáng nhớ và một chút cảm xúc thật.
+- Đôi khi nhân vật thấy ngại nên gạch bỏ giữa chừng: dùng ~~cụm từ~~ cho một cụm từ bị gạch. Chỉ thỉnh thoảng, không phải đoạn nào cũng có.
+- Không tiêu đề, không nhắc điểm số, phần thưởng, hệ thống hay tên game.
+- Chỉ trả về các đoạn nhật ký, không thêm lời dẫn.`;
+}
+
+function diaryChatSync(story, char) {
+  if (!story || !char) return;
+  const hist = (window.state.chatHistories || {})[story.id] || [];
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const covered = (story.diaryChatMarks && story.diaryChatMarks[char.id]) || 0;
+  const from = Math.max(dayStart.getTime(), covered + 1);
+  const msgs = hist.filter(m => m && m.ts >= from && (m.sender === 'user' || m.sender === 'ai') && !m.opening && !m.event).slice(-60);
+  if (msgs.length < 2) return;
+  const transcript = diaryChatTranscript(story, char, msgs).slice(0, 6000);
+  if (!transcript) return;
+
+  if (!story.diaryChatMarks || typeof story.diaryChatMarks !== 'object') story.diaryChatMarks = {};
+  story.diaryChatMarks[char.id] = msgs[msgs.length - 1].ts;
+
+  const me = diaryPlayerRef(story);
+  const firstUser = msgs.find(m => m.sender === 'user');
+  const lastAi = [...msgs].reverse().find(m => m.sender === 'ai');
+  const users = msgs.filter(m => m.sender === 'user');
+  const midUser = users.length > 2 ? users[Math.floor(users.length / 2)] : null;
+  const firstQuote = firstUser ? diaryChatQuote(diaryChatText(firstUser)) : '';
+  const midQuote = midUser && midUser !== firstUser ? diaryChatQuote(diaryChatText(midUser)) : '';
+  const lastQuote = lastAi ? diaryChatQuote(diaryChatText(lastAi)) : '';
+  const p1 = firstQuote
+    ? `Hôm nay ${me} mở lời trước: "${firstQuote}". Mình đọc xong, ngồi một lúc mới trả lời.`
+    : `Hôm nay mình nói chuyện với ${me} một lúc.`;
+  const pMid = midQuote
+    ? `Giữa buổi, ${me} còn kể: "${midQuote}". Mình nghe rồi ghi lại trong đầu, sợ quên.`
+    : '';
+  const p2 = lastQuote
+    ? `Tới cuối buổi, mình nói với ${me}: "${lastQuote}". Nói xong vẫn thấy còn điều chưa kịp nói.`
+    : `Chuyện trò dừng ở đó. Mình ngồi lại một lúc, nghĩ về những gì ${me} kể.`;
+
+  const entries = diaryAddGroup(story, 'chat', char, [p1, pMid, p2].filter(Boolean));
+  if (!entries.length) return;
+  diaryRefreshIfOpen();
+  if (diaryKeys().length) diaryRewriteGroup(story, entries, diaryChatPrompt(story, char, transcript));
+}
+
+function diaryGiftPrompt(story, char, itemName, shared, names) {  const me = diaryPlayerRef(story);
   const scene = shared
     ? `${me} mời cả nhóm (${names}) cùng thưởng thức "${itemName}".`
     : `${me} tặng riêng "${itemName}" cho ${char.name}.`;
@@ -347,6 +429,9 @@ function openDiary(charId) {
   renderDiary();
   ov.classList.remove('hidden');
   document.body.classList.add('diary-open');
+  const story = diaryStory();
+  const char = charId && story ? (story.characters || []).find(c => c.id === charId) : null;
+  if (char) setTimeout(() => diaryChatSync(story, char), 80);
 }
 
 function closeDiary() {

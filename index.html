@@ -883,8 +883,14 @@
         <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:10px;background:#f7fafc;">
           <span style="font-size:0.82rem;color:#4a5568;">♫</span>
           <span id="music-now-name" style="flex:1;min-width:0;font-size:0.8rem;color:#2d3748;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Đang tắt</span>
+          <button type="button" class="btn btn-outline" id="music-repeat-btn" onclick="Sound.toggleRepeat()" style="padding:0;width:34px;height:30px;line-height:1;font-size:0.85rem;" title="Lặp lại bài này" aria-pressed="false">🔁</button>
           <button type="button" class="btn btn-outline" onclick="Sound.nextSong()" style="padding:0;width:34px;height:30px;line-height:1;font-size:0.9rem;" title="Chuyển bài khác">⏭</button>
         </div>
+        <div style="display:flex;align-items:center;gap:6px;margin:0 0 6px;">
+          <button type="button" class="btn btn-outline" onclick="Sound.togglePlaylistBox()" style="font-size:0.76rem;padding:4px 10px;">Danh sách phát</button>
+          <span id="music-playlist-count" style="font-size:0.74rem;color:#718096;">Tất cả bài</span>
+        </div>
+        <div id="music-playlist-box" class="hidden" style="border:1px solid #e2e8f0;border-radius:10px;background:#f7fafc;padding:8px;margin:0 0 8px;max-height:190px;overflow:auto;"></div>
       </div>
       <button class="btn" onclick="saveAppSettings()">Lưu Cài Đặt</button>
     </div>
@@ -935,18 +941,18 @@
 
   <script src="theme.js?v=2"></script>
   <script type="module" src="firebase.js?v=6"></script>
-  <script src="core.js?v=1"></script>
+  <script src="core.js?v=2"></script>
   <script src="data-shop.js?v=7"></script>
   <script src="shop.js?v=19"></script>
   <script src="jobs.js?v=19"></script>
   <script src="craft.js?v=4"></script>
   <script src="themes.js?v=7"></script>
-  <script src="diary.js?v=4"></script>
-  <script src="quests.js?v=6"></script>
+  <script src="diary.js?v=5"></script>
+  <script src="quests.js?v=8"></script>
   <script src="pets.js?v=22"></script>
-  <script src="chat.js?v=27"></script>
+  <script src="chat.js?v=28"></script>
   <script src="ui.js?v=7"></script>
-  <script src="audio.js?v=6"></script>
+  <script src="audio.js?v=7"></script>
   <script src="play.js?v=6"></script>
   <script src="farm.js?v=32"></script>
   <script src="biz.js?v=8"></script>

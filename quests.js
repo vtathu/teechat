@@ -22,16 +22,59 @@
       { id: 'd_chat20', name: 'Gửi 20 tin nhắn trong truyện', metric: 'chats', target: 20, reward: [{ type: 'aff', pts: 4 }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
       { id: 'd_lv4', name: 'Tạo một món cấp 4 trở lên', metric: 'craftBest', target: 4, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
       { id: 'd_lv8', name: 'Tạo một món cấp 8 trở lên', metric: 'craftBest', target: 8, reward: [{ type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_feed2', name: 'Cho thú cưng ăn 2 lần', metric: 'petFeeds', target: 2, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_feed5', name: 'Cho thú cưng ăn 5 lần', metric: 'petFeeds', target: 5, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_play2', name: 'Chơi với thú cưng 2 lần', metric: 'petPlays', target: 2, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_play5', name: 'Chơi với thú cưng 5 lần', metric: 'petPlays', target: 5, reward: [{ type: 'aff', pts: 3 }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_walk1', name: 'Dắt thú cưng đi dạo 1 lần', metric: 'petWalks', target: 1, reward: [{ type: 'aff', pts: 2 }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_pet_walk3', name: 'Dắt thú cưng đi dạo 3 lần', metric: 'petWalks', target: 3, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+      { id: 'd_sell1', name: 'Bán 1 món thủ công', metric: 'sells', target: 1, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_sell3', name: 'Bán 3 món thủ công', metric: 'sells', target: 3, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+      { id: 'd_craft10', name: 'Làm 10 món thủ công', metric: 'craftDaily', target: 10, reward: [{ type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+      { id: 'd_craft25', name: 'Làm 25 món thủ công', metric: 'craftDaily', target: 25, reward: [{ type: 'aff', pts: 4 }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
     ];
+    // Thành tựu chạy theo chuỗi bậc: bậc sau mốc cao hơn và thưởng hậu hơn.
     const MISSION_MILESTONE = [
-      { id: 'm_call', name: 'Qua tổng cộng 30 màn công việc', metric: 'workLevels', target: 30, reward: [{ type: 'unlock', mode: 'adventure' }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
-      { id: 'm_gift', name: 'Tặng quà tổng cộng 10 lần', metric: 'gifts', target: 10, reward: [{ type: 'aff', pts: 10 }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
-      { id: 'm_date', name: 'Giao tổng cộng 8 đơn hàng thủ công', metric: 'orders', target: 8, reward: [{ type: 'unlock', mode: 'date' }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
-      { id: 'm_chat', name: 'Gửi tổng cộng 150 tin nhắn', metric: 'chats', target: 150, reward: [{ type: 'aff', pts: 8 }] },
-      { id: 'm_night', name: 'Đạt màn 15 trong một ca làm', metric: 'workBest', target: 15, reward: [{ type: 'unlock', mode: 'night' }, { type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
-      { id: 'm_sell', name: 'Bán tổng cộng 3 món thủ công', metric: 'sells', target: 3, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 2 }] },
-      { id: 'm_confess', name: 'Tạo một món cấp 12 trong game thủ công', metric: 'craftBest', target: 12, reward: [{ type: 'unlock', mode: 'confess' }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
-      { id: 'm_work25', name: 'Đạt màn 25 trong một ca làm', metric: 'workBest', target: 25, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      { id: 'm_call', name: 'Màn công việc đã qua', metric: 'workLevels', tiers: [
+        { target: 30, reward: [{ type: 'unlock', mode: 'adventure' }, { type: 'box', tier: 'normal', theme: 'rand', n: 1 }] },
+        { target: 60, reward: [{ type: 'aff', pts: 8 }, { type: 'box', tier: 'silver', theme: 'rand', n: 2 }] },
+        { target: 100, reward: [{ type: 'aff', pts: 15 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      ] },
+      { id: 'm_gift', name: 'Quà đã tặng nhân vật', metric: 'gifts', tiers: [
+        { target: 10, reward: [{ type: 'aff', pts: 10 }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+        { target: 25, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
+        { target: 50, reward: [{ type: 'aff', pts: 40 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      ] },
+      { id: 'm_date', name: 'Đơn hàng thủ công đã giao', metric: 'orders', tiers: [
+        { target: 8, reward: [{ type: 'unlock', mode: 'date' }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+        { target: 20, reward: [{ type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
+        { target: 40, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      ] },
+      { id: 'm_chat', name: 'Tin nhắn đã gửi', metric: 'chats', tiers: [
+        { target: 150, reward: [{ type: 'aff', pts: 8 }] },
+        { target: 400, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'silver', theme: 'rand', n: 1 }] },
+        { target: 800, reward: [{ type: 'aff', pts: 40 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      ] },
+      { id: 'm_night', name: 'Màn cao nhất trong ca làm', metric: 'workBest', tiers: [
+        { target: 15, reward: [{ type: 'unlock', mode: 'night' }, { type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
+        { target: 20, reward: [{ type: 'aff', pts: 15 }, { type: 'box', tier: 'gold', theme: 'rand', n: 1 }] },
+        { target: 25, reward: [{ type: 'aff', pts: 30 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] }
+      ] },
+      { id: 'm_sell', name: 'Món thủ công đã bán', metric: 'sells', tiers: [
+        { target: 3, reward: [{ type: 'box', tier: 'silver', theme: 'rand', n: 2 }] },
+        { target: 8, reward: [{ type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
+        { target: 15, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'gold', theme: 'rand', n: 3 }] }
+      ] },
+      { id: 'm_confess', name: 'Cấp món thủ công cao nhất', metric: 'craftBest', tiers: [
+        { target: 12, reward: [{ type: 'unlock', mode: 'confess' }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
+        { target: 14, reward: [{ type: 'aff', pts: 15 }, { type: 'box', tier: 'gold', theme: 'rand', n: 3 }] },
+        { target: 15, reward: [{ type: 'aff', pts: 40 }, { type: 'box', tier: 'gold', theme: 'rand', n: 3 }] }
+      ] },
+      { id: 'm_work25', name: 'Màn thứ 25 trở lên trong ca', metric: 'workBest', tiers: [
+        { target: 25, reward: [{ type: 'aff', pts: 20 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
+        { target: 32, reward: [{ type: 'aff', pts: 30 }, { type: 'box', tier: 'gold', theme: 'rand', n: 2 }] },
+        { target: 40, reward: [{ type: 'aff', pts: 50 }, { type: 'box', tier: 'gold', theme: 'rand', n: 3 }] }
+      ] }
     ];
 
     function mHash(str) {
@@ -51,6 +94,11 @@
       if (!md.claimed || typeof md.claimed !== 'object') md.claimed = {};
       if (!window.state.stats) window.state.stats = {};
       if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {};
+      if (!window.state.milestoneTiers || typeof window.state.milestoneTiers !== 'object') window.state.milestoneTiers = {};
+      // Mốc cũ đã nhận (true) quy đổi thành bậc 1 của chuỗi, giữ nguyên lịch sử
+      Object.keys(window.state.milestoneClaimed).forEach(id => {
+        if (window.state.milestoneClaimed[id] && !window.state.milestoneTiers[id]) window.state.milestoneTiers[id] = 1;
+      });
       if (!window.state.unlockedModes) window.state.unlockedModes = {};
       return md;
     }
@@ -81,9 +129,20 @@
       const md = ensureMissionDay();
       return kind === 'daily' ? (md.progress[def.metric] || 0) : ((window.state.stats && window.state.stats[def.metric]) || 0);
     }
+    function missionTierCount(def) {
+      const m = window.state.milestoneTiers || {};
+      return Math.max(0, Math.min(m[def.id] || 0, def.tiers ? def.tiers.length : 0));
+    }
+    function missionNextTier(def) {
+      if (!def || !def.tiers) return null;
+      const n = missionTierCount(def);
+      return n < def.tiers.length ? { idx: n, tier: def.tiers[n] } : null;
+    }
     function missionClaimed(kind, id) {
       const md = ensureMissionDay();
-      return kind === 'daily' ? !!md.claimed[id] : !!(window.state.milestoneClaimed && window.state.milestoneClaimed[id]);
+      if (kind === 'daily') return !!md.claimed[id];
+      const def = MISSION_MILESTONE.find(m => m.id === id);
+      return !!def && !missionNextTier(def);
     }
     function rewardLabel(r) {
       if (r.type === 'box') {
@@ -102,13 +161,56 @@
       let btn;
       if (claimed) btn = '<button class="btn btn-outline" disabled style="opacity:.6;">✓ Đã nhận</button>';
       else if (done) btn = `<button class="btn btn-pink" onclick="claimMission('${kind}','${def.id}')">Nhận</button>`;
-      else btn = '<button class="btn btn-outline" disabled style="opacity:.6;">Chưa xong</button>';
+      else btn = missionJumpBtn(def.metric);
       return `<div style="background:#f7faf8;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
           <div style="font-size:0.88rem;font-weight:bold;">${def.name}</div>${btn}
         </div>
         <div style="height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--app-green);"></div></div>
         <div style="font-size:0.75rem;color:#4a5568;">${Math.min(cur, def.target)}/${def.target} · Thưởng: ${def.reward.map(rewardLabel).join(' + ')}</div>
+      </div>`;
+    }
+
+    const MISSION_JUMP = {
+      workLevels: () => openFs('work'),
+      workBest: () => openFs('work'),
+      gifts: () => { switchStoryTab('chat'); setTimeout(() => { if (typeof openGiftModal === 'function') openGiftModal(); }, 120); },
+      chats: () => switchStoryTab('chat'),
+      orders: () => openFs('craft'),
+      merges: () => openFs('craft'),
+      craftBest: () => openFs('craft'),
+      craftDaily: () => openFs('craft'),
+      sells: () => { if (typeof openBagTab === 'function') openBagTab('craft'); },
+      petFeeds: () => openFs('pet'),
+      petPlays: () => openFs('pet'),
+      petWalks: () => openFs('pet')
+    };
+    function missionJumpBtn(metric) {
+      if (!MISSION_JUMP[metric]) return '<button class="btn btn-outline" disabled style="opacity:.6;">Chưa xong</button>';
+      return `<button class="btn btn-outline" style="opacity:.85;" onclick="jumpMission('${metric}')">Chưa xong</button>`;
+    }
+    function jumpMission(metric) {
+      const fn = MISSION_JUMP[metric];
+      if (!fn) return;
+      try { fn(); } catch (e) { console.error('jumpMission', e); }
+    }
+
+    function missionChainHtml(def) {
+      const next = missionNextTier(def);
+      const cur = missionProgress('ms', def);
+      const goal = next ? next.tier.target : def.tiers[def.tiers.length - 1].target;
+      const reward = next ? next.tier.reward : def.tiers[def.tiers.length - 1].reward;
+      const pct = Math.min(100, Math.round(Math.min(cur, goal) / goal * 100));
+      let btn;
+      if (!next) btn = '<button class="btn btn-outline" disabled style="opacity:.6;">✓ Đã nhận</button>';
+      else if (cur >= goal) btn = `<button class="btn btn-pink" onclick="claimMission('ms','${def.id}')">Nhận</button>`;
+      else btn = missionJumpBtn(def.metric);
+      return `<div style="background:#f7faf8;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+          <div style="font-size:0.88rem;font-weight:bold;">${def.name}</div>${btn}
+        </div>
+        <div style="height:8px;background:#e2e8f0;border-radius:6px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--app-green);"></div></div>
+        <div style="font-size:0.75rem;color:#4a5568;">${Math.min(cur, goal)}/${goal} · Thưởng: ${reward.map(rewardLabel).join(' + ')}</div>
       </div>`;
     }
 
@@ -119,7 +221,7 @@
       
       const milestoneEl = document.getElementById('mission-milestone');
       if (milestoneEl) {
-        milestoneEl.innerHTML = MISSION_MILESTONE.map(m => missionRowHtml('ms', m)).join('');
+        milestoneEl.innerHTML = MISSION_MILESTONE.map(m => missionChainHtml(m)).join('');
       }
 
       const rows = [];
@@ -154,12 +256,22 @@
     function claimMission(kind, id) {
       const list = kind === 'daily' ? MISSION_DAILY : MISSION_MILESTONE;
       const def = list.find(m => m.id === id);
-      if (!def || missionClaimed(kind, id) || missionProgress(kind, def) < def.target) return;
-      const needsChar = def.reward.some(r => r.type === 'aff' || r.type === 'unlock');
-      if (!needsChar) { applyMissionReward(kind, id, null); return; }
+      if (!def) return;
+      let reward, tier = null;
+      if (kind === 'daily') {
+        if (missionClaimed('daily', id) || missionProgress('daily', def) < def.target) return;
+        reward = def.reward;
+      } else {
+        const next = missionNextTier(def);
+        if (!next || missionProgress('ms', def) < next.tier.target) return;
+        tier = next.idx;
+        reward = next.tier.reward;
+      }
+      const needsChar = reward.some(r => r.type === 'aff' || r.type === 'unlock');
+      if (!needsChar) { applyMissionReward(kind, id, null, tier); return; }
       const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       if (!story || !story.characters || story.characters.length === 0) return alert('Truyện chưa có nhân vật nào để nhận phần thưởng này!');
-      pendingClaim = { kind, id };
+      pendingClaim = { kind, id, tier };
       
       const charSelectEl = document.getElementById('mission-char-select');
       if (charSelectEl) {
@@ -172,7 +284,7 @@
       
       const rewardEl = document.getElementById('mission-char-reward');
       if (rewardEl) {
-        rewardEl.innerText = 'Thưởng: ' + def.reward.map(rewardLabel).join(' + ');
+        rewardEl.innerText = 'Thưởng: ' + reward.map(rewardLabel).join(' + ');
       }
       if (typeof openModal === 'function') openModal('modal-mission-char');
     }
@@ -180,22 +292,24 @@
       if (!pendingClaim) return;
       const charSelectEl = document.getElementById('mission-char-select');
       const charId = charSelectEl ? charSelectEl.value : null;
-      applyMissionReward(pendingClaim.kind, pendingClaim.id, charId);
+      applyMissionReward(pendingClaim.kind, pendingClaim.id, charId, pendingClaim.tier);
     }
-    function applyMissionReward(kind, id, charId) {
+    function applyMissionReward(kind, id, charId, tierIdx) {
       const list = kind === 'daily' ? MISSION_DAILY : MISSION_MILESTONE;
       const def = list.find(m => m.id === id);
       if (!def) return;
+      const reward = kind === 'daily' ? def.reward : (def.tiers && def.tiers[tierIdx || 0] ? def.tiers[tierIdx || 0].reward : null);
+      if (!reward) return;
       const story = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
       const ch = story && charId && story.characters ? story.characters.find(c => c.id === charId) : null;
 
-      for (const r of def.reward) {
+      for (const r of reward) {
         if (r.type === 'unlock' && !ch) return;
       }
 
       const got = [];
       const newActivityItems = [];
-      def.reward.forEach(r => {
+      reward.forEach(r => {
         if (r.type === 'box') {
           for (let k = 0; k < (r.n || 1); k++) {
             const t = (r.theme === 'rand' && typeof THEMES !== 'undefined') ? THEMES[Math.floor(Math.random() * THEMES.length)] : r.theme;
@@ -223,7 +337,12 @@
       });
 
       if (kind === 'daily') ensureMissionDay().claimed[id] = true;
-      else { if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {}; window.state.milestoneClaimed[id] = true; }
+      else {
+        if (!window.state.milestoneClaimed) window.state.milestoneClaimed = {};
+        if (!window.state.milestoneTiers) window.state.milestoneTiers = {};
+        window.state.milestoneTiers[id] = Math.max(window.state.milestoneTiers[id] || 0, (tierIdx || 0) + 1);
+        window.state.milestoneClaimed[id] = true;
+      }
       pendingClaim = null;
       if (typeof saveStorage === 'function') saveStorage();
       if (typeof closeModal === 'function') closeModal('modal-mission-char');

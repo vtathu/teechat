@@ -31,6 +31,7 @@ window.state = {
   missionData: null,
   stats: {},
   milestoneClaimed: {},
+  milestoneTiers: {},
   unlockedModes: {}
 };
 
