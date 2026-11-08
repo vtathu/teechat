@@ -1,7 +1,7 @@
 // ===================== NGHỀ NGHIỆP =====================
     // Nghề càng khó thắng thì lương càng cao
     const JOBS = {
-      cleaner: { unit: 27000, desc: 'Lau sạch vết bẩn. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
+      cleaner: { unit: 27000, desc: 'Mở hộp đồ, cất món vào đúng ngăn trước khi hết giờ. Nhầm ngăn hoặc chậm mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       cashier: { unit: 36000, desc: 'Thối tiền cho khách. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       barista: { unit: 48000, desc: 'Pha đúng công thức khách gọi. Sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
       teacher: { unit: 60000, desc: 'Chấm bài. Phải chấm chuẩn 100% mới qua màn, sai hoặc hết giờ mất 1 mạng, hết 3 mạng thì dừng. Mỗi màn qua được nhận tiền, càng xa càng nhiều.' },
@@ -227,51 +227,85 @@
       next();
     }
 
-    // ---------- 1. VỆ SINH: chùi vết bẩn ----------
+    // ---------- 1. VỆ SINH: mở hộp đồ, cất đúng ngăn ----------
     function playCleaner(lv, ctx, finish) {
-      const total = Math.min(18, 4 + lv);
-      const TIME = Math.max(11, Math.round(24 - lv * 1.3));
-      const sMin = Math.max(30, 66 - lv * 3), sMax = Math.max(40, 78 - lv * 3);
-      const hpBase = 60 + lv * 8;
-      jgSetQ(`🧹 Lau sạch ${total} vết bẩn! Kéo ngón tay (hoặc chuột) lên vết bẩn.`);
-      jgArea().innerHTML = `<div id="cl-time" style="font-size:0.85rem;margin-bottom:4px;">⏱ ${TIME}s</div><div id="cl-board" style="position:relative;width:100%;max-width:320px;aspect-ratio:1/1;margin:0 auto;background:linear-gradient(135deg,#e6f2ff,#fdfdfd);border:2px solid var(--app-green);border-radius:14px;overflow:hidden;touch-action:none;user-select:none;"></div>`;
-      const board = document.getElementById('cl-board');
-      const stains = [];
-      for (let i = 0; i < total; i++) {
-        const size = jgRand(sMin, sMax);
-        const el = document.createElement('div');
-        const x = jgRand(12, 88), y = jgRand(12, 88);
-        el.style.cssText = `position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;margin:-${size / 2}px 0 0 -${size / 2}px;border-radius:${jgRand(35, 50)}% ${jgRand(35, 50)}% ${jgRand(35, 50)}% ${jgRand(35, 50)}%;background:radial-gradient(circle,rgba(110,70,30,.9),rgba(110,70,30,.35));pointer-events:none;`;
-        board.appendChild(el);
-        stains.push({ el, x, y, size, hp: jgRand(hpBase, hpBase + 50), alive: true });
+      const BINS = [
+        { k: 'bath', e: '🧴', n: 'Đồ tắm', items: ['🧴', '🪥', '🧼'] },
+        { k: 'kitchen', e: '🍽️', n: 'Nhà bếp', items: ['🍽️', '🥄', '🍳'] },
+        { k: 'cloth', e: '🧺', n: 'Đồ vải', items: ['🧦', '🧣', '👕'] },
+        { k: 'tools', e: '🔧', n: 'Dụng cụ', items: ['🔧', '🔨', '🪛'] }
+      ];
+      const total = Math.min(14, 3 + lv);
+      const TIME = Math.max(2200, 4600 - lv * 220);   // hạn của từng món, tính bằng ms
+      const order = lv >= 4 ? jgShuffle(BINS.slice()) : BINS;
+      let done = 0, left = 0, started = 0, cur = null, open = false, dead = false, tick = null;
+
+      jgSetQ(`🧹 Mở hộp đồ và cất đúng ngăn: ${total} món. Nhầm ngăn hoặc chậm là mất 1 mạng.`);
+      jgArea().innerHTML = `
+        <div id="cl-bins" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
+          ${order.map(b => `<button class="btn btn-outline jg-btn" data-bin="${b.k}" style="flex-direction:column;padding:8px 2px;font-size:0.66rem;line-height:1.15;gap:2px;border-width:2px;"><span style="font-size:1.5rem;">${b.e}</span>${b.n}</button>`).join('')}
+        </div>
+        <div id="cl-stage" style="min-height:172px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f7faf8;border:2px dashed #cbd5e0;border-radius:14px;padding:12px;"></div>`;
+      const stage = document.getElementById('cl-stage');
+      const binsEl = document.getElementById('cl-bins');
+
+      function fail(msg) {
+        if (dead) return;
+        dead = true;
+        if (tick) { clearInterval(tick); tick = null; }
+        finish(false, msg);
       }
-      let cleared = 0, left = TIME, down = false;
 
-      const wipe = (e) => {
-        if (!down) return;
-        const r = board.getBoundingClientRect();
-        const px = e.clientX - r.left, py = e.clientY - r.top;
-        stains.forEach(st => {
-          if (!st.alive) return;
-          const cx = r.width * st.x / 100, cy = r.height * st.y / 100;
-          if (Math.hypot(px - cx, py - cy) < st.size / 2 + 10) {
-            st.hp -= 9;
-            st.el.style.opacity = Math.max(0, st.hp / (hpBase + 30)).toFixed(2);
-            if (st.hp <= 0) { st.alive = false; st.el.remove(); cleared++; if (cleared >= total) finish(true, 'Sạch bong!'); }
+      function spawnBox() {
+        if (dead) return;
+        open = false; cur = null;
+        stage.innerHTML = `<button id="cl-box" class="jg-btn" style="font-size:3.1rem;background:#fff;border:2px solid var(--app-green);border-radius:16px;width:104px;height:104px;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,.08);">📦</button>
+          <div style="font-size:0.72rem;color:#718096;">Chạm hộp để mở · còn ${total - done} món</div>`;
+        document.getElementById('cl-box').onclick = openBox;
+      }
+
+      function openBox() {
+        if (dead || open) return;
+        open = true;
+        const cat = BINS[jgRand(0, BINS.length - 1)];
+        cur = { e: cat.items[jgRand(0, cat.items.length - 1)], cat };
+        left = TIME; started = Date.now();
+        stage.innerHTML = `<div style="font-size:3.2rem;line-height:1;">${cur.e}</div>
+          <div style="font-size:0.8rem;color:#4a5568;">Cất món này vào ngăn nào?</div>
+          <div style="width:100%;">
+            <div style="width:100%;height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;"><span id="cl-bar" style="display:block;height:100%;width:100%;background:#48bb78;"></span></div>
+            <div id="cl-left" style="margin-top:3px;font-size:0.7rem;color:#718096;text-align:right;">⏱ ${(TIME / 1000).toFixed(1)}s</div>
+          </div>`;
+        if (tick) { clearInterval(tick); tick = null; }
+        tick = jgAddTimer(setInterval(() => {
+          if (dead || !cur) return;
+          left = TIME - (Date.now() - started);
+          const p = Math.max(0, left / TIME);
+          const bar = document.getElementById('cl-bar');
+          if (bar) {
+            bar.style.width = (p * 100).toFixed(1) + '%';
+            bar.style.background = p > 0.5 ? '#48bb78' : (p > 0.25 ? '#ecc94b' : '#e53e3e');
           }
-        });
-      };
-      board.addEventListener('pointerdown', (e) => { down = true; wipe(e); });
-      board.addEventListener('pointermove', wipe);
-      const up = () => { down = false; };
-      window.addEventListener('pointerup', up);
-      jobGameState.listeners.push(() => window.removeEventListener('pointerup', up));
+          const t = document.getElementById('cl-left');
+          if (t) t.innerText = `⏱ ${(Math.max(0, left) / 1000).toFixed(1)}s`;
+          if (left <= 0) fail('Hết giờ! Món này chưa kịp cất.');
+        }, 80));
+      }
 
-      jgAddTimer(setInterval(() => {
-        left--;
-        const t = document.getElementById('cl-time'); if (t) t.innerText = `⏱ ${left}s`;
-        if (left <= 0) finish(false, `Hết giờ! Còn ${total - cleared} vết bẩn.`);
-      }, 1000));
+      binsEl.querySelectorAll('[data-bin]').forEach(b => b.onclick = () => {
+        if (dead || !open || !cur) return;
+        const cat = BINS.find(x => x.k === b.dataset.bin);
+        if (!cat) return;
+        if (cat.k !== cur.cat.k) { fail(`Nhầm ngăn! Món đó thuộc ${cur.cat.e} ${cur.cat.n}.`); return; }
+        done++;
+        if (tick) { clearInterval(tick); tick = null; }
+        if (done >= total) { dead = true; finish(true, 'Cất gọn gàng!'); return; }
+        open = false; cur = null;
+        stage.innerHTML = `<div style="font-size:2.2rem;line-height:1;">✅</div><div style="font-size:0.78rem;color:#2f855a;">Còn ${total - done} món</div>`;
+        jgAddTimer(setTimeout(spawnBox, 260));
+      });
+
+      spawnBox();
     }
 
     // ---------- 2. THU NGÂN: thối tiền ----------
@@ -283,7 +317,7 @@
         ['🧻 Giấy vệ sinh', 20, 55], ['🍪 Bánh quy', 10, 35]
       ];
       const NAMES = ['Cô Hoa', 'Anh Nam', 'Bé Mi', 'Chú Tư', 'Chị Lan', 'Bạn Khoa', 'Bà Sáu', 'Anh Dũng'];
-      const n = Math.min(5, 2 + Math.floor(lv / 3));
+      const n = Math.min(6, 2 + Math.floor(lv / 2));
       const items = jgShuffle(ITEMS.slice()).slice(0, n).map(it => ({ name: it[0], price: jgRand(it[1], it[2]) * 1000 }));
       const bill = items.reduce((t, i) => t + i.price, 0);
       const bills = [20000, 50000, 100000, 200000, 500000].filter(d => d > bill);
@@ -293,7 +327,7 @@
       const paid = opts[jgRand(0, opts.length - 1)];
       const change = paid - bill;
       const name = NAMES[jgRand(0, NAMES.length - 1)];
-      let left = Math.max(10, Math.round(26 - lv * 1.5));
+      let left = Math.max(8, Math.round(22 - lv * 1.5));
       let picked = [];
       const sum = () => picked.reduce((t, v) => t + v, 0);
       const showSum = () => { const el = document.getElementById('cs-sum'); if (el) el.innerText = sum().toLocaleString('vi-VN') + 'đ'; };
@@ -335,14 +369,14 @@
         { k: 'ice', e: '🧊', n: 'Đá' }, { k: 'tea', e: '🍵', n: 'Trà' }, { k: 'syr', e: '🍓', n: 'Siro' }, { k: 'cream', e: '🍦', n: 'Kem' }
       ];
       const DRINKS = ['Latte đặc biệt', 'Trà sữa chiều', 'Cà phê muối', 'Mocha lạ', 'Trà trái cây', 'Cacao kem', 'Bạc xỉu'];
-      const nTypes = lv <= 3 ? 2 : (lv <= 7 ? 3 : 4);
-      const pieces = Math.min(12, 3 + Math.ceil(lv * 0.8));
+      const nTypes = lv <= 2 ? 2 : (lv <= 5 ? 3 : 4);
+      const pieces = Math.min(14, 4 + Math.ceil(lv * 0.85));
       const picks = jgShuffle(ING.slice()).slice(0, nTypes);
       const order = {};
       picks.forEach(i => order[i.k] = 1);
       for (let t = nTypes; t < pieces; t++) order[picks[jgRand(0, nTypes - 1)].k]++;
       let cup = {};
-      let left = Math.max(8, Math.round(16 - lv * 0.8));
+      let left = Math.max(7, Math.round(14 - lv * 0.7));
       const fmt = (o) => ING.filter(i => o[i.k]).map(i => `${i.e}${i.n} ×${o[i.k]}`).join('  ');
 
       jgSetQ(`🧾 Khách gọi "${DRINKS[jgRand(0, DRINKS.length - 1)]}":\n${fmt(order)}`);
@@ -361,7 +395,7 @@
         grid.innerHTML = jgShuffle(ING.slice()).map(i => `<button class="btn btn-outline jg-btn" data-k="${i.k}" style="flex-direction:column;padding:8px 2px;font-size:0.7rem;"><span style="font-size:1.4rem;">${i.e}</span>${i.n}</button>`).join('');
         grid.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
           cup[b.dataset.k] = (cup[b.dataset.k] || 0) + 1; upCup();
-          if (lv >= 6) drawGrid(); // từ màn 6: nút đảo vị trí sau mỗi lần bấm
+          if (lv >= 4) drawGrid(); // từ màn 4: nút đảo vị trí sau mỗi lần bấm
         });
       }
       drawGrid();
@@ -399,7 +433,7 @@
       const OBS = ['🚧', '🕳️', '🐕', '🚗', '🛢️', '🪨'];
       let lane = 1, elapsed = 0, spawnT = 0.4, last = null;
       const obstacles = [];
-      const baseSpeed = Math.min(400, 140 + lv * 22);
+      const baseSpeed = Math.min(450, 155 + lv * 24);
 
       function setLane(l) { lane = Math.max(0, Math.min(2, l)); car.style.left = (lane * 33.33) + '%'; }
       setLane(1);
@@ -417,7 +451,7 @@
         if (last === null) last = ts;
         const dt = Math.min(0.05, (ts - last) / 1000); last = ts;
         elapsed += dt;
-        const speed = ctx.endless ? Math.min(520, baseSpeed + elapsed * 5) : baseSpeed + elapsed * 6;
+        const speed = ctx.endless ? Math.min(560, baseSpeed + elapsed * 6) : baseSpeed + elapsed * 6;
 
         spawnT -= dt;
         if (spawnT <= 0) {
@@ -430,7 +464,7 @@
             board.appendChild(el);
             obstacles.push({ el, lane: l, y: -40 });
           }
-          spawnT = Math.max(0.3, 0.8 - lv * 0.04 - (ctx.endless ? Math.min(0.3, elapsed * 0.004) : 0) + Math.random() * 0.5);
+          spawnT = Math.max(0.26, 0.75 - lv * 0.045 - (ctx.endless ? Math.min(0.3, elapsed * 0.004) : 0) + Math.random() * 0.45);
         }
 
         for (let i = obstacles.length - 1; i >= 0; i--) {
@@ -456,9 +490,9 @@
 
     // ---------- 5. GIÁO VIÊN: chấm bài ----------
     function playTeacher(lv, ctx, finish) {
-      const N = Math.min(12, 6 + Math.floor(lv / 2));
-      const numWrong = Math.min(5, 2 + Math.floor(lv / 3));
-      let left = Math.max(14, Math.round(32 - lv * 1.8));
+      const N = Math.min(15, 6 + Math.ceil(lv / 1.8));
+      const numWrong = Math.min(6, 2 + Math.floor(lv / 2.5));
+      let left = Math.max(12, Math.round(27 - lv * 1.7));
       const M = 20 + lv * 12;
       const dMax = Math.max(2, 10 - lv);
       const ops = lv < 3 ? ['+', '−'] : ['+', '−', '×'];
