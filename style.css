@@ -1111,3 +1111,28 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .activity-reward-name { font-size: 0.86rem; font-weight: bold; color: var(--app-dark-green); }
     .activity-reward-name span { display: block; margin-top: 2px; font-size: 0.72rem; font-weight: normal; color: var(--muted); }
     .activity-reward-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ===== Nhật ký: trang vở viết tay của nhân vật ===== */
+    #diary-overlay { position: fixed; inset: 0; z-index: 97; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(24, 16, 8, 0.66); backdrop-filter: blur(4px); }
+    #diary-overlay.hidden { display: none; }
+    .diary-book { position: relative; width: 100%; max-width: 420px; max-height: 92vh; display: flex; border-radius: 8px 16px 16px 8px; background: #fffdf4; box-shadow: -8px 16px 40px rgba(0,0,0,.45); overflow: hidden; }
+    .diary-book::before { content: ''; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 26px; z-index: 3; pointer-events: none; background-image: radial-gradient(circle at 13px 13px, #b9aa8a 0 4.5px, #f3ead6 4.5px 6.5px, transparent 7px); background-size: 26px 30px; background-repeat: repeat-y; }
+    .diary-panel { position: relative; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .diary-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 10px 34px; background: #f7eed9; border-bottom: 1px solid #e4d6b6; }
+    .diary-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .diary-head-av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #cdb98f; background: #fff; flex: 0 0 auto; }
+    .diary-head-mark { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; background: #fff; border: 2px solid #cdb98f; border-radius: 50%; flex: 0 0 auto; }
+    .diary-head-text { min-width: 0; }
+    .diary-head-name { font-size: 1rem; font-weight: bold; color: #5b4a2f; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .diary-head-sub { font-size: 0.7rem; color: #937c54; }
+    .diary-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 6px 16px 26px 42px; color: #3f362a; font-size: 0.9rem; line-height: 28px; background-color: #fffdf4; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(166,144,101,0.22) 27px, rgba(166,144,101,0.22) 28px), linear-gradient(rgba(205,104,104,0.38), rgba(205,104,104,0.38)); background-size: 100% 28px, 1px 100%; background-position: 0 6px, 31px 0; background-repeat: repeat-y, no-repeat; }
+    .diary-empty { line-height: 1.7; color: #99885f; font-size: 0.84rem; padding: 18px 0; }
+    .diary-day { line-height: 28px; font-size: 0.7rem; font-weight: bold; letter-spacing: 0.8px; text-transform: uppercase; color: #a58b5a; }
+    .diary-entry { padding: 0 0 10px; }
+    .diary-entry-top { display: flex; justify-content: flex-end; gap: 8px; font-size: 0.66rem; line-height: 24px; color: #a58b5a; }
+    .diary-entry-who { font-size: 0.76rem; font-weight: bold; color: #6b5636; line-height: 24px; }
+    .diary-entry-text { margin-top: 2px; white-space: pre-wrap; }
+    .diary-entry-text p { margin: 0; }
+    .diary-entry-text p + p { margin-top: 28px; }
+    .diary-entry-text s { color: #9c8c72; text-decoration-thickness: 1px; text-decoration-color: rgba(110,90,60,0.55); }
+    body.diary-open { overflow: hidden; }

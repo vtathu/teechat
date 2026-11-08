@@ -811,6 +811,9 @@
         window.__nextHint = hints.join(' ') + ' Hãy để từng nhân vật phản ứng đúng như vậy theo tính cách, không nhắc đến điểm số.';
       }
 
+      const giftStory = window.state.stories ? window.state.stories.find(s => s.id === window.state.activeStoryId) : null;
+      if (giftStory && typeof diaryAddGift === 'function') diaryAddGift(giftStory, targets, baseSingleName, shared);
+
       sendMessage(giftActionText);
     }
 

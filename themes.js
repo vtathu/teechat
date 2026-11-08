@@ -665,6 +665,55 @@ function themeTodayKey() {
   return new Date().toDateString();
 }
 
+// Phiếu không bị tiêu: mỗi ngày được nhận thưởng tối đa 3 lượt cho mỗi truyện,
+// các lượt sau vẫn chơi được nhưng chỉ ghi ký ức
+const THEME_REWARD_RUNS = 3;
+const THEME_TICKET_DROP_CHANCE = 0.02;
+const THEME_TICKET_DAILY_CAP = 3;
+
+function themeDailyCount(story) {
+  const today = themeTodayKey();
+  if (!story.themeDaily || typeof story.themeDaily !== 'object' || story.themeDaily.date !== today) {
+    story.themeDaily = { date: today, runs: 0 };
+  }
+  if (typeof story.themeDaily.runs !== 'number') story.themeDaily.runs = 0;
+  return story.themeDaily;
+}
+
+function themeTicketDay() {
+  const today = themeTodayKey();
+  if (!window.state.activityTicketDay || typeof window.state.activityTicketDay !== 'object' || window.state.activityTicketDay.date !== today) {
+    window.state.activityTicketDay = { date: today, n: 0 };
+  }
+  if (typeof window.state.activityTicketDay.n !== 'number') window.state.activityTicketDay.n = 0;
+  return window.state.activityTicketDay;
+}
+
+// Phiếu chỉ rơi rất hiếm sau một ca làm, tối đa 3 phiếu/ngày.
+// Phiếu của nhân vật chưa đủ cấp là vé mở sớm, dùng một lần là mở luôn.
+function themeMaybeDropTicket() {
+  const day = themeTicketDay();
+  if (day.n >= THEME_TICKET_DAILY_CAP) return null;
+  if (Math.random() > THEME_TICKET_DROP_CHANCE) return null;
+  const stories = (window.state.stories || []).filter(s => s && Array.isArray(s.characters) && s.characters.length);
+  if (!stories.length) return null;
+  for (let i = 0; i < 6; i++) {
+    const story = stories[Math.floor(Math.random() * stories.length)];
+    const char = story.characters[Math.floor(Math.random() * story.characters.length)];
+    if (!char) continue;
+    if (!char.activityId || !CHAT_THEMES[char.activityId]) char.activityId = themeActivityIdFor(char, story);
+    const theme = CHAT_THEMES[char.activityId];
+    if (!theme) continue;
+    if (themeActivityItemFor(story, char)) continue;
+    const item = themeGrantActivityItem(story, char);
+    if (!item) continue;
+    day.n++;
+    if (typeof saveStorage === 'function') saveStorage();
+    return item;
+  }
+  return null;
+}
+
 function ensureThemeStory(story) {
   if (!story) return null;
   if (!story.themeMemories || !Array.isArray(story.themeMemories)) story.themeMemories = [];
@@ -904,8 +953,11 @@ function themeFreeReply() {
   else { saveStorage(); renderThemeTab(); }
 }
 
-function applyThemeReward(theme, tier, char) {
+// Thưởng ngẫu nhiên như quà thường ngày, không phụ thuộc câu trả lời "đúng/sai"
+function applyThemeReward(theme, char) {
   const got = [];
+  const roll = Math.random();
+  const tier = roll < 0.2 ? 2 : (roll < 0.55 ? 1 : 0);
   const money = (theme.rewards.money || [])[tier] || 0;
   if (money > 0) {
     window.state.walletBalance = (window.state.walletBalance || 0) + money;
@@ -932,28 +984,23 @@ function finishThemeActivity(story, theme, char, session) {
   const memory = `${theme.name} cùng ${char.name}. ${session.picks.map(p => p.line).join(' ')} ${theme.closing[tier]}`;
   story.themeMemories.push({ themeId: theme.id, charId: char.id, text: memory, tier, ts: Date.now() });
   if (story.themeMemories.length > 40) story.themeMemories.splice(0, story.themeMemories.length - 40);
+  try {
+    if (typeof diaryAddActivity === 'function') diaryAddActivity(story, theme, char, session, memory, tier);
+  } catch (e) {}
 
-  const today = themeTodayKey();
-  const repeat = story.themeRuns[theme.id] === today;
+  const day = themeDailyCount(story);
+  const repeat = day.runs >= THEME_REWARD_RUNS;
   let got = [];
   if (!repeat) {
-    got = applyThemeReward(theme, tier, char);
-    story.themeRuns[theme.id] = today;
+    got = applyThemeReward(theme, char);
+    day.runs++;
   }
-
-  if (!window.state.chatHistories[story.id]) window.state.chatHistories[story.id] = [];
-  window.state.chatHistories[story.id].push({
-    sender: 'system', event: true,
-    text: `[Hoạt động: ${theme.name} với ${char.name}] ${memory}`,
-    ts: Date.now()
-  });
 
   story.themeLastResult = { themeId: theme.id, charId: char.id, tier, memory, rewards: got, repeat, ts: Date.now() };
   story.themeSession = null;
   window.__themeShowHome = false;
   saveStorage();
   renderThemeTab();
-  try { if (window.state.activeStoryId === story.id) renderChatHistory(); } catch (e) {}
 }
 
 function themeBackToHome() {
@@ -999,7 +1046,6 @@ function renderThemeTab() {
 function renderThemeHome(story) {
   const root = document.getElementById('theme-body');
   const char = themeSelectedChar(story);
-  const today = themeTodayKey();
   const session = story.themeSession;
   const sessionTheme = session ? CHAT_THEMES[session.themeId] : null;
 
@@ -1016,7 +1062,7 @@ function renderThemeHome(story) {
   if (theme) {
     const lv = themeCharLevel(char.id);
     const unlocked = themeIsUnlocked(theme, char, story);
-    const done = story.themeRuns[theme.id] === today;
+    const runsLeft = Math.max(0, THEME_REWARD_RUNS - themeDailyCount(story).runs);
     const pct = Math.min(100, Math.round(lv / Math.max(1, theme.minLv) * 100));
     const aiArt = themeStageArt(char);
     const art = themeCharArt(char) || char.avatar;
@@ -1033,7 +1079,7 @@ function renderThemeHome(story) {
         <div class="activity-home-meta">${theme.minLv > 1 ? `Mốc Lv.${theme.minLv} · ` : ''}${themeRewardHint(theme)}</div>
         ${unlocked
           ? `<button class="btn btn-pink activity-start" onclick="startThemeActivity()">▶ Bắt đầu hoạt động</button>
-             ${done ? '<div class="activity-done">✓ Hôm nay đã nhận thưởng · chơi lại vẫn ghi ký ức</div>' : ''}`
+             <div class="activity-done">${runsLeft > 0 ? `🎁 Còn ${runsLeft}/${THEME_REWARD_RUNS} lượt nhận thưởng hôm nay · chơi lại vẫn ghi ký ức` : `✓ Hôm nay đã nhận đủ ${THEME_REWARD_RUNS} lượt thưởng · chơi tiếp vẫn ghi ký ức`}</div>`
           : `<div class="activity-lock">
                <div class="activity-lock-line">🔒 Mở ở Lv.${theme.minLv} · hiện Lv.${lv}</div>
                <div class="activity-lock-bar"><span style="width:${pct}%"></span></div>
@@ -1141,7 +1187,7 @@ function renderThemeResult(story) {
   const theme = CHAT_THEMES[r.themeId];
   const char = (story.characters || []).find(c => c.id === r.charId);
   if (!theme || !char) { story.themeLastResult = null; saveStorage(); renderThemeTab(); return; }
-  const rewards = r.rewards.length ? r.rewards.join(' · ') : (r.repeat ? 'Hôm nay đã nhận thưởng cho hoạt động này, lần này chỉ ghi ký ức.' : 'Không có phần thưởng.');
+  const rewards = r.rewards.length ? r.rewards.join(' · ') : (r.repeat ? `Hôm nay đã nhận đủ ${THEME_REWARD_RUNS} lượt thưởng cho hoạt động, lần này chỉ ghi ký ức.` : 'Không có phần thưởng.');
   const effect = r.tier === 2 ? 'fireworks' : (r.tier === 0 ? 'sparks' : (THEME_EFFECT[theme.id] || 'sparks'));
   const aiArt = themeStageArt(char);
   const art = themeCharArt(char) || char.avatar;
@@ -1176,5 +1222,6 @@ window.themeCloseOverlay = themeCloseOverlay;
 window.useActivityItem = useActivityItem;
 window.themeGrantActivityItem = themeGrantActivityItem;
 window.themeActivityItemFor = themeActivityItemFor;
+window.themeMaybeDropTicket = themeMaybeDropTicket;
 window.themeShowRewardItems = themeShowRewardItems;
 window.themeUseGrantedItem = themeUseGrantedItem;

@@ -125,7 +125,15 @@
         renderLifeModeUI();
         try { if (window.Sound) window.Sound.play('coin'); } catch (e) {}
       }
-      alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}`);
+      let drop = null;
+      if (earned > 0) {
+        try { if (typeof window.themeMaybeDropTicket === 'function') drop = window.themeMaybeDropTicket(); } catch (e) {}
+      }
+      const canChoose = drop && typeof window.themeShowRewardItems === 'function';
+      alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}${drop && !canChoose ? `\n🎭 Nhặt được ${drop.name} (đã vào Túi)` : ''}`);
+      if (canChoose) {
+        try { window.themeShowRewardItems([], [drop]); } catch (e) {}
+      }
     }
 
     function executeWorkMinigame() {

@@ -2108,6 +2108,9 @@ ${out}`;
       const body = document.getElementById('aff-card-body');
       if (!body || !sp) return;
       const av = `<img src="${sp.avatar}" onerror="this.src='${DEFAULT_LOGO}'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--app-green);">`;
+      const diaryBtn = sp.id
+        ? `<button class="btn btn-pink" style="width:100%;" onclick="closeModal('modal-affection'); openDiary('${sp.id}')">📔 Nhật ký</button>`
+        : '';
       if (!sp.id) {
         body.innerHTML = `${av}<h3 style="font-size:1.1rem;color:var(--app-dark-green);">${escapeHtml(sp.name)}</h3><div style="font-size:0.82rem;color:#718096;">Nhân vật phụ</div>`;
       } else {
@@ -2123,7 +2126,8 @@ ${out}`;
             <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#ff8fa3,#d53f8c);"></div>
           </div>
           <div style="font-size:0.78rem;color:#4a5568;">${aff.points}/${need} điểm để lên Lv.${aff.level + 1}</div>
-          <div style="font-size:0.75rem;color:#718096;">${nm ? `Mốc tiếp theo: Lv.${nm} · ${affectionStage(nm)}` : 'Đã đạt mốc cao nhất'}</div>`;
+          <div style="font-size:0.75rem;color:#718096;">${nm ? `Mốc tiếp theo: Lv.${nm} · ${affectionStage(nm)}` : 'Đã đạt mốc cao nhất'}</div>
+          ${diaryBtn}`;
       }
       openModal('modal-affection');
     }
