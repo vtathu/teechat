@@ -828,14 +828,11 @@ function useActivityItem(uid) {
   story.themeCharId = char.id;
   if (!story.activityUnlocks) story.activityUnlocks = {};
   story.activityUnlocks[char.id] = true;
-  if (!story.themeSession) {
-    story.themeLastResult = null;
-    story.themeSession = { themeId: theme.id, charId: char.id, step: 0, score: 0, picks: [], startedAt: Date.now() };
-  }
   window.__themeShowHome = false;
   if (typeof saveStorage === 'function') saveStorage();
   themeOpenOverlay();
-  renderThemeTab();
+  if (!story.themeSession) themeBeginSession(story, theme, char);
+  else renderThemeTab();
   if (typeof closeModal === 'function') closeModal('modal-activity-reward');
 }
 
@@ -901,10 +898,26 @@ function startThemeActivity(themeId) {
   if (!theme) return;
   if (!themeIsUnlocked(theme, char, story)) return;
   if (story.themeSession && !confirm('Bạn đang có một hoạt động dở. Bắt đầu hoạt động mới sẽ bỏ hoạt động đó. Tiếp tục?')) return;
+  themeBeginSession(story, theme, char);
+}
+
+// Hoạt động AI dẫn: mỗi lượt sinh cảnh mới nối tiếp câu trả lời trước.
+// Không có key hoặc AI lỗi ở cảnh đầu thì rơi về kịch bản cố định để vẫn chơi được.
+function themeBeginSession(story, theme, char) {
   window.__themeShowHome = false;
   story.themeLastResult = null;
+  if (themeHasApiKey()) {
+    story.themeSession = {
+      themeId: theme.id, charId: char.id, step: 0, score: 0, picks: [],
+      startedAt: Date.now(), dyn: 1, log: [], beat: null, busy: true, error: '', pending: null
+    };
+    if (typeof saveStorage === 'function') saveStorage();
+    renderThemeTab();
+    themeDynAdvance(story, story.themeSession, null);
+    return;
+  }
   story.themeSession = { themeId: theme.id, charId: char.id, step: 0, score: 0, picks: [], startedAt: Date.now() };
-  saveStorage();
+  if (typeof saveStorage === 'function') saveStorage();
   renderThemeTab();
 }
 
@@ -912,6 +925,7 @@ function themeChoose(optionIndex) {
   const story = ensureThemeStory(window.state.stories.find(s => s.id === window.state.activeStoryId));
   const session = story && story.themeSession;
   if (!story || !session) return;
+  if (session.dyn) { themeDynChoice(optionIndex); return; }
   const theme = CHAT_THEMES[session.themeId];
   const char = (story.characters || []).find(c => c.id === session.charId);
   if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
@@ -938,6 +952,7 @@ function themeFreeReply() {
   const input = document.getElementById('activity-free-input');
   const text = String((input && input.value) || '').trim().slice(0, 200);
   if (!text) return;
+  if (session.dyn) { themeDynSubmit(text, themeInputMode(text)); return; }
   const theme = CHAT_THEMES[session.themeId];
   const char = (story.characters || []).find(c => c.id === session.charId);
   if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
@@ -953,11 +968,285 @@ function themeFreeReply() {
   else { saveStorage(); renderThemeTab(); }
 }
 
+// ===== Hoạt động do AI dẫn =====
+// Cảnh, lời thoại và gợi ý đều sinh theo thân mật + chat + ký ức; lượt sau nối từ lượt trước.
+const THEME_AI_ROUNDS = 3;
+
+// Tự soạn: *...* hoặc (...) là hành động, "..." là lời nói, còn lại để AI tự hiểu
+function themeInputMode(text) {
+  const t = String(text || '').trim();
+  if (/^\*[^*\n]+\*$/.test(t) || /^\([^)\n]+\)$/.test(t)) return 'action';
+  if (/^["“«][\s\S]*["”»]$/.test(t)) return 'say';
+  return 'free';
+}
+
+function themeModeLabel(mode) {
+  return mode === 'action' ? 'hành động' : (mode === 'say' ? 'lời nói' : 'tự do');
+}
+
+function themeDynTotal(session, theme) {
+  if (session && session.dyn) return THEME_AI_ROUNDS;
+  return (theme && theme.steps && theme.steps.length) || THEME_AI_ROUNDS;
+}
+
+async function themeAiText(prompt, temperature) {
+  const keys = (window.state.apiKeys || [])
+    .map(k => String(k).trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
+  const model = String(window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+  for (const key of keys) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: typeof temperature === 'number' ? temperature : 0.9 }
+        })
+      });
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => ({}));
+      const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+      const text = parts.map(p => (p && p.text) || '').join('').trim();
+      if (text) return text;
+    } catch (e) {}
+  }
+  return '';
+}
+
+function themeParseJson(text) {
+  let s = String(text || '').replace(/\r/g, '').trim();
+  s = s.replace(/```(?:json)?/gi, '');
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b <= a) return null;
+  const raw = s.slice(a, b + 1);
+  try { return JSON.parse(raw); } catch (e) {}
+  // Model đôi khi xuống dòng thật bên trong chuỗi JSON
+  let fixed = '', inStr = false, esc = false;
+  for (const ch of raw) {
+    if (inStr) {
+      if (esc) { fixed += ch; esc = false; continue; }
+      if (ch === '\\') { fixed += ch; esc = true; continue; }
+      if (ch === '"') { inStr = false; fixed += ch; continue; }
+      if (ch === '\n') { fixed += '\\n'; continue; }
+      fixed += ch;
+    } else {
+      if (ch === '"') inStr = true;
+      fixed += ch;
+    }
+  }
+  try { return JSON.parse(fixed); } catch (e) { return null; }
+}
+
+function themeDynContext(story, char) {
+  const me = themePlayerName(story);
+  const persona = (typeof activeStoryPersona === 'function' ? activeStoryPersona(story) : null) || {};
+  const aff = (window.state.affectionLevels || {})[char.id] || { level: 1 };
+  const setting = String(story.setting || '').replace(/\s+/g, ' ').slice(0, 700);
+  const others = (story.characters || []).filter(c => c.id !== char.id).map(c => c.name).join(', ');
+  const hist = ((window.state.chatHistories || {})[story.id] || [])
+    .filter(m => m && (m.sender === 'user' || m.sender === 'ai'))
+    .slice(-6)
+    .map(m => `${m.sender === 'user' ? me : char.name}: ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 200)}`)
+    .join('\n');
+  const mems = (story.themeMemories || []).slice(-3)
+    .map(m => `- ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 220)}`)
+    .join('\n');
+  return [
+    `[NHÂN VẬT] ${char.name}`,
+    `[TÍNH CÁCH] ${String(char.personality || '(không ghi)').slice(0, 500)}`,
+    `[NGƯỜI CHƠI] ${me}${persona.memories ? ' — ' + String(persona.memories).slice(0, 250) : ''}`,
+    `[THÂN MẬT] Lv.${aff.level || 1}`,
+    `[TRUYỆN] ${String(story.title || '').slice(0, 80)}`,
+    `[BỐI CẢNH] ${setting || '(không có)'}`,
+    others ? `[NHÂN VẬT KHÁC trong truyện, chỉ đưa vào nếu thật cần] ${others}` : '',
+    '[CHAT GẦN ĐÂY]',
+    hist || '- (chưa có)',
+    '[KÝ ỨC HOẠT ĐỘNG CŨ]',
+    mems || '- (chưa có)'
+  ].filter(Boolean).join('\n');
+}
+
+function themeDynTranscript(session) {
+  return (session.log || []).filter(e => e && e.text).map(e => {
+    const who = e.k === 'me' ? `NGƯỜI CHƠI (${themeModeLabel(e.mode)})`
+      : e.k === 'char' ? 'NHÂN VẬT'
+      : e.k === 'closing' ? 'KHÉP LẠI' : 'DIỄN BIẾN';
+    return `${who}: ${e.text}`;
+  }).join('\n') || '(chưa có)';
+}
+
+function themeDynPrompt(story, theme, char, session, input) {
+  const round = (session.step || 0) + 1;
+  const mustEnd = round >= THEME_AI_ROUNDS;
+  const inputBlock = input
+    ? `[NGƯỜI CHƠI VỪA] (${themeModeLabel(input.mode)}) ${input.text}`
+    : '[MỞ CẢNH] Người chơi chưa làm gì. Hãy mở cảnh và mời người chơi tham gia.';
+  const currentBeat = session.beat && !session.beat.end
+    ? `[NHỊP NGAY TRƯỚC] ${session.beat.narration || ''} ${session.beat.line || ''}`.trim()
+    : '';
+  return `Bạn dẫn một hoạt động đời thường ngắn trong ứng dụng trò chuyện. Đây KHÔNG phải khung chat: không có tin nhắn, không ai cầm điện thoại. Hãy viết như một đoạn truyện ngắn tương tác, mỗi lượt là một khoảnh khắc nhỏ, chậm và cụ thể.
+
+${themeDynContext(story, char)}
+
+[HOẠT ĐỘNG] ${theme.name} — ${theme.tagline}
+${currentBeat}
+[DIỄN BIẾN ĐÃ XẢY RA]
+${themeDynTranscript(session)}
+
+${inputBlock}
+[LƯỢT] ${round}/${THEME_AI_ROUNDS}${mustEnd ? ' — ĐÂY LÀ LƯỢT CUỐI, BẮT BUỘC KHÉP LẠI' : ''}
+
+[QUY TẮC]
+1. Tình huống phải cụ thể, mới, hợp tính cách ${char.name}, mức thân mật Lv.${themeCharLevel(char.id)}, bối cảnh truyện, những gì đã xảy ra trong chat và ký ức cũ. Không lặp lại hoạt động đã có trong ký ức.
+2. TUYỆT ĐỐI không viết lời nói, hành động, suy nghĩ hay cảm xúc thay người chơi; không nhắc lại nguyên văn lời người chơi vừa nói; chỉ tả phản ứng bên ngoài của nhân vật và điều xảy ra trong cảnh.
+3. "narration" là 1-2 câu tả cảnh và phản ứng của nhân vật ngay sau điều người chơi vừa làm. "line" là lời thoại hoặc hành động tiếp theo của nhân vật, đúng khẩu khí.
+4. "choices" gồm 2-3 câu trả lời gợi ý cho người chơi ở ngôi của họ. Mỗi câu một thái độ khác nhau, đều tự nhiên và hợp lý; KHÔNG có lựa chọn đúng/sai, không gắn nhãn tốt/xấu. Tối đa một câu viết dạng hành động trong dấu *...*.
+5. Nếu đã đủ ${THEME_AI_ROUNDS} lượt hoặc cảnh đã tới chỗ khép tự nhiên (không sớm hơn lượt 2), trả "choices": [] kèm "closing": 1-2 câu khép lại buổi và "end": true. Lượt cuối bắt buộc khép.
+6. Tiếng Việt có dấu, đúng từ điển, câu hoàn chỉnh; không markdown, không tiêu đề, không nhắc hệ thống, điểm số hay phần thưởng.
+
+Chỉ trả về một JSON đúng định dạng, không thêm chữ nào khác:
+{"narration":"...","line":"...","choices":["...","..."]}
+Khi khép: {"narration":"...","line":"...","choices":[],"closing":"...","end":true}`;
+}
+
+function themeDynBeat(data, session) {
+  if (!data || typeof data !== 'object') return null;
+  const pick = v => String(v == null ? '' : v).trim();
+  const narration = pick(data.narration).slice(0, 700);
+  const line = pick(data.line).slice(0, 500);
+  let choices = Array.isArray(data.choices) ? data.choices.map(pick).filter(Boolean).slice(0, 3) : [];
+  const closing = pick(data.closing).slice(0, 600);
+  let end = !!data.end || (!choices.length && !!closing);
+  if (((session && session.step) || 0) < 1) end = false;
+  if (!narration && !line) return null;
+  if (end) choices = [];
+  return { narration, line, choices, closing, end };
+}
+
+async function themeDynAdvance(story, session, input) {
+  if (!story || !session || !session.dyn) return;
+  const theme = CHAT_THEMES[session.themeId];
+  const char = (story.characters || []).find(c => c.id === session.charId);
+  if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
+  session.busy = true;
+  session.error = '';
+  saveStorage();
+  renderThemeTab();
+
+  let beat = null;
+  try {
+    const raw = await themeAiText(themeDynPrompt(story, theme, char, session, input), 0.9);
+    beat = themeDynBeat(themeParseJson(raw), session);
+  } catch (e) {}
+
+  // Người chơi đã bỏ hoạt động trong lúc chờ
+  if (story.themeSession !== session) return;
+  session.busy = false;
+
+  if (!beat) {
+    if (!input) {
+      // Không gọi được AI ở cảnh đầu: quay về kịch bản cố định, không mất lượt chơi
+      session.dyn = 0;
+      session.log = [];
+      session.pending = null;
+      session.pendingEcho = null;
+      saveStorage();
+      renderThemeTab();
+      return;
+    }
+    session.error = 'Chưa nối được AI, bạn thử lại nhé.';
+    saveStorage();
+    renderThemeTab();
+    return;
+  }
+
+  if (input) {
+    const prev = session.beat;
+    if (prev && !prev.end) {
+      if (prev.narration) session.log.push({ k: 'nar', text: prev.narration });
+      if (prev.line) session.log.push({ k: 'char', text: prev.line });
+    }
+    session.log.push({ k: 'me', text: input.text, mode: input.mode || themeInputMode(input.text) });
+    const line = [beat.narration, beat.line].filter(Boolean).join(' ');
+    session.picks.push({ label: input.text, mode: input.mode, line });
+    session.step = (session.step || 0) + 1;
+    session.pending = null;
+    session.pendingEcho = null;
+  }
+
+  if (beat.end) {
+    if (beat.narration) session.log.push({ k: 'nar', text: beat.narration });
+    if (beat.line) session.log.push({ k: 'char', text: beat.line });
+    session.closing = beat.closing || beat.narration || '';
+    session.beat = { end: true, choices: [] };
+  } else {
+    session.beat = beat;
+  }
+  saveStorage();
+  renderThemeTab();
+}
+
+function themeDynSubmit(text, mode) {
+  const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+  const session = story && story.themeSession;
+  if (!story || !session || !session.dyn || session.busy) return;
+  if (!session.beat || session.beat.end) return;
+  const clean = String(text || '').trim().slice(0, 200);
+  if (!clean) return;
+  const m = mode || themeInputMode(clean);
+  session.pending = { text: clean, mode: m };
+  session.pendingEcho = { text: clean, mode: m };
+  themeDynAdvance(story, session, session.pending);
+}
+
+function themeDynChoice(index) {
+  const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+  const session = story && story.themeSession;
+  if (!story || !session || !session.dyn || session.busy) return;
+  const beat = session.beat;
+  const text = beat && !beat.end ? (beat.choices || [])[index] : '';
+  if (!text) return;
+  themeDynSubmit(text, themeInputMode(text));
+}
+
+function themeDynRetry() {
+  const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+  const session = story && story.themeSession;
+  if (!story || !session || !session.dyn || session.busy || !session.pending) return;
+  themeDynAdvance(story, session, session.pending);
+}
+
+function themeDynFinish() {
+  const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
+  const session = story && story.themeSession;
+  if (!story || !session || !session.dyn) return;
+  if (!session.beat || !session.beat.end) return;
+  const theme = CHAT_THEMES[session.themeId];
+  const char = (story.characters || []).find(c => c.id === session.charId);
+  if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
+  finishThemeActivity(story, theme, char, session);
+}
+
+// Ký ức ghi lại diễn biến thật của buổi, để chat và nhật ký nhớ đúng chuyện đã xảy ra
+function themeDynMemory(story, theme, char, session) {
+  const parts = [];
+  (session.log || []).forEach(e => {
+    if (e && (e.k === 'nar' || e.k === 'closing') && e.text) parts.push(e.text);
+  });
+  if (!parts.length) {
+    parts.push((session.picks || []).map(p => p.line).filter(Boolean).join(' '));
+  }
+  if (session.closing && !parts.some(p => p.indexOf(session.closing) >= 0)) parts.push(session.closing);
+  const text = `${theme.name} cùng ${char.name}. ${parts.join(' ')}`.replace(/\s+/g, ' ').trim();
+  return text.slice(0, 700);
+}
+
 // Thưởng ngẫu nhiên như quà thường ngày, không phụ thuộc câu trả lời "đúng/sai"
-function applyThemeReward(theme, char) {
+function applyThemeReward(theme, char, tierOverride) {
   const got = [];
   const roll = Math.random();
-  const tier = roll < 0.2 ? 2 : (roll < 0.55 ? 1 : 0);
+  const tier = typeof tierOverride === 'number' ? tierOverride : (roll < 0.2 ? 2 : (roll < 0.55 ? 1 : 0));
   const money = (theme.rewards.money || [])[tier] || 0;
   if (money > 0) {
     window.state.walletBalance = (window.state.walletBalance || 0) + money;
@@ -980,8 +1269,12 @@ function applyThemeReward(theme, char) {
 }
 
 function finishThemeActivity(story, theme, char, session) {
-  const tier = themeResultTier(session.score);
-  const memory = `${theme.name} cùng ${char.name}. ${session.picks.map(p => p.line).join(' ')} ${theme.closing[tier]}`;
+  const dyn = !!session.dyn;
+  const roll = Math.random();
+  const tier = dyn ? (roll < 0.2 ? 2 : (roll < 0.55 ? 1 : 0)) : themeResultTier(session.score);
+  const memory = dyn
+    ? themeDynMemory(story, theme, char, session)
+    : `${theme.name} cùng ${char.name}. ${session.picks.map(p => p.line).join(' ')} ${theme.closing[tier]}`;
   story.themeMemories.push({ themeId: theme.id, charId: char.id, text: memory, tier, ts: Date.now() });
   if (story.themeMemories.length > 40) story.themeMemories.splice(0, story.themeMemories.length - 40);
   try {
@@ -992,11 +1285,14 @@ function finishThemeActivity(story, theme, char, session) {
   const repeat = day.runs >= THEME_REWARD_RUNS;
   let got = [];
   if (!repeat) {
-    got = applyThemeReward(theme, char);
+    got = applyThemeReward(theme, char, dyn ? tier : undefined);
     day.runs++;
   }
 
-  story.themeLastResult = { themeId: theme.id, charId: char.id, tier, memory, rewards: got, repeat, ts: Date.now() };
+  story.themeLastResult = {
+    themeId: theme.id, charId: char.id, tier, memory, summary: dyn ? (session.closing || '') : '',
+    rewards: got, repeat, ts: Date.now()
+  };
   story.themeSession = null;
   window.__themeShowHome = false;
   saveStorage();
@@ -1048,6 +1344,7 @@ function renderThemeHome(story) {
   const char = themeSelectedChar(story);
   const session = story.themeSession;
   const sessionTheme = session ? CHAT_THEMES[session.themeId] : null;
+  const sessionTotal = session ? themeDynTotal(session, sessionTheme) : THEME_AI_ROUNDS;
 
   const charChips = story.characters.map(c => {
     const active = char && c.id === char.id;
@@ -1104,7 +1401,7 @@ function renderThemeHome(story) {
     </div>
     <div class="theme-chars">${charChips}</div>
     ${sessionTheme ? `<div class="theme-resume">
-      <div class="theme-resume-txt">Đang dở: <b>${sessionTheme.icon} ${sessionTheme.name}</b> · bước ${session.step + 1}/${sessionTheme.steps.length}</div>
+      <div class="theme-resume-txt">Đang dở: <b>${sessionTheme.icon} ${sessionTheme.name}</b> · bước ${Math.min(session.step + 1, sessionTotal)}/${sessionTotal}</div>
       <div class="theme-resume-actions">
         <button class="btn btn-pink" onclick="window.__themeShowHome=false;renderThemeTab()">Tiếp tục</button>
         <button class="btn btn-outline" onclick="themeAbandonSession()">Bỏ</button>
@@ -1127,11 +1424,12 @@ function renderThemeHome(story) {
 }
 
 function renderThemeSession(story) {
-  const root = document.getElementById('theme-body');
   const session = story.themeSession;
   const theme = CHAT_THEMES[session.themeId];
   const char = (story.characters || []).find(c => c.id === session.charId);
   if (!theme || !char) { story.themeSession = null; saveStorage(); renderThemeTab(); return; }
+  if (session.dyn) { renderThemeDynSession(story, session, theme, char); return; }
+  const root = document.getElementById('theme-body');
   const step = theme.steps[session.step];
   if (!step) { finishThemeActivity(story, theme, char, session); return; }
   const me = themePlayerName(story);
@@ -1181,6 +1479,87 @@ function renderThemeSession(story) {
   }
 }
 
+function renderThemeDynSession(story, session, theme, char) {
+  const root = document.getElementById('theme-body');
+  if (!root) return;
+  const effect = THEME_EFFECT[theme.id] || 'sparks';
+  const aiArt = themeStageArt(char);
+  const art = themeCharArt(char) || char.avatar;
+  const artBusy = themeArtBusy(char);
+  const canAi = themeHasApiKey();
+  const total = THEME_AI_ROUNDS;
+  const beat = session.beat;
+  const closing = !!(beat && beat.end);
+  const stepLabel = closing ? total : Math.min((session.step || 0) + 1, total);
+  const pct = closing ? 100 : Math.round((session.step || 0) / total * 100);
+
+  const logHtml = (session.log || []).map(e => {
+    if (!e || !e.text) return '';
+    if (e.k === 'me') return `<div class="activity-log-line me">${escapeHtml(e.text)}</div>`;
+    if (e.k === 'char') return `<div class="activity-log-line char"><b>${escapeHtml(char.name)}</b>${escapeHtml(e.text)}</div>`;
+    if (e.k === 'closing') return `<div class="activity-log-line closing">${escapeHtml(e.text)}</div>`;
+    return `<div class="activity-log-line nar">${escapeHtml(e.text)}</div>`;
+  }).join('');
+
+  const echo = session.pendingEcho && session.pendingEcho.text
+    ? `<div class="activity-log-line me">${escapeHtml(session.pendingEcho.text)}</div>` : '';
+  const showBeat = beat && !beat.end && !session.busy;
+  const narration = showBeat && beat.narration ? `<div class="activity-narration">${escapeHtml(beat.narration)}</div>` : '';
+  const line = showBeat && beat.line
+    ? `<div class="activity-dialogue"><div class="activity-speaker">${escapeHtml(char.name)}</div><div class="activity-line">${escapeHtml(beat.line)}</div></div>` : '';
+  const options = showBeat
+    ? (beat.choices || []).map((c, i) => `<button class="activity-choice" onclick="themeChoose(${i})">${escapeHtml(c)}</button>`).join('')
+    : '';
+  const thinking = session.busy
+    ? `<div class="activity-thinking"><i></i><i></i><i></i><span>${session.step ? 'Diễn tiếp…' : 'Mở cảnh…'}</span></div>` : '';
+  const error = session.error && !session.busy
+    ? `<div class="activity-error">${escapeHtml(session.error)}<button class="activity-retry" onclick="themeDynRetry()">Thử lại</button></div>` : '';
+  const finish = closing
+    ? `<div class="activity-closing">${escapeHtml(session.closing || '')}</div>
+       <button class="btn btn-pink activity-finish" onclick="themeDynFinish()">💮 Khép lại buổi này</button>` : '';
+
+  root.innerHTML = `
+    <div class="activity-stage fx-${effect} ${aiArt ? 'has-scene' : ''}">
+      ${aiArt ? `<img class="activity-scene" src="${escapeHtml(aiArt)}" alt="">` : ''}
+      ${aiArt ? '<div class="activity-scene-shade"></div>' : ''}
+      ${themeFxHtml(effect)}
+      <div class="activity-stage-head">
+        <button class="activity-back" onclick="themeCloseOverlay()">←</button>
+        <div class="activity-stage-title">${theme.icon} ${theme.name}</div>
+        ${canAi ? `<button class="activity-ai-mini" title="Tạo dáng AI" onclick="generateThemeArt()" ${artBusy ? 'disabled' : ''}>${artBusy ? '⏳' : '✨'}</button>` : ''}
+        <div class="activity-stage-step">${stepLabel}/${total}</div>
+      </div>
+      <div class="activity-progress"><span style="width:${pct}%"></span></div>
+      ${aiArt ? '' : `<div class="activity-art">
+        ${art ? `<img data-theme-art="${escapeHtml(char.id)}" src="${escapeHtml(art)}" alt="${escapeHtml(char.name)}">` : `<span class="activity-art-glyph">${theme.icon}</span>`}
+      </div>`}
+      ${logHtml || echo ? `<div class="activity-log" data-dyn-log>${logHtml}${echo}</div>` : ''}
+      ${narration}
+      ${line}
+      ${thinking}
+      ${error}
+      ${finish}
+      ${options ? `<div class="activity-choices">${options}</div>` : ''}
+      ${showBeat ? `<div class="activity-free">
+        <input id="activity-free-input" type="text" maxlength="200" placeholder="Hoặc tự soạn: *hành động* hoặc &quot;lời nói&quot;..." onkeydown="if(event.key==='Enter'){event.preventDefault();themeFreeReply();}">
+        <button class="btn btn-pink" onclick="themeFreeReply()">Gửi</button>
+      </div>` : ''}
+      <button class="activity-abandon" onclick="themeAbandonSession()">Bỏ hoạt động</button>
+    </div>
+  `;
+
+  const log = root.querySelector('[data-dyn-log]');
+  if (log) log.scrollTop = log.scrollHeight;
+
+  if (!aiArt && !char.cutout) {
+    themeEnsureAutoCutout(char, url => {
+      if (!url) return;
+      const img = Array.from(root.querySelectorAll('[data-theme-art]')).find(x => x.getAttribute('data-theme-art') === char.id);
+      if (img) img.src = url;
+    });
+  }
+}
+
 function renderThemeResult(story) {
   const root = document.getElementById('theme-body');
   const r = story.themeLastResult;
@@ -1198,7 +1577,7 @@ function renderThemeResult(story) {
       <div class="theme-result-icon">${themeTierIcon(r.tier)}</div>
       <div class="theme-result-title">${themeTierLabel(r.tier)}</div>
       <div class="theme-result-sub">${theme.icon} ${theme.name} · ${escapeHtml(char.name)}</div>
-      <div class="theme-result-memory">${escapeHtml(r.memory)}</div>
+      <div class="theme-result-memory">${escapeHtml(r.summary || r.memory)}</div>
       <div class="theme-result-rewards">${rewards}</div>
       <div class="theme-result-actions">
         <button class="btn btn-pink" onclick="themeCloseOverlay()">💬 Về trò chuyện</button>
@@ -1211,6 +1590,8 @@ window.renderThemeTab = renderThemeTab;
 window.startThemeActivity = startThemeActivity;
 window.themeChoose = themeChoose;
 window.themeFreeReply = themeFreeReply;
+window.themeDynRetry = themeDynRetry;
+window.themeDynFinish = themeDynFinish;
 window.selectThemeChar = selectThemeChar;
 window.themeBackToHome = themeBackToHome;
 window.themeAbandonSession = themeAbandonSession;
