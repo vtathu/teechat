@@ -738,8 +738,9 @@ function ensureThemeStory(story) {
     const theme = CHAT_THEMES[c.activityId];
     if (theme && themeIsUnlocked(theme, c, story)) {
       const before = (window.state.inventory || []).length;
-      themeGrantActivityItem(story, c);
+      const item = themeGrantActivityItem(story, c);
       if ((window.state.inventory || []).length !== before) changed = true;
+      if (item && themeRefreshActivityItem(item, story, c)) changed = true;
     }
   });
   const am = window.state.activeMode && window.state.activeMode[story.id];
@@ -758,6 +759,25 @@ function themeSelectedChar(story) {
 
 function themeCharLevel(charId) {
   return ((window.state.affectionLevels || {})[charId] || { level: 1 }).level;
+}
+
+function themeAffectionStage(lv) {
+  if (lv >= 60) return 'Tri kỷ';
+  if (lv >= 40) return 'Tâm giao';
+  if (lv >= 20) return 'Hảo hữu';
+  if (lv >= 10) return 'Thân thiết';
+  return 'Mới quen';
+}
+
+// Cài đặt nhân vật ghi xưng hô trong phần tính cách, dạng "xưng hô Anh - em"
+function themePronounPair(char) {
+  const p = String((char && char.personality) || '');
+  const m = p.match(/xưng\s*hô\s*[:\-–—]?\s*([^\n.;()]{2,50})/i);
+  if (!m) return null;
+  const pair = m[1].split(/\s*(?:[-–—\/,]|\bvà\b|\bvới\b)\s*/i)
+    .map(s => s.replace(/[.\s]+$/, '').trim()).filter(Boolean);
+  if (pair.length < 2) return null;
+  return { self: pair[0].slice(0, 12), you: pair[1].slice(0, 12) };
 }
 
 function themePlayerName(story) {
@@ -781,23 +801,36 @@ function themeActivityItemFor(story, char) {
     it && it.cat === 'activity' && it.storyId === story.id && it.charId === char.id) || null;
 }
 
+function themeRefreshActivityItem(item, story, char) {
+  if (!item || !story || !char) return false;
+  const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES[item.themeId] || CHAT_THEMES.daily;
+  const name = `Phiếu hoạt động: ${theme.icon} ${theme.name} · ${char.name}`;
+  const desc = `${theme.tagline} · ${themeAffectionStage(themeCharLevel(char.id))} · ${story.title || ''}`;
+  const changed = item.name !== name || item.desc !== desc || item.themeId !== theme.id;
+  item.name = name;
+  item.desc = desc;
+  item.themeId = theme.id;
+  return changed;
+}
+
 function themeGrantActivityItem(story, char) {
   if (!story || !char) return null;
   const existing = themeActivityItemFor(story, char);
-  if (existing) return existing;
+  if (existing) { themeRefreshActivityItem(existing, story, char); return existing; }
   const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES.daily;
   if (!window.state.inventory) window.state.inventory = [];
   const item = {
     uniqueId: 'act-' + char.id + '-' + Date.now(),
     cat: 'activity',
-    name: `Phiếu hoạt động: ${theme.icon} ${theme.name}`,
-    desc: `${theme.tagline} · ${char.name} · ${story.title || ''}`,
+    name: '',
+    desc: '',
     storyId: story.id,
     charId: char.id,
     themeId: theme.id,
     qty: 1,
     paid: 0
   };
+  themeRefreshActivityItem(item, story, char);
   window.state.inventory.push(item);
   return item;
 }
@@ -1042,6 +1075,8 @@ function themeDynContext(story, char) {
   const me = themePlayerName(story);
   const persona = (typeof activeStoryPersona === 'function' ? activeStoryPersona(story) : null) || {};
   const aff = (window.state.affectionLevels || {})[char.id] || { level: 1 };
+  const lv = aff.level || 1;
+  const pr = themePronounPair(char);
   const setting = String(story.setting || '').replace(/\s+/g, ' ').slice(0, 700);
   const others = (story.characters || []).filter(c => c.id !== char.id).map(c => c.name).join(', ');
   const hist = ((window.state.chatHistories || {})[story.id] || [])
@@ -1056,7 +1091,8 @@ function themeDynContext(story, char) {
     `[NHÂN VẬT] ${char.name}`,
     `[TÍNH CÁCH] ${String(char.personality || '(không ghi)').slice(0, 500)}`,
     `[NGƯỜI CHƠI] ${me}${persona.memories ? ' — ' + String(persona.memories).slice(0, 250) : ''}`,
-    `[THÂN MẬT] Lv.${aff.level || 1}`,
+    `[QUAN HỆ] ${themeAffectionStage(lv)} · Lv.${lv}`,
+    `[XƯNG HÔ] ${pr ? `${char.name} xưng "${pr.self}", gọi người chơi là "${pr.you}"` : 'chưa ghi trong hồ sơ — tự chọn cặp xưng hô hợp tuổi, tính cách và quan hệ rồi giữ cố định'}`,
     `[TRUYỆN] ${String(story.title || '').slice(0, 80)}`,
     `[BỐI CẢNH] ${setting || '(không có)'}`,
     others ? `[NHÂN VẬT KHÁC trong truyện, chỉ đưa vào nếu thật cần] ${others}` : '',
@@ -1098,12 +1134,13 @@ ${inputBlock}
 [LƯỢT] ${round}/${THEME_AI_ROUNDS}${mustEnd ? ' — ĐÂY LÀ LƯỢT CUỐI, BẮT BUỘC KHÉP LẠI' : ''}
 
 [QUY TẮC]
-1. Tình huống phải cụ thể, mới, hợp tính cách ${char.name}, mức thân mật Lv.${themeCharLevel(char.id)}, bối cảnh truyện, những gì đã xảy ra trong chat và ký ức cũ. Không lặp lại hoạt động đã có trong ký ức.
+1. Tình huống phải cụ thể, mới, hợp tính cách ${char.name}, quan hệ ${themeAffectionStage(themeCharLevel(char.id))} (Lv.${themeCharLevel(char.id)}), bối cảnh truyện, những gì đã xảy ra trong chat và ký ức cũ. Cảnh mở đầu phải nối tiếp tự nhiên từ [CHAT GẦN ĐÂY] và [BỐI CẢNH], không bỏ qua mốc truyện, không mở đầu lại từ đầu. Không lặp lại hoạt động đã có trong ký ức.
 2. TUYỆT ĐỐI không viết lời nói, hành động, suy nghĩ hay cảm xúc thay người chơi; không nhắc lại nguyên văn lời người chơi vừa nói; chỉ tả phản ứng bên ngoài của nhân vật và điều xảy ra trong cảnh.
 3. "narration" là 1-2 câu tả cảnh và phản ứng của nhân vật ngay sau điều người chơi vừa làm. "line" là lời thoại hoặc hành động tiếp theo của nhân vật, đúng khẩu khí.
 4. "choices" gồm 2-3 câu trả lời gợi ý cho người chơi ở ngôi của họ. Mỗi câu một thái độ khác nhau, đều tự nhiên và hợp lý; KHÔNG có lựa chọn đúng/sai, không gắn nhãn tốt/xấu. Tối đa một câu viết dạng hành động trong dấu *...*.
 5. Nếu đã đủ ${THEME_AI_ROUNDS} lượt hoặc cảnh đã tới chỗ khép tự nhiên (không sớm hơn lượt 2), trả "choices": [] kèm "closing": 1-2 câu khép lại buổi và "end": true. Lượt cuối bắt buộc khép.
 6. Tiếng Việt có dấu, đúng từ điển, câu hoàn chỉnh; không markdown, không tiêu đề, không nhắc hệ thống, điểm số hay phần thưởng.
+7. Giữ đúng [XƯNG HÔ] và [QUAN HỆ] suốt hoạt động: không tự đổi cặp xưng hô, cách gọi phải khớp tuổi và tính cách; mức thân mật thấp thì giữ ý, chưa vội thân mật, mức cao thì gần gũi tự nhiên; không đi trước diễn biến truyện.
 
 Chỉ trả về một JSON đúng định dạng, không thêm chữ nào khác:
 {"narration":"...","line":"...","choices":["...","..."]}
@@ -1372,7 +1409,7 @@ function renderThemeHome(story) {
       </div>
       <div class="activity-home-body">
         <div class="activity-home-name">${theme.name}</div>
-        <div class="activity-home-tag">${theme.tagline} · ${escapeHtml(char.name)}</div>
+        <div class="activity-home-tag">${theme.tagline} · ${escapeHtml(char.name)} · ${themeAffectionStage(lv)}</div>
         <div class="activity-home-meta">${theme.minLv > 1 ? `Mốc Lv.${theme.minLv} · ` : ''}${themeRewardHint(theme)}</div>
         ${unlocked
           ? `<button class="btn btn-pink activity-start" onclick="startThemeActivity()">▶ Bắt đầu hoạt động</button>

@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=64" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=64"></noscript>
+  <link rel="stylesheet" href="style.css?v=66" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=66"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -514,6 +514,16 @@
     </div>
   </div>
 
+  <div id="modal-ticket" class="modal" onclick="if(event.target===this) Play.closeStall()">
+    <div class="modal-content ticket-sheet">
+      <div class="modal-header">
+        <h3 id="ticket-sheet-title">🎟️ Quầy vé số</h3>
+        <button class="btn btn-outline" onclick="Play.closeStall()">✖</button>
+      </div>
+      <div id="ticket-sheet-body" class="ticket-sheet-body"></div>
+    </div>
+  </div>
+
   <div id="modal-sudoku" class="modal">
     <div class="modal-content" style="max-width: 480px; text-align: center;">
       <div class="modal-header">
@@ -946,14 +956,14 @@
   <script src="shop.js?v=19"></script>
   <script src="jobs.js?v=19"></script>
   <script src="craft.js?v=4"></script>
-  <script src="themes.js?v=7"></script>
+  <script src="themes.js?v=8"></script>
   <script src="diary.js?v=5"></script>
   <script src="quests.js?v=8"></script>
   <script src="pets.js?v=22"></script>
   <script src="chat.js?v=29"></script>
-  <script src="ui.js?v=7"></script>
+  <script src="ui.js?v=9"></script>
   <script src="audio.js?v=7"></script>
-  <script src="play.js?v=6"></script>
+  <script src="play.js?v=9"></script>
   <script src="farm.js?v=32"></script>
   <script src="biz.js?v=8"></script>
   <script src="push.js?v=1"></script>

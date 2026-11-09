@@ -326,12 +326,23 @@
     if (!$('pet-style') && typeof window.renderPetTab === 'function') window.renderPetTab(); // nạp CSS của thú cưng
 
     const items = (S().inventory || []).filter(o => o && o.kind !== 'craft' && !isPetObj(o) && !(typeof isEstateObj === 'function' && isEstateObj(o)));
+    const tickets = items.filter(o => o.cat === 'ticket' && o.ticket);
+    const rest = items.filter(o => !(o.cat === 'ticket' && o.ticket));
     const hasHouse = estates().length > 0;
-    const actRows = items.filter(o => o.cat === 'activity').map(o => `<div class="bag-row"><div class="nm">${esc(o.name)}
+    const ticketRows = tickets.map(o => {
+      const t = o.ticket, ready = (window.Play && window.Play.ticketReady) ? window.Play.ticketReady(o) : false;
+      return `<div class="bag-row bag-ticket"><div class="nm">🎟️ ${esc(o.name.replace(/^🎟️\s*/, ''))}
+        <div class="bag-ticket-sub">${esc(o.desc || '')}</div></div><div class="bt">
+        ${ready
+          ? `<button class="btn btn-pink" onclick="Play.openDraw('${o.uniqueId}')">Ra phố dò</button>`
+          : `<span class="bag-ticket-wait">Chờ 16:30</span>`}
+      </div></div>`;
+    }).join('');
+    const actRows = rest.filter(o => o.cat === 'activity').map(o => `<div class="bag-row"><div class="nm">${esc(o.name)}
       <div style="font-size:.72rem;color:#718096;margin-top:2px;">${esc(o.desc || '')}</div></div><div class="bt">
       <button class="btn btn-pink" onclick="UI.useActivity('${o.uniqueId}')">▶ Dùng</button>
     </div></div>`).join('');
-    gen.innerHTML = actRows + (items.filter(o => o.cat !== 'activity').map(o => {
+    gen.innerHTML = ticketRows + actRows + (rest.filter(o => o.cat !== 'activity').map(o => {
       const unit = sellUnit(o), qty = o.qty || 1;
       return `<div class="bag-row"><div class="nm">${esc(o.name)}</div><div class="bt">
         <button class="btn btn-pink" onclick="UI.gift('${o.uniqueId}')">🎁 Tặng</button>

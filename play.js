@@ -45,6 +45,159 @@
   const JACKPOT_MAX = 160e9;
   // Mỗi kỳ quay bốc lại một hũ ngẫu nhiên 100 - 160 tỷ.
   const rollJackpot = () => Math.round((JACKPOT_MIN + Math.random() * (JACKPOT_MAX - JACKPOT_MIN)) / 5e7) * 5e7;
+
+  // ===== VÉ SỐ TRUYỀN THỐNG: sổ 16:30, vé giấy nằm trong túi, ra quầy dò =====
+  const XSK_COST = 10000;
+  const XSK_CUTOFF = 16 * 60 + 30;
+  const XSK_PER_DAY = 20;
+  const XSK_REGIONS = {
+    mb: { name: 'Miền Bắc', short: 'Bắc', len: 5 },
+    mt: { name: 'Miền Trung', short: 'Trung', len: 6 },
+    mn: { name: 'Miền Nam', short: 'Nam', len: 6 }
+  };
+  const XSK_SOUTH_TIERS = [
+    { key: 'db', name: 'Đặc biệt', len: 6, count: 1, value: 2000000000 },
+    { key: 'nhat', name: 'Nhất', len: 5, count: 1, value: 30000000 },
+    { key: 'nhi', name: 'Nhì', len: 5, count: 2, value: 15000000 },
+    { key: 'ba', name: 'Ba', len: 5, count: 2, value: 10000000 },
+    { key: 'tu', name: 'Tư', len: 5, count: 7, value: 3000000 },
+    { key: 'nam', name: 'Năm', len: 4, count: 1, value: 1000000 },
+    { key: 'sau', name: 'Sáu', len: 4, count: 3, value: 400000 },
+    { key: 'bay', name: 'Bảy', len: 3, count: 1, value: 200000 },
+    { key: 'tam', name: 'Tám', len: 2, count: 1, value: 100000 }
+  ];
+  const XSK_TIERS = {
+    mb: [
+      { key: 'db', name: 'Đặc biệt', len: 5, count: 1, value: 1000000000 },
+      { key: 'nhat', name: 'Nhất', len: 5, count: 1, value: 10000000 },
+      { key: 'nhi', name: 'Nhì', len: 5, count: 2, value: 5000000 },
+      { key: 'ba', name: 'Ba', len: 5, count: 6, value: 1000000 },
+      { key: 'tu', name: 'Tư', len: 4, count: 4, value: 400000 },
+      { key: 'nam', name: 'Năm', len: 4, count: 6, value: 200000 },
+      { key: 'sau', name: 'Sáu', len: 3, count: 3, value: 100000 },
+      { key: 'bay', name: 'Bảy', len: 2, count: 4, value: 40000 }
+    ],
+    mt: XSK_SOUTH_TIERS,
+    mn: XSK_SOUTH_TIERS
+  };
+  let xskRegion = 'mb', xskSaid = '';
+  let xskLastCheck = null, xskFocus = '', currentStall = '';
+  let lotClockTimer = null, lotClockMark = '', lotSayTimer = null;
+
+  function addDay(day, n) {
+    const a = day.split('-').map(Number);
+    const d = new Date(a[0], a[1] - 1, a[2] + n);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  const dmy = (day) => day.slice(8, 10) + '/' + day.slice(5, 7);
+  const xskDrawAt = (day) => { const a = day.split('-').map(Number); return new Date(a[0], a[1] - 1, a[2], 16, 30, 0, 0).getTime(); };
+  const canDraw = (day) => Date.now() >= xskDrawAt(day);
+  const currentDrawDay = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes() >= XSK_CUTOFF ? addDay(dayKey(), 1) : dayKey(); };
+  // Vé 6 số (Trung, Nam) dò được ngay, không phải chờ 16:30; vé Bắc 5 số vẫn chờ giờ sổ
+  const isSixDigit = (region) => !!(XSK_REGIONS[region] && XSK_REGIONS[region].len === 6);
+  const drawDayOf = (region) => isSixDigit(region) ? dayKey() : currentDrawDay();
+  const ticketOpen = (o) => !!(o && o.ticket && (isSixDigit(o.ticket.region) || canDraw(o.ticket.drawDay)));
+  const fmtTicket = (s) => String(s || '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  function X() {
+    const l = L();
+    if (!l.xsk || typeof l.xsk !== 'object') l.xsk = {};
+    const x = l.xsk;
+    if (!x.results || typeof x.results !== 'object') x.results = {};
+    if (!Array.isArray(x.history)) x.history = [];
+    if (typeof x.buyDay !== 'string') x.buyDay = '';
+    if (typeof x.buyCount !== 'number') x.buyCount = 0;
+    return x;
+  }
+  function seedOf(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function seeded(str) {
+    let a = seedOf(str);
+    return () => {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function digitRun(rng, len) { let s = ''; for (let i = 0; i < len; i++) s += Math.floor(rng() * 10); return s; }
+  function xskResult(day, region) {
+    const x = X();
+    if (!x.results[day]) x.results[day] = {};
+    if (x.results[day][region]) return x.results[day][region];
+    const rng = seeded('xsk|' + day + '|' + region);
+    const out = {};
+    XSK_TIERS[region].forEach(t => {
+      const arr = [];
+      for (let i = 0; i < t.count; i++) arr.push(digitRun(rng, t.len));
+      out[t.key] = arr;
+    });
+    x.results[day][region] = out;
+    const days = Object.keys(x.results).sort();
+    while (days.length > 20) delete x.results[days.shift()];
+    save();
+    return out;
+  }
+  function xskBoughtToday() {
+    const x = X();
+    if (x.buyDay !== dayKey()) { x.buyDay = dayKey(); x.buyCount = 0; }
+    return x.buyCount;
+  }
+  function bagTickets(product) {
+    return (S().inventory || []).filter(o => o && o.cat === 'ticket' && o.ticket && (!product || o.ticket.product === product));
+  }
+  function newXskTicket(region, digits, drawDay) {
+    return {
+      id: 'ticket-xsk-' + region,
+      name: '🎟️ Vé ' + XSK_REGIONS[region].name + ' · ' + fmtTicket(digits),
+      singleName: 'Vé số ' + XSK_REGIONS[region].short,
+      qty: 1,
+      cat: 'ticket',
+      paid: XSK_COST,
+      desc: 'Kỳ ' + dmy(drawDay) + (isSixDigit(region) ? ' · dò được ngay' : ' · sổ 16:30'),
+      uniqueId: 'tk-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+      ticket: { product: 'xsk', region: region, digits: digits, drawDay: drawDay, paid: XSK_COST }
+    };
+  }
+  const FAN_LETTERS = 'ABCDEFGHIJKLMNOPQRST';
+  const FAN_DECK_VERSION = 2;
+  function fanDeck(day, region) {
+    const x = X();
+    if (!x.fans || typeof x.fans !== 'object') x.fans = {};
+    const key = day + '|' + region;
+    let d = x.fans[key];
+    if (!d || d.v !== FAN_DECK_VERSION || !Array.isArray(d.list) || d.list.length !== XSK_PER_DAY) {
+      // Như xấp vé thật: thỉnh thoảng 2-3 tờ liền nhau trùng số để mua nhiều tờ một số
+      const rng = seeded('xskfan2|' + day + '|' + region);
+      const meta = XSK_REGIONS[region];
+      d = { v: FAN_DECK_VERSION, list: [] };
+      let run = 0;
+      for (let i = 0; i < XSK_PER_DAY; i++) {
+        let digits;
+        if (i > 0 && run < 3 && rng() < 0.4) { digits = d.list[i - 1].digits; run++; }
+        else { digits = digitRun(rng, meta.len); run = 0; }
+        d.list.push({ digits: digits, serial: FAN_LETTERS[i], sold: false });
+      }
+      x.fans[key] = d;
+      const keys = Object.keys(x.fans).sort();
+      while (keys.length > 60) delete x.fans[keys.shift()];
+      save();
+    }
+    return d;
+  }
+  function ticketPrize(t) {
+    const res = xskResult(t.drawDay, t.region);
+    const hits = [];
+    let total = 0;
+    XSK_TIERS[t.region].forEach(tier => (res[tier.key] || []).forEach(num => {
+      if (t.digits.endsWith(num)) { hits.push({ tier: tier.name, num: num, value: tier.value }); total += tier.value; }
+    }));
+    return { total: total, hits: hits };
+  }
+
   const SCRATCH_SYMBOLS = ['🍒', '🍋', '🍀', '⭐', '🔔', '7️⃣', '🍇', '🍑'];
   const SCRATCH_ROWS = [
     { p: 0.003, prize: 2000000, sym: '💎', name: 'Hũ kim cương' },
@@ -174,6 +327,342 @@
     if (jack) toast('🎉🎉 TRÚNG ĐỘC ĐẮC ' + bigMoney(total) + '!');
     else toast(total > 0 ? '🎉 Trúng ' + money(total) + '!' : 'Chưa trúng giải nào, chia buồn!');
   }
+
+  // ===================== PHỐ VÉ SỐ =====================
+  function buyTicket(index) {
+    const drawDay = drawDayOf(xskRegion);
+    const deck = fanDeck(drawDay, xskRegion);
+    const t = deck.list[index];
+    if (!t || t.sold) return toast('Tờ này có người lấy rồi.');
+    const bought = xskBoughtToday();
+    if (bought >= XSK_PER_DAY) return toast('Hôm nay chỉ mua được ' + XSK_PER_DAY + ' vé thôi.');
+    if (wallet() < XSK_COST) return toast('Không đủ tiền rồi.');
+    addMoney(-XSK_COST);
+    const x = X();
+    x.buyCount = bought + 1;
+    t.sold = true;
+    (S().inventory || (S().inventory = [])).push(newXskTicket(xskRegion, t.digits, drawDay));
+    const sameLeft = deck.list.filter(x => !x.sold && x.digits === t.digits).length;
+    xskSaid = 'Tờ ' + t.serial + ' của con đó. '
+      + (sameLeft ? 'Còn ' + sameLeft + ' tờ cùng số nếu con muốn lấy.' : 'Chúc trúng lớn nha!');
+    save(); sfx('buy'); render();
+    toast('Đã mua tờ ' + t.serial + ' · ' + fmtTicket(t.digits));
+  }
+  function xskCheck(uid) {
+    const inv = S().inventory || [];
+    const i = inv.findIndex(o => o && o.uniqueId === uid);
+    if (i < 0) return;
+    const t = inv[i];
+    if (!t.ticket || !ticketOpen(t)) return toast('Chưa tới giờ sổ của vé này.');
+    const r = ticketPrize(t.ticket);
+    inv.splice(i, 1);
+    const x = X();
+    x.history.unshift({ day: t.ticket.drawDay, region: t.ticket.region, digits: t.ticket.digits, prize: r.total, hits: r.hits.map(h => h.tier), at: Date.now() });
+    x.history = x.history.slice(0, 20);
+    if (r.total > 0) addMoney(r.total);
+    save(); sfx(r.total > 0 ? 'win' : 'lose');
+    xskLastCheck = { ticket: t.ticket, total: r.total, hits: r.hits };
+    xskFocus = '';
+    xskSaid = r.total > 0 ? 'Trúng ' + money(r.total) + ' rồi con ơi! Cô mừng quá!' : 'Tờ này chưa trúng, mai thử vận may nha con.';
+    render();
+    toast(r.total > 0 ? 'Trúng ' + money(r.total) + '!' : 'Vé này chưa trúng, để dành may mắn lần sau.');
+  }
+  function xskCheckAll() {
+    const inv = S().inventory || [];
+    const ready = inv.filter(o => o && o.cat === 'ticket' && o.ticket && o.ticket.product === 'xsk' && ticketOpen(o));
+    if (!ready.length) return toast('Chưa có vé nào tới giờ dò.');
+    const x = X();
+    let total = 0, wins = 0;
+    ready.forEach(t => {
+      const r = ticketPrize(t.ticket);
+      total += r.total;
+      if (r.total > 0) wins++;
+      x.history.unshift({ day: t.ticket.drawDay, region: t.ticket.region, digits: t.ticket.digits, prize: r.total, hits: r.hits.map(h => h.tier), at: Date.now() });
+    });
+    x.history = x.history.slice(0, 20);
+    const ids = new Set(ready.map(o => o.uniqueId));
+    S().inventory = inv.filter(o => !ids.has(o.uniqueId));
+    if (total > 0) addMoney(total);
+    save(); sfx(total > 0 ? 'win' : 'lose');
+    xskLastCheck = { bulk: true, count: ready.length, wins: wins, total: total };
+    xskFocus = '';
+    xskSaid = total > 0 ? 'Dò ' + ready.length + ' vé, trúng ' + money(total) + ' đó con!' : 'Cả xấp chưa trúng tờ nào, mai quay lại nha con.';
+    render();
+    toast(total > 0 ? 'Dò ' + ready.length + ' vé · trúng ' + money(total) + '!' : 'Dò ' + ready.length + ' vé · chưa vé nào trúng.');
+  }
+  function setXskRegion(r) { if (!XSK_REGIONS[r]) return; xskRegion = r; xskSaid = ''; renderStall(); }
+  function openDraw(uid) {
+    const t = (S().inventory || []).find(o => o && o.uniqueId === uid);
+    if (!t || !t.ticket) return;
+    xskRegion = t.ticket.region;
+    xskFocus = uid;
+    tab = 'lottery';
+    if (typeof openFs === 'function') openFs('play');
+    render();
+    stall('xsk');
+    setTimeout(() => { const el = document.getElementById('lot-' + uid); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 120);
+  }
+  function stall(name) {
+    if (!name) return;
+    currentStall = name;
+    if (name === 'xsk') xskSaid = '';
+    const title = document.getElementById('ticket-sheet-title');
+    if (title) title.textContent = name === 'xsk' ? '🎟️ Vé số ba miền' : name === 'scratch' ? '🎟️ Cào vé' : '🎱 Vietlott';
+    renderStall(true);
+    if (typeof openModal === 'function') openModal('modal-ticket');
+    sfx('click');
+  }
+  function closeStall() { currentStall = ''; stopSellerTimer(); if (typeof closeModal === 'function') closeModal('modal-ticket'); }
+  function renderStall(reset) {
+    const b = document.getElementById('ticket-sheet-body');
+    if (!b || !currentStall) { stopSellerTimer(); return; }
+    const keep = reset ? 0 : b.scrollTop;
+    if (currentStall === 'xsk') b.innerHTML = xskPanel();
+    else if (currentStall === 'scratch') b.innerHTML = scratchPanel();
+    else b.innerHTML = vietPanel();
+    b.scrollTop = keep;
+    if (currentStall === 'xsk') startSellerTimer(); else stopSellerTimer();
+  }
+  // Cô Bảy lâu lâu buột miệng câu khác, đổi mỗi 3 phút để không nhảy chữ liên tục
+  function xskIdleSay() {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins >= XSK_CUTOFF - 30 && mins < XSK_CUTOFF) return 'Sắp 16:30 sổ rồi, con có vé thì đem ra dò nha!';
+    if (mins >= XSK_CUTOFF && mins < XSK_CUTOFF + 30) return 'Sổ rồi đó, ai có vé đem ra cô dò!';
+    const flavors = [
+      '16:30 sổ nha con, nhớ ra dò!',
+      'Số đổi mỗi ngày, tờ nào cũng có duyên hết.',
+      'Con coi tờ nào hợp mắt thì lấy, cô để riêng.',
+      'Mấy tờ trùng số kìa, con lấy cả cặp cũng được.',
+      'Mua một tờ cũng vui, không cần nhiều đâu.',
+      'Sổ xong cô ngồi đây dò cho con, khỏi lo.'
+    ];
+    const rng = seeded('xskidle|' + Math.floor(Date.now() / 180000));
+    if (rng() < 0.45) return flavors[Math.floor(rng() * flavors.length)];
+    return 'Vé ba miền đây, mua giúp cô một tờ nha!';
+  }
+  function xskSayLine() {
+    if (xskSaid) return xskSaid;
+    const ready = bagTickets('xsk').filter(o => ticketOpen(o)).length;
+    if (ready) return 'Có vé rồi, đưa cô dò cho!';
+    if (!Math.max(0, XSK_PER_DAY - xskBoughtToday())) return 'Con mua nhiều quá, cô để phần người khác nha!';
+    return xskIdleSay();
+  }
+  function stopSellerTimer() { if (lotSayTimer) { clearInterval(lotSayTimer); lotSayTimer = null; } }
+  function startSellerTimer() {
+    stopSellerTimer();
+    lotSayTimer = setInterval(() => {
+      if (currentStall !== 'xsk' || xskSaid) return;
+      const el = document.querySelector('#ticket-sheet-body .lot-say span');
+      if (!el) return;
+      const s = xskSayLine();
+      if (el.textContent !== s) el.textContent = s;
+    }, 20000);
+  }
+  function xskPanel() {
+    const meta = XSK_REGIONS[xskRegion];
+    const all = bagTickets('xsk').sort((a, b) => a.ticket.drawDay.localeCompare(b.ticket.drawDay));
+    const ready = all.filter(o => ticketOpen(o));
+    const waiting = all.filter(o => !ticketOpen(o));
+    const day = drawDayOf(xskRegion);
+    const deck = fanDeck(day, xskRegion);
+    const left = Math.max(0, XSK_PER_DAY - xskBoughtToday());
+    const shelf = deck.list.map((t, i) => ({ t: t, i: i })).filter(o => !o.t.sold).slice(0, 5);
+    const regionTabs = Object.keys(XSK_REGIONS).map(k =>
+      '<button class="lot-region' + (k === xskRegion ? ' on' : '') + '" onclick="Play.xskRegion(\'' + k + '\')">' + XSK_REGIONS[k].short + '</button>'
+    ).join('');
+    const say = xskSayLine();
+    const vendor = '<div class="lot-vendor">'
+      + '<span class="lot-vface"><i class="ls-head"></i><i class="ls-hair"></i><i class="ls-body"></i><i class="ls-arm"></i></span>'
+      + '<div class="lot-say"><b>Cô Bảy · quầy vé số</b><span>' + say + '</span></div>'
+      + '</div>';
+    const fan = shelf.length
+      ? '<div class="lot-fan">' + shelf.map(o =>
+        '<button class="lot-paper" onclick="Play.buyTicket(' + o.i + ')">'
+        + '<span class="lp-side"><span class="lp-top">Vé số ' + meta.short + '</span><span class="lp-date">Sổ ' + dmy(day) + ' · 10.000đ</span></span>'
+        + '<b class="lp-num">' + fmtTicket(o.t.digits) + '</b>'
+        + '<span class="lp-serial">' + o.t.serial + '</span>'
+        + '</button>').join('') + '</div>'
+      : '<div class="lot-empty">Cô Bảy đã bán hết xấp vé hôm nay.</div>';
+    const buy = vendor
+      + '<div class="lot-sec-head"><b>Xấp vé · sổ ' + dmy(day) + '</b><span>' + meta.name + (isSixDigit(xskRegion) ? ' · dò ngay' : ' · chọn một tờ') + '</span></div>'
+      + fan
+      + '<div class="lot-buy-foot"><span>10.000đ/tờ · số đổi mỗi ngày</span><b>Còn ' + left + ' vé</b></div>';
+    let last = '';
+    if (xskLastCheck) {
+      if (xskLastCheck.bulk) {
+        last = '<div class="lot-check-card' + (xskLastCheck.total > 0 ? ' win' : '') + '">'
+          + '<b>Đã dò ' + xskLastCheck.count + ' vé</b>'
+          + '<span>' + (xskLastCheck.total > 0 ? 'Trúng ' + xskLastCheck.wins + ' vé · +' + money(xskLastCheck.total) : 'Chưa vé nào trúng') + '</span></div>';
+      } else {
+        const t = xskLastCheck.ticket;
+        last = '<div class="lot-check-card' + (xskLastCheck.total > 0 ? ' win' : '') + '">'
+          + '<b>Vé ' + fmtTicket(t.digits) + ' · ' + XSK_REGIONS[t.region].short + '</b>'
+          + '<span>Kỳ ' + dmy(t.drawDay) + '</span>'
+          + (xskLastCheck.total > 0
+            ? '<div class="lot-hits">' + xskLastCheck.hits.map(h => '<i>' + h.tier + ' ' + h.num + ' · ' + money(h.value) + '</i>').join('') + '</div>'
+            : '<span>Chưa trúng giải nào.</span>')
+          + '<strong>' + (xskLastCheck.total > 0 ? '+' + money(xskLastCheck.total) : '0đ') + '</strong></div>';
+      }
+    }
+    let check = '';
+    if (ready.length) {
+      check += '<div class="lot-sec-head"><b>Dò vé</b><span>' + ready.length + ' vé có kết quả</span></div>';
+      if (ready.length > 1) check += '<button class="p-btn p-btn-mint" onclick="Play.xskCheckAll()">Dò tất cả</button>';
+      check += ready.map(o => '<div class="lot-ticket' + (o.uniqueId === xskFocus ? ' focus' : '') + '" id="lot-' + o.uniqueId + '">'
+        + '<div><b>' + fmtTicket(o.ticket.digits) + '</b><span>Vé ' + XSK_REGIONS[o.ticket.region].short + ' · kỳ ' + dmy(o.ticket.drawDay) + '</span></div>'
+        + '<button class="lot-draw-btn" onclick="Play.xskCheck(\'' + o.uniqueId + '\')">Dò</button></div>').join('');
+    }
+    if (waiting.length) {
+      check += '<div class="lot-sec-head"><b>Chờ sổ</b><span>' + waiting.length + ' vé trong túi</span></div>';
+      check += waiting.map(o => '<div class="lot-ticket wait"><div><b>' + fmtTicket(o.ticket.digits) + '</b><span>Vé ' + XSK_REGIONS[o.ticket.region].short + ' · ' + (o.ticket.drawDay === dayKey() ? 'sổ 16:30 hôm nay' : 'sổ 16:30 ' + dmy(o.ticket.drawDay)) + '</span></div><span class="lot-wait-tag">Chờ 16:30</span></div>').join('');
+    }
+    if (!all.length) check += '<div class="lot-empty">Chưa có vé nào trong túi. Mua một tờ rồi quay lại dò nhé.</div>';
+    let board;
+    if (isSixDigit(xskRegion) || canDraw(dayKey())) {
+      const res = xskResult(dayKey(), xskRegion);
+      const hits = xskLastCheck && !xskLastCheck.bulk && xskLastCheck.ticket.region === xskRegion && xskLastCheck.ticket.drawDay === dayKey()
+        ? xskLastCheck.hits : [];
+      board = '<div class="lot-board"><div class="lot-board-head"><b>Kết quả ' + meta.short + ' · ' + dmy(dayKey()) + '</b><span>Sổ 16:30</span></div>'
+        + XSK_TIERS[xskRegion].map(t => '<div class="lot-board-row"><span>' + t.name + '</span><b>'
+          + (res[t.key] || []).map(n => '<i class="' + (hits.some(h => h.tier === t.name && h.num === n) ? 'on' : '') + '">' + n + '</i>').join('')
+          + '</b></div>').join('')
+        + '</div>';
+    } else {
+      board = '<div class="lot-board-off">Bảng kết quả mở lúc 16:30.</div>';
+    }
+    const hist = X().history.length
+      ? '<div class="lot-hist">' + X().history.slice(0, 6).map(h =>
+        '<div><span>Vé ' + XSK_REGIONS[h.region].short + ' ' + fmtTicket(h.digits) + ' · ' + dmy(h.day) + '</span><b class="' + (h.prize ? '' : 'zero') + '">' + (h.prize ? '+' + money(h.prize) : 'không trúng') + '</b></div>'
+      ).join('') + '</div>'
+      : '';
+    return '<div class="lot-panel">'
+      + '<div class="lot-region-tabs">' + regionTabs + '</div>'
+      + buy
+      + last
+      + check
+      + '<div class="lot-sec-head"><b>Bảng kết quả</b><span>' + meta.name + '</span></div>'
+      + board
+      + (hist ? '<div class="lot-sec-head"><b>Đã dò</b><span>gần đây</span></div>' + hist : '')
+      + '</div>';
+  }
+  function scratchPanel() {
+    const l = L(), t = l.scratchTicket;
+    let html;
+    if (!t) {
+      html = '<div class="scratch-empty"><div class="big">🎟️</div>'
+        + '<div class="p-sub">Cào 9 ô, ba biểu tượng trùng nhau là trúng vé.</div></div>'
+        + '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé · ' + money(SCRATCH_COST) + '</button>';
+    } else {
+      const cells = t.cells.map((sym, i) => {
+        const rv = t.revealed[i];
+        const win = rv && sym === t.winSym;
+        return '<button class="scratch-cell' + (rv ? ' revealed' : '') + (win ? ' win' : '') + '" onclick="Play.scratch(' + i + ')">' + (rv ? sym : '?') + '</button>';
+      }).join('');
+      const done = t.done;
+      html = '<div class="scratch-grid">' + cells + '</div>'
+        + '<div class="scratch-result ' + (done && t.prize > 0 ? 'win' : 'lose') + '">'
+        + (done
+          ? (t.prize > 0 ? '🎉 Trúng ' + money(t.prize) + ' · ' + t.name : 'Chưa trúng, chúc may mắn lần sau!')
+          : 'Cào hết 9 ô để xem kết quả')
+        + '</div>'
+        + (done ? '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé khác · ' + money(SCRATCH_COST) + '</button>' : '');
+    }
+    return '<div class="lot-panel">'
+      + '<div class="lot-buy-head"><b>Cào vé may mắn</b><span>Còn ' + l.scratchLeft + '/' + SCRATCH_PER_DAY + ' vé hôm nay</span></div>'
+      + html
+      + '<div class="lot-board-off">Ba biểu tượng trùng nhau: 2 triệu · 300.000 · 80.000 · 20.000.</div>'
+      + '</div>';
+  }
+  function vietPanel() {
+    const l = L();
+    const nums = [];
+    for (let i = 1; i <= 45; i++) nums.push('<button class="viet-num' + (l.pick.indexOf(i) !== -1 ? ' on' : '') + '" onclick="Play.pickNum(' + i + ')">' + i + '</button>');
+    const picked = l.pick.length ? balls(l.pick) : '<span class="p-sub">Chạm bảng số để chọn 6 con.</span>';
+    const tickets = l.tickets.length
+      ? l.tickets.map((tk, i) => '<div class="viet-ticket"><b>Vé ' + (i + 1) + '</b>' + balls(tk.n, null, true) + '</div>').join('')
+      : '<div class="viet-empty">Chưa giữ vé nào — chọn số rồi bấm Mua vé.</div>';
+    let last = '';
+    if (l.lastDraw) {
+      const w = l.lastDraw.win || [];
+      const rows = (l.lastDraw.rows || []).map(r => {
+        const hits = r.n.filter(n => w.indexOf(n) !== -1).length;
+        return '<div class="p-hist"><span>' + r.n.join(' · ') + '</span><b class="' + (r.prize ? '' : 'zero') + '">'
+          + (r.prize ? '+' + bigMoney(r.prize) : 'trúng ' + hits + ' số') + '</b></div>';
+      }).join('');
+      last = '<div class="lot-board"><div class="lot-board-head"><b>Kết quả kỳ #' + (l.lastDraw.round || 1) + '</b><span>' + (l.lastDraw.jackpot ? 'hũ ' + bigMoney(l.lastDraw.jackpot) : '') + '</span></div>'
+        + '<div class="viet-balls">' + balls(w, w) + '</div>' + rows + '</div>';
+    }
+    return '<div class="lot-panel">'
+      + '<div class="viet-jackpot"><div class="vj-l"><span class="vj-k">💎 Hũ độc đắc</span><span class="vj-s">Còn ' + l.vietLeft + '/' + VIET_PER_DAY + ' vé hôm nay · ' + money(VIET_COST) + '/vé</span></div><b class="vj-v">' + bigMoney(l.jackpot) + '</b></div>'
+      + '<div class="viet-grid">' + nums.join('') + '</div>'
+      + '<div class="viet-balls">' + picked + '</div>'
+      + '<div class="p-btn-row"><button class="p-btn p-btn-ghost" onclick="Play.luckyPick()">🎲 Chọn nhanh</button><button class="p-btn p-btn-pink" onclick="Play.buyViet()">🎱 Mua vé</button></div>'
+      + '<div class="p-sub" style="margin-top:2px;">Vé đang giữ</div>' + tickets
+      + '<button class="p-btn p-btn-night" onclick="Play.drawViet()">🎬 Quay số kỳ #' + l.round + '</button>'
+      + '<div class="p-sub">Trúng 2 số 20.000đ · 3 số 100.000đ · 4 số 1.000.000đ · 5 số 10.000.000đ · 6 số ăn trọn hũ.</div>'
+      + last
+      + '</div>';
+  }
+  function stallBtn(name, title, sub, bubble) {
+    return '<button class="lot-stall stall-' + name + '" onclick="Play.stall(\'' + name + '\')">'
+      + '<span class="lot-bubble">' + bubble + '</span>'
+      + '<span class="lot-kiosk">'
+      + '<span class="lot-awning"></span>'
+      + '<span class="lot-seller"><i class="ls-head"></i><i class="ls-hair"></i><i class="ls-body"></i><i class="ls-arm"></i></span>'
+      + '<span class="lot-tray">🎟️</span>'
+      + '<span class="lot-counter"></span>'
+      + '</span>'
+      + '<span class="lot-label">' + title + '<small>' + sub + '</small></span>'
+      + '</button>';
+  }
+  function streetHtml(l) {
+    const now = new Date();
+    const night = now.getHours() >= 18 || now.getHours() < 6;
+    const all = bagTickets('xsk');
+    const ready = all.filter(o => ticketOpen(o)).length;
+    return '<div class="lot-street' + (night ? ' night' : '') + '">'
+      + '<div class="lot-sky"><i class="lot-sun"></i><i class="lot-cloud c1"></i><i class="lot-cloud c2"></i></div>'
+      + '<div class="lot-skyline"></div>'
+      + '<div class="lot-clockbox"><b id="lot-clock-live">--:--</b><span>Sổ 16:30</span></div>'
+      + '<div class="lot-lamp lamp-a"></div><div class="lot-lamp lamp-b"></div>'
+      + '<div class="lot-walkers"><i class="lot-walker w1">🚶</i><i class="lot-walker w2">🚶‍♀️</i><i class="lot-walker w3">🧍</i></div>'
+      + '<div class="lot-stalls">'
+      + stallBtn('xsk', 'Ba miền', 'Vé Bắc · Trung · Nam', ready ? ready + ' vé chờ dò!' : 'Mua giúp cô tờ vé!')
+      + stallBtn('scratch', 'Cào vé', 'Trúng tới 2 triệu', 'Cào thử hông?')
+      + stallBtn('viet', 'Vietlott', 'Hũ trăm tỷ', 'Hũ to lắm đó!')
+      + '</div>'
+      + '<div class="lot-road"><i></i></div>'
+      + '</div>';
+  }
+  function lotHistoryCard() {
+    const l = L();
+    const rows = [];
+    (X().history || []).slice(0, 4).forEach(h => {
+      rows.push('<div class="p-hist"><span>Vé ' + XSK_REGIONS[h.region].short + ' ' + fmtTicket(h.digits) + ' · ' + dmy(h.day) + '</span>'
+        + '<b class="' + (h.prize ? '' : 'zero') + '">' + (h.prize ? '+' + money(h.prize) : 'không trúng') + '</b></div>');
+    });
+    (l.history || []).slice(0, Math.max(0, 6 - rows.length)).forEach(h => {
+      rows.push('<div class="p-hist"><span>' + h.g + '</span><b class="' + (h.v > 0 ? '' : 'zero') + '">' + (h.v > 0 ? '+' + bigMoney(h.v) : 'không trúng') + '</b></div>');
+    });
+    if (!rows.length) return '';
+    return '<div class="p-card"><div class="p-sec"><span class="p-sec-ico">📜</span><b>Sổ tay gần đây</b></div>' + rows.join('') + '</div>';
+  }
+  function startLotClock() {
+    stopLotClock();
+    const paint = () => {
+      const now = new Date();
+      const el = document.getElementById('lot-clock-live');
+      if (el) el.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      const mark = dayKey() + '|' + (now.getHours() * 60 + now.getMinutes() >= XSK_CUTOFF ? '1' : '0');
+      const crossed = lotClockMark && lotClockMark !== mark;
+      lotClockMark = mark;
+      if (crossed && tab === 'lottery') render();
+    };
+    paint();
+    lotClockTimer = setInterval(paint, 15000);
+  }
+  function stopLotClock() { if (lotClockTimer) { clearInterval(lotClockTimer); lotClockTimer = null; } }
 
   // ===================== CÂU CÁ =====================
   const BAIT = 2000;
@@ -406,63 +895,16 @@
 
   function renderLottery(body) {
     const l = L();
-    const t = l.scratchTicket;
-    let scratchHtml;
-    if (!t) {
-      scratchHtml = '<div class="scratch-empty"><div class="big">🎟️</div>'
-        + '<div class="p-sub">Cào 9 ô, ba biểu tượng trùng nhau là trúng vé.</div></div>'
-        + '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé · ' + money(SCRATCH_COST) + '</button>';
-    } else {
-      const cells = t.cells.map((sym, i) => {
-        const rv = t.revealed[i];
-        const win = rv && sym === t.winSym;
-        return '<button class="scratch-cell' + (rv ? ' revealed' : '') + (win ? ' win' : '') + '" onclick="Play.scratch(' + i + ')">' + (rv ? sym : '?') + '</button>';
-      }).join('');
-      const done = t.done;
-      scratchHtml = '<div class="scratch-grid">' + cells + '</div>'
-        + '<div class="scratch-result ' + (done && t.prize > 0 ? 'win' : 'lose') + '">'
-        + (done
-          ? (t.prize > 0 ? '🎉 Trúng ' + money(t.prize) + ' · ' + t.name : 'Chưa trúng, chúc may mắn lần sau!')
-          : 'Cào hết 9 ô để xem kết quả')
-        + '</div>'
-        + (done ? '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé khác · ' + money(SCRATCH_COST) + '</button>' : '');
-    }
-    const nums = [];
-    for (let i = 1; i <= 45; i++) nums.push('<button class="viet-num' + (l.pick.indexOf(i) !== -1 ? ' on' : '') + '" onclick="Play.pickNum(' + i + ')">' + i + '</button>');
-    const picked = l.pick.length ? balls(l.pick) : '<span class="p-sub">Chạm bảng số để chọn 6 con.</span>';
-    const tickets = l.tickets.length
-      ? l.tickets.map((tk, i) => '<div class="viet-ticket"><b>Vé ' + (i + 1) + '</b>' + balls(tk.n, null, true) + '</div>').join('')
-      : '<div class="viet-empty">Chưa giữ vé nào — chọn số rồi bấm Mua vé.</div>';
-    let last = '';
-    if (l.lastDraw) {
-      const w = l.lastDraw.win || [];
-      const rows = (l.lastDraw.rows || []).map(r => {
-        const hits = r.n.filter(n => w.indexOf(n) !== -1).length;
-        return '<div class="p-hist"><span>' + r.n.join(' · ') + '</span><b class="' + (r.prize ? '' : 'zero') + '">'
-          + (r.prize ? '+' + bigMoney(r.prize) : 'trúng ' + hits + ' số') + '</b></div>';
-      }).join('');
-      last = card('🎬', 'Kết quả kỳ #' + (l.lastDraw.round || 1),
-        l.lastDraw.jackpot ? 'hũ ' + bigMoney(l.lastDraw.jackpot) : '',
-        '<div class="viet-balls">' + balls(w, w) + '</div>' + rows);
-    }
-    const history = l.history.length
-      ? l.history.map(h => '<div class="p-hist"><span>' + h.g + '</span><b class="' + (h.v > 0 ? '' : 'zero') + '">'
-        + (h.v > 0 ? '+' + bigMoney(h.v) : 'không trúng') + '</b></div>').join('')
-      : '<div class="p-sub">Chưa chơi lần nào.</div>';
+    const all = bagTickets('xsk');
+    const ready = all.filter(o => ticketOpen(o)).length;
+    const x = X();
+    const spent = x.buyDay === dayKey() ? x.buyCount : 0;
     body.innerHTML = ''
-      + hero('tone-gold', '🎟️', 'Giải trí', 'Vé số & Vietlott', 'Cào vé 2 triệu, hũ độc đắc trăm tỷ đổi mỗi kỳ.',
-        [['vé cào', l.scratchLeft + '/' + SCRATCH_PER_DAY], ['vé vietlott', l.vietLeft + '/' + VIET_PER_DAY], ['hũ độc đắc', bigMoney(l.jackpot)]])
-      + card('🎟️', 'Cào vé may mắn', 'thưởng 2 triệu', scratchHtml)
-      + card('🎱', 'Vietlott 6/45', 'kỳ #' + l.round,
-        '<div class="viet-jackpot"><div class="vj-l"><span class="vj-k">💎 Hũ độc đắc</span><span class="vj-s">Quay mỗi ngày · ' + money(VIET_COST) + '/vé</span></div><b class="vj-v">' + bigMoney(l.jackpot) + '</b></div>'
-        + '<div class="viet-grid">' + nums.join('') + '</div>'
-        + '<div class="viet-balls">' + picked + '</div>'
-        + '<div class="p-btn-row"><button class="p-btn p-btn-ghost" onclick="Play.luckyPick()">🎲 Chọn nhanh</button><button class="p-btn p-btn-pink" onclick="Play.buyViet()">🎱 Mua vé</button></div>'
-        + '<div class="p-sub" style="margin-top:2px;">Vé đang giữ</div>' + tickets
-        + '<button class="p-btn p-btn-night" onclick="Play.drawViet()">🎬 Quay số kỳ #' + l.round + '</button>'
-        + '<div class="p-sub">Trúng 2 số 20.000đ · 3 số 100.000đ · 4 số 1.000.000đ · 5 số 10.000.000đ · 6 số ăn trọn hũ.</div>')
-      + last
-      + card('📜', 'Lịch sử gần đây', '', history);
+      + hero('tone-gold', '🎟️', 'Ra phố', 'Phố vé số', 'Ba quầy đèn sáng cả ngày. Mua vé bỏ vào túi, 16:30 ra dò.',
+        [['vé trong túi', all.length ? all.length + ' vé' : 'chưa có'], ['chờ dò', ready ? ready + ' vé' : '—'], ['vé mua hôm nay', spent + '/' + XSK_PER_DAY]])
+      + streetHtml(l)
+      + lotHistoryCard();
+    startLotClock();
   }
 
   function renderFishing(body) {
@@ -573,22 +1015,27 @@
       else if (tab === 'fishing') renderFishing(body);
       else if (tab === 'market') renderMarket(body);
     } catch (e) { console.error('Play.render', e); }
+    if (tab !== 'lottery') stopLotClock();
     if (tab === 'fishing') { if (fishAnim) startFishLoop(); } else stopFishLoop();
+    if (currentStall) renderStall();
     refreshWallets();
   }
 
   window.Play = {
     render: render,
     tab: (name) => {
-      if (name === 'farm') { if (window.FarmGame) window.FarmGame.enter(); return; }
+      if (name === 'farm') { stopLotClock(); if (window.FarmGame) window.FarmGame.enter(); return; }
       if (name === tab) return;
       tab = name;
       render();
     },
-    stop: () => { if (window.FarmGame) window.FarmGame.unmount(); stopFishLoop(); },
+    stop: () => { if (window.FarmGame) window.FarmGame.unmount(); stopFishLoop(); stopLotClock(); stopSellerTimer(); },
     buyScratch, scratch: scratchCell,
     pickNum, luckyPick, buyViet, drawViet,
     fishCast, fishReel, fishSell, fishRelease, enterContest,
-    mktBuy, mktSell
+    mktBuy, mktSell,
+    stall, closeStall, buyTicket,
+    xskRegion: setXskRegion,
+    xskCheck, xskCheckAll, openDraw, ticketReady: ticketOpen
   };
 })();

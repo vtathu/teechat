@@ -1152,3 +1152,160 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .diary-entry-text p + p { margin-top: 28px; }
     .diary-entry-text s { color: #9c8c72; text-decoration-thickness: 1px; text-decoration-color: rgba(110,90,60,0.55); }
     body.diary-open { overflow: hidden; }
+
+    /* ===== Phố vé số: cảnh đường phố + ba quầy ===== */
+    .lot-street { position: relative; flex: 0 0 auto; width: 100%; height: clamp(268px, 74vw, 336px); border-radius: 22px; overflow: hidden; border: 1px solid var(--border); background: linear-gradient(#bfe3f5 0%, #dff2f0 52%, #f8f0df 100%); box-shadow: 0 10px 24px rgba(80, 70, 130, .14); isolation: isolate; }
+    .lot-street.night { background: linear-gradient(#243257 0%, #3d4a7c 46%, #6b6191 100%); }
+    .lot-sky { position: absolute; inset: 0; pointer-events: none; }
+    .lot-sun { position: absolute; top: 24px; left: 24px; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 38% 34%, #fff6c9, #ffd469 62%, #ffbf48); box-shadow: 0 0 26px 12px rgba(255, 209, 110, .45); }
+    .lot-street.night .lot-sun { background: radial-gradient(circle at 36% 32%, #fdfbf2, #cfd6ee); box-shadow: 0 0 22px 9px rgba(196, 209, 246, .35); }
+    .lot-cloud { position: absolute; height: 16px; border-radius: 20px; background: rgba(255, 255, 255, .78); box-shadow: 14px 5px 0 -2px rgba(255, 255, 255, .72), 28px 1px 0 -4px rgba(255, 255, 255, .62); animation: lotDrift 34s linear infinite; }
+    .lot-cloud.c1 { top: 42px; left: -70px; width: 52px; }
+    .lot-cloud.c2 { top: 68px; left: -120px; width: 38px; animation-duration: 46s; animation-delay: -14s; opacity: .8; }
+    .lot-street.night .lot-cloud { background: rgba(180, 196, 235, .35); box-shadow: 14px 5px 0 -2px rgba(180, 196, 235, .3), 28px 1px 0 -4px rgba(180, 196, 235, .26); }
+    .lot-skyline { position: absolute; left: 0; right: 0; bottom: 58px; height: 84px; background: #a7bdd9; opacity: .75; clip-path: polygon(0 100%, 0 44%, 7% 44%, 7% 26%, 13% 26%, 13% 52%, 21% 52%, 21% 34%, 27% 34%, 27% 62%, 35% 62%, 35% 18%, 43% 18%, 43% 48%, 50% 48%, 50% 30%, 58% 30%, 58% 58%, 66% 58%, 66% 40%, 74% 40%, 74% 22%, 81% 22%, 81% 54%, 88% 54%, 88% 36%, 95% 36%, 95% 60%, 100% 60%, 100% 100%); }
+    .lot-street.night .lot-skyline { background: #1d2647; opacity: .85; }
+    .lot-clockbox { position: absolute; top: 10px; right: 10px; z-index: 4; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; padding: 5px 9px; border-radius: 12px; background: rgba(26, 32, 55, .8); color: #ffe9a8; box-shadow: 0 4px 12px rgba(20, 26, 50, .3), inset 0 0 0 1px rgba(255, 233, 168, .22); }
+    .lot-clockbox b { font-size: .92rem; letter-spacing: 1.2px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .lot-clockbox span { font-size: .5rem; letter-spacing: .6px; text-transform: uppercase; opacity: .78; }
+    .lot-lamp { position: absolute; bottom: 54px; width: 3px; height: 74px; background: #5c6072; border-radius: 2px; z-index: 1; }
+    .lot-lamp::before { content: ''; position: absolute; top: -8px; left: 50%; width: 13px; height: 11px; transform: translateX(-50%); border-radius: 7px 7px 2px 2px; background: #ffd988; box-shadow: 0 0 14px 5px rgba(255, 213, 120, .5); }
+    .lot-lamp.lamp-a { left: 8%; }
+    .lot-lamp.lamp-b { right: 9%; }
+    .lot-street.night .lot-lamp::before { box-shadow: 0 0 18px 7px rgba(255, 224, 150, .62); }
+    .lot-walkers { position: absolute; left: 0; right: 0; bottom: 34px; height: 28px; z-index: 2; pointer-events: none; }
+    .lot-walker { position: absolute; left: -14%; bottom: 0; font-size: 1.12rem; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .18)); animation: lotWalk 22s linear infinite; }
+    .lot-walker.w2 { font-size: .96rem; bottom: 4px; animation-duration: 31s; animation-delay: -11s; }
+    .lot-walker.w3 { font-size: .86rem; bottom: 1px; animation-duration: 26s; animation-delay: -19s; opacity: .82; }
+    .lot-stalls { position: absolute; left: 8px; right: 8px; bottom: 46px; z-index: 3; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; }
+    .lot-stall { flex: 1 1 0; min-width: 0; max-width: 112px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: none; background: transparent; font-family: inherit; color: #4a3a2c; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .16s ease-out; position: relative; }
+    .lot-stall:active { transform: translateY(2px) scale(.98); }
+    .lot-street.night .lot-stall { color: #f3e9d6; }
+    .lot-bubble { position: relative; max-width: 100%; padding: 2px 7px; border-radius: 9px; background: #fffdf7; color: #6a4b2a; font-size: .52rem; font-weight: bold; line-height: 1.35; white-space: nowrap; box-shadow: 0 2px 6px rgba(50, 40, 30, .18); }
+    .lot-bubble::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #fffdf7; border-bottom: 0; }
+    .lot-street.night .lot-bubble { background: #2b3459; color: #ffe9b8; }
+    .lot-street.night .lot-bubble::after { border-top-color: #2b3459; }
+    .lot-kiosk { position: relative; display: block; width: 100%; max-width: 98px; height: clamp(88px, 25vw, 112px); }
+    .lot-kiosk::before { content: ''; position: absolute; inset: 12px 2px 20px; border-radius: 6px 6px 3px 3px; background: linear-gradient(#f7e7c8, #efd8ae 68%, #e4c894); box-shadow: inset 0 0 0 1px rgba(140, 104, 62, .18); }
+    .lot-street.night .lot-kiosk::before { background: linear-gradient(#4a4470, #3b3760 70%, #322f52); box-shadow: inset 0 0 16px rgba(255, 214, 130, .28), inset 0 0 0 1px rgba(20, 18, 40, .5); }
+    .lot-awning { position: absolute; top: 0; left: -3px; right: -3px; height: 17px; border-radius: 8px 8px 4px 4px; background: repeating-linear-gradient(90deg, #ef7f96 0 9px, #fff2f4 9px 18px); box-shadow: 0 3px 5px rgba(90, 50, 60, .22); }
+    .stall-scratch .lot-awning { background: repeating-linear-gradient(90deg, #f0b25c 0 9px, #fff4dd 9px 18px); }
+    .stall-viet .lot-awning { background: repeating-linear-gradient(90deg, #7d6fc2 0 9px, #efeaff 9px 18px); }
+    .lot-awning::after { content: ''; position: absolute; left: 3px; right: 3px; bottom: -4px; height: 5px; background: radial-gradient(circle at 4px 0, rgba(255, 255, 255, .92) 3.6px, transparent 4px) repeat-x; background-size: 8px 5px; }
+    .lot-seller { position: absolute; bottom: 18px; left: 50%; width: 40px; height: 46px; transform: translateX(-50%); }
+    .ls-head { position: absolute; top: 0; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: linear-gradient(#ffe0c4, #f6c9a2); box-shadow: inset 0 -3px 4px rgba(190, 130, 90, .18); }
+    .ls-head::after { content: ''; position: absolute; top: 12px; left: 5px; width: 2px; height: 2px; border-radius: 50%; background: #7a4a35; box-shadow: 6px 0 0 #7a4a35; }
+    .ls-hair { position: absolute; top: -2px; left: 50%; width: 22px; height: 11px; margin-left: -11px; border-radius: 11px 11px 5px 5px; background: #4b3428; }
+    .ls-body { position: absolute; bottom: 0; left: 50%; width: 34px; height: 28px; margin-left: -17px; border-radius: 14px 14px 5px 5px; background: linear-gradient(#8fc8b4, #5f9b88); box-shadow: inset 0 4px 0 rgba(255, 255, 255, .28); }
+    .stall-scratch .ls-body { background: linear-gradient(#f3c27f, #d9a055); }
+    .stall-viet .ls-body { background: linear-gradient(#9d8fd6, #6f63ad); }
+    .ls-arm { position: absolute; top: 23px; right: 1px; width: 6px; height: 17px; border-radius: 4px; background: #f6c9a2; transform-origin: 50% 0; animation: lotWave 2.4s ease-in-out infinite; }
+    .stall-scratch .ls-arm { animation-duration: 3.1s; animation-delay: -.7s; }
+    .stall-viet .ls-arm { animation-duration: 2.8s; animation-delay: -1.4s; }
+    .lot-tray { position: absolute; bottom: 19px; left: 50%; transform: translateX(-50%); font-size: .95rem; line-height: 1; filter: drop-shadow(0 2px 2px rgba(60, 40, 20, .25)); z-index: 2; }
+    .lot-counter { position: absolute; bottom: 8px; left: -3px; right: -3px; height: 14px; border-radius: 3px 3px 5px 5px; background: linear-gradient(#8a6540, #6a4a2c); box-shadow: 0 3px 6px rgba(60, 40, 20, .28), inset 0 1px 0 rgba(255, 255, 255, .22); }
+    .lot-street.night .lot-counter { background: linear-gradient(#55406b, #3d2f4d); }
+    .lot-label { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: clamp(.58rem, 2.6vw, .68rem); font-weight: bold; line-height: 1.15; text-shadow: 0 1px 0 rgba(255, 255, 255, .5); }
+    .lot-street.night .lot-label { color: #f7efdd; background: rgba(18, 22, 40, .82); padding: 1px 7px; border-radius: 9px; margin-top: 1px; text-shadow: none; box-shadow: 0 2px 6px rgba(8, 10, 22, .45); }
+    .lot-street.night .lot-label small { opacity: .92; }
+    .lot-label small { font-size: .5rem; font-weight: normal; opacity: .74; }
+    .lot-stall::after { content: ''; position: absolute; top: 0; left: 50%; width: 74px; height: 60px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(255, 226, 150, .5), transparent 68%); opacity: 0; pointer-events: none; }
+    .lot-street.night .lot-stall::after { opacity: .8; }
+    .lot-road { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: linear-gradient(#9398a8, #767c8e); }
+    .lot-road::before { content: ''; position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: repeating-linear-gradient(90deg, #f8ecc6 0 16px, transparent 16px 32px); opacity: .8; }
+    .lot-road i { position: absolute; left: 0; right: 0; top: -6px; height: 6px; background: linear-gradient(#c9c2ad, #b3ab95); }
+    @keyframes lotWalk { from { left: -14%; } to { left: 104%; } }
+    @keyframes lotDrift { from { transform: translateX(0); } to { transform: translateX(min(560px, 150vw)); } }
+    @keyframes lotWave { 0%, 100% { transform: rotate(6deg); } 50% { transform: rotate(-24deg); } }
+
+    /* ===== Quầy vé: modal + bảng mua/dò ===== */
+    .ticket-sheet { width: 100%; max-width: 460px; max-height: 88vh; padding: 0; gap: 0; overflow: hidden; display: flex; flex-direction: column; border-radius: 22px; }
+    .ticket-sheet .modal-header { flex: 0 0 auto; margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .ticket-sheet .modal-header h3 { margin: 0; font-size: .98rem; color: var(--app-dark-green); }
+    .ticket-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px 14px 18px; -webkit-overflow-scrolling: touch; }
+    .lot-panel { display: flex; flex-direction: column; gap: 10px; }
+    .lot-region-tabs { display: flex; gap: 6px; }
+    .lot-region { flex: 1 1 0; min-width: 0; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); border-radius: 12px; padding: 7px 4px; font-family: inherit; font-size: .74rem; font-weight: bold; cursor: pointer; transition: background .18s, color .18s, transform .12s; -webkit-tap-highlight-color: transparent; }
+    .lot-region.on { background: linear-gradient(140deg, #7fc4b0, #4f8577); border-color: transparent; color: #fff; box-shadow: 0 5px 12px rgba(79, 133, 119, .3); }
+    .lot-buy-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .76rem; }
+    .lot-buy-head b { color: var(--app-dark-green); }
+    .lot-buy-head span { color: var(--muted); font-size: .68rem; white-space: nowrap; }
+    .lot-buy-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .66rem; color: var(--muted); }
+    .lot-buy-foot b { font-size: .86rem; color: var(--app-dark-green); }
+    .lot-vendor { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; background: linear-gradient(140deg, #fff8e8, #ffefd2); border: 1px solid #f3ddb0; }
+    .lot-vface { position: relative; flex: 0 0 auto; width: 40px; height: 46px; }
+    .lot-vface .ls-arm { animation-duration: 2.1s; }
+    .lot-say { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .lot-say b { font-size: .66rem; color: #8a5a10; }
+    .lot-say span { font-size: .74rem; line-height: 1.4; color: #5f4628; }
+    .lot-fan { display: flex; flex-direction: column; padding: 3px 7px 5px; }
+    .lot-paper { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; margin-top: -4px; padding: 7px 10px; border: 1px solid #d9b98a; border-radius: 7px; background: radial-gradient(circle at 14% 8%, rgba(255, 255, 255, .95), transparent 42%), repeating-linear-gradient(0deg, rgba(160, 120, 70, .05) 0 2px, transparent 2px 5px), linear-gradient(160deg, #fffdf2, #f7e8c9); box-shadow: 0 3px 7px rgba(120, 80, 40, .16); font-family: inherit; text-align: left; cursor: pointer; transform: translateX(var(--x, 0px)) rotate(var(--r, 0deg)); transition: transform .14s; -webkit-tap-highlight-color: transparent; }
+    .lot-paper:first-child { margin-top: 0; }
+    .lot-paper::before { content: ''; position: absolute; inset: 4px; border: 1px dashed rgba(179, 32, 42, .16); border-radius: 4px; pointer-events: none; }
+    .lot-paper:nth-child(1) { --r: -1.1deg; --x: -3px; z-index: 1; }
+    .lot-paper:nth-child(2) { --r: .7deg; --x: 2px; z-index: 2; }
+    .lot-paper:nth-child(3) { --r: -.5deg; --x: -1px; z-index: 3; }
+    .lot-paper:nth-child(4) { --r: .9deg; --x: 3px; z-index: 4; }
+    .lot-paper:nth-child(5) { --r: -.8deg; --x: -2px; z-index: 5; }
+    .lot-paper:active { transform: translateX(var(--x, 0px)) rotate(var(--r, 0deg)) scale(.985); }
+    .lp-side { flex: 0 0 auto; display: flex; flex-direction: column; gap: 1px; }
+    .lp-top { font-size: .56rem; font-weight: bold; color: #8a6a3c; }
+    .lp-date { font-size: .5rem; color: #96794e; }
+    .lp-num { flex: 1 1 auto; text-align: center; font-size: 1.06rem; font-weight: 900; letter-spacing: 1.6px; color: #b3202a; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 rgba(255, 255, 255, .85); }
+    .lp-serial { flex: 0 0 auto; width: 23px; height: 23px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(179, 32, 42, .45); border-radius: 50%; font-size: .7rem; font-weight: 900; color: #b3202a; }
+    .lot-check-card { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); border: 1px dashed var(--border); font-size: .72rem; color: var(--text-2); }
+    .lot-check-card.win { background: #fff6dc; border-color: #f0c268; border-style: solid; }
+    .lot-check-card b { font-size: .8rem; color: var(--app-dark-green); }
+    .lot-check-card > span { color: var(--muted); font-size: .68rem; }
+    .lot-check-card strong { font-size: 1rem; color: #a05f10; }
+    .lot-hits { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lot-hits i { font-style: normal; font-size: .62rem; font-weight: bold; padding: 1px 6px; border-radius: 8px; background: #ffe9b4; color: #8a5a10; }
+    .lot-sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 2px; font-size: .76rem; }
+    .lot-sec-head b { color: var(--app-dark-green); }
+    .lot-sec-head span { font-size: .62rem; color: var(--muted); }
+    .lot-ticket { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 13px; background: var(--surface); border: 1px solid var(--border); }
+    .lot-ticket > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .lot-ticket b { font-size: .88rem; letter-spacing: 1.2px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .lot-ticket span { font-size: .62rem; color: var(--muted); }
+    .lot-ticket.focus { border-color: #f0c268; background: #fffaf0; box-shadow: 0 0 0 2px rgba(240, 194, 104, .28); }
+    .lot-ticket.wait { opacity: .82; }
+    .lot-draw-btn { flex: 0 0 auto; border: none; border-radius: 10px; padding: 6px 14px; font-family: inherit; font-size: .72rem; font-weight: bold; color: #123f34; background: linear-gradient(135deg, #9adbc4, #5fae95); box-shadow: 0 4px 10px rgba(95, 174, 149, .3); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .lot-wait-tag { flex: 0 0 auto; font-size: .56rem; font-weight: bold; color: #8a6a2c; background: #fff3d6; border-radius: 8px; padding: 3px 7px; }
+    .lot-empty { padding: 12px; border-radius: 13px; background: var(--surface-2); font-size: .7rem; color: var(--muted); text-align: center; line-height: 1.45; }
+    .lot-board { border-radius: 15px; overflow: hidden; background: linear-gradient(150deg, #3a5d52, #27463d); color: #ffeab3; box-shadow: inset 0 0 0 1px rgba(255, 234, 179, .18); }
+    .lot-board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 11px; background: rgba(0, 0, 0, .16); font-size: .72rem; }
+    .lot-board-head span { font-size: .56rem; opacity: .78; }
+    .lot-board-row { display: flex; align-items: center; gap: 8px; padding: 4px 11px; border-top: 1px dashed rgba(255, 234, 179, .14); }
+    .lot-board-row > span { flex: 0 0 56px; font-size: .6rem; opacity: .82; }
+    .lot-board-row > b { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 3px; font-weight: normal; }
+    .lot-board-row i { font-style: normal; font-size: .66rem; font-weight: bold; letter-spacing: .6px; padding: 1px 5px; border-radius: 6px; background: rgba(255, 255, 255, .08); font-variant-numeric: tabular-nums; }
+    .lot-board-row i.on { background: #ffd77e; color: #5d3606; }
+    .lot-board-off { padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--border); background: var(--surface-2); font-size: .68rem; color: var(--muted); text-align: center; }
+    .lot-hist { display: flex; flex-direction: column; gap: 2px; }
+    .lot-hist > div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 2px; border-bottom: 1px dashed var(--border); font-size: .68rem; color: var(--text-2); }
+    .lot-hist > div:last-child { border-bottom: none; }
+    .lot-hist b { color: var(--app-dark-green); white-space: nowrap; }
+    .lot-hist b.zero { color: var(--muted); font-weight: normal; }
+
+    /* Vé nằm trong túi */
+    .bag-ticket .nm { font-weight: bold; }
+    .bag-ticket-sub { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+    .bag-ticket-wait { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 10px; background: #fff3d6; color: #8a6a2c; font-size: .68rem; font-weight: bold; white-space: nowrap; }
+
+    @media (max-width: 360px) {
+      .lot-street { height: 252px; }
+      .lot-stalls { left: 5px; right: 5px; bottom: 42px; gap: 2px; }
+      .lot-kiosk { max-width: 86px; height: 92px; }
+      .lot-label small { font-size: .46rem; }
+      .lot-bubble { font-size: .48rem; padding: 1px 5px; }
+      .lot-clockbox { top: 8px; right: 8px; padding: 4px 7px; }
+      .lot-clockbox b { font-size: .82rem; }
+      .lot-board-row > span { flex-basis: 46px; font-size: .56rem; }
+      .lot-paper { padding: 6px 8px; }
+      .lp-num { font-size: .94rem; letter-spacing: 1px; }
+      .lot-say span { font-size: .7rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lot-walker, .lot-cloud, .ls-arm { animation: none !important; }
+      .lot-walker.w1 { left: 24%; } .lot-walker.w2 { left: 56%; } .lot-walker.w3 { left: 80%; }
+    }
