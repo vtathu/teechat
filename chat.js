@@ -261,14 +261,21 @@ Trả về đúng mảng JSON các chuỗi, ví dụ: ["...", "..."]`;
           .map(m => `${m.sender === 'user' ? 'Người chơi' : 'Nhân vật'}: ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 220)}`)
           .join('\n');
         const done = (story.beatLog || []).slice(-8).map(b => `- ${b}`).join('\n') || '- (chưa có)';
+        const outline = (Array.isArray(story.beats) ? story.beats : []).slice(-10).map(b => `- ${b}`).join('\n') || '- (chưa có)';
         const chars = (story.characters || []).map(c => `- ${c.name}: ${c.personality || ''}`).join('\n');
         const prompt = `Bạn là biên tập viên tiếp nối truyện. Truyện đã đi hết dàn ý cũ nhưng người chơi vẫn muốn kể tiếp. Hãy sinh các MỐC DIỄN BIẾN tiếp theo.
 
 [BỐI CẢNH]
 ${String(story.setting || '').slice(0, 1000) || '(không có)'}
 
+[CẢNH MỞ ĐẦU]
+${String(story.openingScene || '').slice(0, 600) || '(không có)'}
+
 [NHÂN VẬT]
 ${chars || '(chưa có)'}
+
+[DÀN Ý ĐÃ CÓ]
+${outline}
 
 [CÁC MỐC ĐÃ QUA]
 ${done}
@@ -278,6 +285,7 @@ ${recent || '(chưa có)'}
 
 [QUY TẮC]
 - Sinh 2 hoặc 3 mốc, mỗi mốc MỘT câu ngắn dưới 120 ký tự, nối tiếp đúng diễn biến gần nhất và tính cách nhân vật.
+- Bám đúng hướng cốt truyện và bối cảnh của dàn ý đã có, không đổi chủ đề, không mở tuyến truyện lạc hướng.
 - Không lặp lại mốc đã qua, không mâu thuẫn với những gì đã xảy ra, không thêm nhân vật/quan hệ mới, không tạo biến cố lớn không thể đảo ngược.
 - Chỉ trả về mảng JSON các chuỗi, không giải thích.`;
         const model = (window.state.currentModel || 'gemini-2.5-flash').trim().replace(/^models\//, '');
@@ -322,7 +330,8 @@ ${recent || '(chưa có)'}
       const total = story.beats.length;
       const idx = story.beatIndex || 0;
       if (idx >= total) {
-        return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]\n- Dàn ý đã mở sang phần mới. Tiếp tục kể tự nhiên theo hướng mới, giữ đúng bối cảnh và tính cách nhân vật; chưa cần đóng mốc mới.\n`;
+        const pastText2 = (story.beatLog || []).slice(-6).map(b => `- ${b}`).join('\n') || '- (chưa có)';
+        return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]\n- Dàn ý đã mở sang phần mới. Tiếp tục kể tự nhiên theo hướng mới, giữ đúng bối cảnh và tính cách nhân vật. Nếu cảnh hiện tại đã trọn ý thì tự nối sang tình tiết kế tiếp, không cần chờ người chơi nhắc.\n- Các mốc đã qua (tóm tắt):\n${pastText2}\n`;
       }
       const turns = Math.max(0, userTurns - (story.beatStartTurn || 0));
       const past = (story.beatLog || []).slice(-6);
@@ -331,11 +340,11 @@ ${recent || '(chưa có)'}
       const upText = upcoming.length ? upcoming.map(b => `- ${b}`).join('\n') : '- (mốc cuối, nếu người chơi đi tiếp thì tự nối mạch mới)';
       let pace;
       if (turns < STORY_BEAT_MIN_TURNS) {
-        pace = `Mốc này mới được ${turns} lượt người chơi: ưu tiên đào sâu mốc hiện tại, nhưng nếu người chơi kéo sang một chi tiết khác trong cùng mạch thì theo tự nhiên ngay, đừng kéo họ lại. Chưa cần mở mốc mới, không nhắc tới mốc sau, không tua thời gian.`;
+        pace = `Mốc này mới được ${turns} lượt người chơi: ưu tiên đào sâu cảm xúc và chi tiết, nhưng nếu mốc đã trọn ý và cuộc trò chuyện tự nhiên trôi tới bước kế thì được phép đóng mốc sớm; nếu người chơi kéo sang một chi tiết khác trong cùng mạch thì theo ngay, đừng kéo họ lại. Chưa cần nhắc tới mốc sau, không tua thời gian.`;
       } else if (turns <= STORY_BEAT_MAX_TURNS) {
-        pace = `Mốc này đã được ${turns} lượt người chơi: đã đủ dày. Khi người chơi có vẻ muốn sang một chi tiết khác, chuyển nhẹ nhàng ngay, không bắt họ nói rõ; nếu họ còn muốn quanh lại chi tiết này thì tiếp tục đào sâu.`;
+        pace = `Mốc này đã được ${turns} lượt người chơi: đã đủ dày. Khi mốc đã cạn ý, tự nhiên đưa câu chuyện sang mốc kế và đóng mốc, không cần chờ người chơi nói rõ; nếu họ còn muốn quanh lại chi tiết này thì tiếp tục đào sâu.`;
       } else {
-        pace = `Mốc này đã được ${turns} lượt người chơi: rất đủ. Có thể chủ động mời người chơi tiến tới mốc kế bằng một câu hỏi/hành động tự nhiên, nhưng nếu họ muốn dừng ở chi tiết khác thì cứ theo họ.`;
+        pace = `Mốc này đã được ${turns} lượt người chơi: rất đủ. Hãy chủ động đóng mốc và chuyển sang mốc kế ngay trong lượt này nếu mạch truyện cho phép; chỉ ở lại khi người chơi đang muốn khai thác thêm.`;
       }
       return `\n[DÀN Ý TRUYỆN - CHỈ HỆ THỐNG BIẾT, TUYỆT ĐỐI KHÔNG NHẮC TỚI]
 - Mốc hiện tại (${idx + 1}/${total}): ${story.beats[idx]}
@@ -347,7 +356,7 @@ ${upText}
 [NHỊP MỐC TRUYỆN]
 - ${pace}
 - Người chơi luôn có quyền tua: nếu họ chủ động nói muốn bỏ qua/chuyển cảnh/đi tới việc khác, theo ngay và kể mốc mới, kể cả khi mốc hiện tại chưa đủ ${STORY_BEAT_MIN_TURNS} lượt. Kể cả khi họ chỉ khẽ chuyển sang một chi tiết nhỏ trong cùng cảnh, cũng theo ngay, không bắt họ nói rõ là muốn chuyển cảnh.
-- Khi thật sự chuyển sang mốc mới, thêm đúng một thẻ ở cuối câu trả lời: [BEAT: một câu ngắn tóm tắt việc đã xảy ra ở mốc vừa qua]. Chưa chuyển thì KHÔNG thêm thẻ. Không viết thẻ này ở bất kỳ chỗ nào khác.
+- Khi chuyển sang mốc mới (kể cả khi bạn tự thấy mốc hiện tại đã xong chứ chưa cần người chơi nhắc), thêm đúng một thẻ ở cuối câu trả lời: [BEAT: một câu ngắn tóm tắt việc đã xảy ra ở mốc vừa qua]. Mỗi lượt chỉ mở tối đa một mốc. Chưa chuyển thì KHÔNG thêm thẻ. Không viết thẻ này ở bất kỳ chỗ nào khác.
 - Không kể lại dàn ý, không nói "mốc", "chương", "phần" với người chơi.
 - Nếu mốc hiện tại đã là mốc cuối và người chơi muốn đi tiếp, tự viết tiếp tự nhiên theo hướng mới phù hợp, không dừng lại, không báo hết truyện.
 `;
@@ -983,9 +992,21 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const story = window.state.stories.find(s => s.id === window.state.activeStoryId);
       if (story) {
         const oldOpening = story.openingScene || '';
+        const oldSetting = story.setting || '';
         const newOpening = document.getElementById('story-opening-input').value.trim();
-        story.setting = document.getElementById('story-setting-input').value.trim();
+        const newSetting = document.getElementById('story-setting-input').value.trim();
+        story.setting = newSetting;
         story.openingScene = newOpening;
+        // Cốt truyện đổi thì bỏ dàn ý cũ để lượt sau dựng dàn ý mới bám đúng cốt truyện mới
+        if (oldSetting.trim() !== newSetting.trim() || oldOpening.trim() !== newOpening.trim()) {
+          story.beats = null;
+          story.beatIndex = 0;
+          story.beatLog = [];
+          story.beatStartTurn = storyUserTurns(story.id);
+          beatsAttemptAt.delete(story.id);
+          beatsExtendAt.delete(story.id);
+          ensureStoryBeats(story);   // dựng sẵn dàn ý mới, để lượt chat kế đã bám đúng cốt truyện mới
+        }
         // Đồng bộ tin mở đầu trong lịch sử chat khi người chơi sửa lại cảnh mở đầu
         if (newOpening !== oldOpening) {
           const hist = (window.state.chatHistories || {})[window.state.activeStoryId];
