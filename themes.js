@@ -1087,6 +1087,7 @@ function themeDynContext(story, char) {
   const mems = (story.themeMemories || []).slice(-3)
     .map(m => `- ${String(m.text || '').replace(/\s+/g, ' ').slice(0, 220)}`)
     .join('\n');
+  const beatIdx = Array.isArray(story.beats) && story.beats.length ? Math.min(story.beatIndex || 0, story.beats.length - 1) : -1;
   return [
     `[NHÂN VẬT] ${char.name}`,
     `[TÍNH CÁCH] ${String(char.personality || '(không ghi)').slice(0, 500)}`,
@@ -1095,6 +1096,7 @@ function themeDynContext(story, char) {
     `[XƯNG HÔ] ${pr ? `${char.name} xưng "${pr.self}", gọi người chơi là "${pr.you}"` : 'chưa ghi trong hồ sơ — tự chọn cặp xưng hô hợp tuổi, tính cách và quan hệ rồi giữ cố định'}`,
     `[TRUYỆN] ${String(story.title || '').slice(0, 80)}`,
     `[BỐI CẢNH] ${setting || '(không có)'}`,
+    beatIdx >= 0 ? `[MỐC TRUYỆN HIỆN TẠI] ${String(story.beats[beatIdx] || '').slice(0, 200)}` : '',
     others ? `[NHÂN VẬT KHÁC trong truyện, chỉ đưa vào nếu thật cần] ${others}` : '',
     '[CHAT GẦN ĐÂY]',
     hist || '- (chưa có)',
@@ -1140,7 +1142,7 @@ ${inputBlock}
 4. "choices" gồm 2-3 câu trả lời gợi ý cho người chơi ở ngôi của họ. Mỗi câu một thái độ khác nhau, đều tự nhiên và hợp lý; KHÔNG có lựa chọn đúng/sai, không gắn nhãn tốt/xấu. Tối đa một câu viết dạng hành động trong dấu *...*.
 5. Nếu đã đủ ${THEME_AI_ROUNDS} lượt hoặc cảnh đã tới chỗ khép tự nhiên (không sớm hơn lượt 2), trả "choices": [] kèm "closing": 1-2 câu khép lại buổi và "end": true. Lượt cuối bắt buộc khép.
 6. Tiếng Việt có dấu, đúng từ điển, câu hoàn chỉnh; không markdown, không tiêu đề, không nhắc hệ thống, điểm số hay phần thưởng.
-7. Giữ đúng [XƯNG HÔ] và [QUAN HỆ] suốt hoạt động: không tự đổi cặp xưng hô, cách gọi phải khớp tuổi và tính cách; mức thân mật thấp thì giữ ý, chưa vội thân mật, mức cao thì gần gũi tự nhiên; không đi trước diễn biến truyện.
+7. Giữ đúng [XƯNG HÔ] và [QUAN HỆ] suốt hoạt động: không tự đổi cặp xưng hô, cách gọi phải khớp tuổi và tính cách; mức thân mật thấp thì giữ ý, chưa vội thân mật, mức cao thì gần gũi tự nhiên; không đi trước diễn biến truyện. Hoạt động diễn ra trong [MỐC TRUYỆN HIỆN TẠI], chỉ khai thác mốc đó, không mở trước tình tiết của mốc sau.
 
 Chỉ trả về một JSON đúng định dạng, không thêm chữ nào khác:
 {"narration":"...","line":"...","choices":["...","..."]}

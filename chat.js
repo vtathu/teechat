@@ -424,6 +424,14 @@ ${upText}
         const pastEvents = (story.eventLog || []).slice(-6).map(e => `- ${cut(e.desc, 220)} → ${cut(e.result || e.choice, 160)}`).join('\n');
         const petMemEvents = ((window.state.petMemories || {})[charId] || []).slice(-4).map(m => `- ${cut(m.text, 200)}`).join('\n');
 
+        // Mốc truyện hiện tại: sự kiện nhỏ phải nằm trong mốc này, không mở trước tình tiết của mốc sau
+        let beatNow = '';
+        if (Array.isArray(story.beats) && story.beats.length) {
+          const bi = Math.min(story.beatIndex || 0, story.beats.length - 1);
+          const done = (story.beatLog || []).slice(-3).map(b => `- ${b}`).join('\n');
+          beatNow = `\n[DÒNG TRUYỆN ĐANG Ở - CHỈ HỆ THỐNG BIẾT]\n- Mốc hiện tại: ${story.beats[bi]}\n${done ? `- Đã qua:\n${done}\n` : ''}`;
+        }
+
         const aff = (window.state.affectionLevels && window.state.affectionLevels[charId]) || { level: 1, points: 0 };
         let living = '';
         if (activeChar.livesWith) living = `${charName} đang SỐNG CHUNG NHÀ với ${userName}.`;
@@ -457,9 +465,9 @@ ${pastEvents || '(chưa có)'}
 
 [DIỄN BIẾN CHAT GẦN NHẤT - ĐÂY LÀ NHỮNG GÌ ĐÃ THẬT SỰ XẢY RA]
 ${recentHistory}
-
+${beatNow}
 [QUY TẮC BẮT BUỘC]
-1. Sự kiện phải tiếp nối ĐÚNG địa điểm, thời điểm, tâm trạng và chủ đề của đoạn chat cuối cùng; nảy ra từ chi tiết đã có trong hồ sơ hoặc lịch sử chat, không đột ngột sang bối cảnh khác. Nếu diễn biến chat đã đi khác thiết lập ban đầu thì đi theo diễn biến chat, không kéo ngược về cốt truyện cũ.
+1. Sự kiện phải tiếp nối ĐÚNG địa điểm, thời điểm, tâm trạng và chủ đề của đoạn chat cuối cùng; nảy ra từ chi tiết đã có trong hồ sơ hoặc lịch sử chat, không đột ngột sang bối cảnh khác. Nếu diễn biến chat đã đi khác thiết lập ban đầu thì đi theo diễn biến chat, không kéo ngược về cốt truyện cũ. Sự kiện chỉ là một nút thắt nhỏ trong mốc hiện tại, không được dùng nó để mở trước tình tiết của mốc sau.
 2. Hành động, nghề nghiệp, khả năng, địa vị, xưng hô của ${charName} phải khớp thân phận và tính cách đã mô tả; không làm điều trái thân phận (người túng thiếu không thể tặng món quá đắt, người lạnh lùng không đột nhiên sến súa...).
 3. Chỉ dùng nhân vật đã có trong truyện, hoặc người qua đường thoáng qua (người bán hàng, hàng xóm, shipper...). Không bịa quan hệ/quá khứ chưa từng xuất hiện.
 4. Tuyệt đối KHÔNG tạo biến cố lớn không thể đảo ngược (mang thai, có con, kết hôn, qua đời, mất trí nhớ, chia tay hẳn, tai nạn nặng, tiết lộ bí mật lớn của cốt truyện).
@@ -2480,6 +2488,18 @@ actDiv.innerText = actText;
         });
         themeMemBlock = `[KÝ ỨC HOẠT ĐỘNG CHỦ ĐỀ - SỰ THẬT ĐÃ XẢY RA] Những hoạt động dưới đây đã thật sự diễn ra giữa người chơi và nhân vật trong hoạt động riêng. Nhân vật nhớ rõ, có thể nhắc lại tự nhiên khi phù hợp, không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
       }
+      let eventMemBlock = '';
+      if (story && Array.isArray(story.eventLog) && story.eventLog.length) {
+        const lines = story.eventLog.slice(-8).map(e => {
+          let d = '';
+          try { d = new Date(e.ts).toLocaleDateString('vi-VN') + ': '; } catch (err) {}
+          const who = e.charName ? e.charName + ' — ' : '';
+          const choice = e.choice ? ` Người chơi chọn: ${e.choice}.` : '';
+          const res = e.result ? ` Kết quả: ${e.result}.` : '';
+          return `- ${d}${who}${String(e.desc || '').replace(/\s+/g, ' ').trim()}${choice}${res}`;
+        });
+        eventMemBlock = `[SỰ KIỆN ĐÃ XẢY RA TRONG TRUYỆN - SỰ THẬT, KHÔNG ĐƯỢC MÂU THUẪN] Những tình huống dưới đây đã thật sự xảy ra và người chơi đã chọn cách xử lý. Nhân vật nhớ rõ, giữ nguyên hậu quả, nhắc lại tự nhiên khi phù hợp, không kể lại máy móc toàn bộ:\n${lines.join('\n')}\n`;
+      }
       const systemInstruction = `
 [QUY TẮC NHẬP VAI & BÁM SÁT CỐT TRUYỆN BẮT BUỘC]
 1. Bối cảnh kịch bản: "${(story && story.setting) || ''}".
@@ -2487,7 +2507,7 @@ actDiv.innerText = actText;
 3. Các nhân vật bạn nhập vai:
 ${charsPrompt}
 4. Thông tin cấp độ thân mật hiện tại của các nhân vật với người chơi:
-${charAffectionSummary}${cohabBlock}${petMemBlock}${themeMemBlock}
+${charAffectionSummary}${cohabBlock}${petMemBlock}${themeMemBlock}${eventMemBlock}
 5. Người tương tác: "${me.name || 'người chơi'}" (${me.memories || ''}).
 ${beatsBlock}
 [NHẬN DIỆN TÊN NHÂN VẬT & LỜI GỌI]
