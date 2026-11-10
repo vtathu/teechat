@@ -198,13 +198,25 @@
     return { total: total, hits: hits };
   }
 
-  const SCRATCH_SYMBOLS = ['🍒', '🍋', '🍀', '⭐', '🔔', '7️⃣', '🍇', '🍑'];
+  const SCRATCH_TYPES = {
+    mystery: { name: 'Ô Số Bí Ẩn' },
+    magic: { name: 'Số Thần Kỳ' }
+  };
+  // Giữ nguyên tỉ lệ cũ: trung bình hoàn 17.400đ trên vé 20.000đ
   const SCRATCH_ROWS = [
-    { p: 0.003, prize: 2000000, sym: '💎', name: 'Hũ kim cương' },
-    { p: 0.010, prize: 300000, sym: '7️⃣', name: 'Ba số 7' },
-    { p: 0.050, prize: 80000, sym: '🍀', name: 'Ba lá may mắn' },
-    { p: 0.220, prize: 20000, sym: '⭐', name: 'Hoàn vốn' }
+    { p: 0.003, prize: 2000000 },
+    { p: 0.010, prize: 300000 },
+    { p: 0.050, prize: 80000 },
+    { p: 0.220, prize: 20000 }
   ];
+  // Tiền in sẵn dưới mỗi ô / mỗi hàng, kể cả ô không trùng
+  const SCRATCH_PRINTS = [
+    20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000,
+    30000, 30000, 30000, 30000, 50000, 50000, 50000, 50000,
+    100000, 100000, 100000, 100000, 200000, 200000, 500000, 1000000, 2000000, 5000000
+  ];
+  const SCRATCH_PARTS = { 2000000: [2000000], 300000: [200000, 100000], 80000: [50000, 30000], 20000: [20000] };
+  const pad2 = (n) => String(n).padStart(2, '0');
 
   function L() {
     const s = S();
@@ -221,6 +233,11 @@
     if (typeof l.drawDay !== 'string') l.drawDay = '';
     if (!l.lastDraw || typeof l.lastDraw !== 'object') l.lastDraw = null;
     if (l.scratchTicket && typeof l.scratchTicket !== 'object') l.scratchTicket = null;
+    if (l.scratchTicket && !l.scratchTicket.type) {
+      // Vé kiểu cũ: chưa cào thì đổi sang vé mới giữ nguyên giải, cào rồi thì bỏ
+      l.scratchTicket = l.scratchTicket.done ? null : makeScratch('mystery', l.scratchTicket.prize || 0);
+    }
+    if (l.scratchTicket && typeof l.scratchTicket.claimed !== 'boolean') l.scratchTicket.claimed = !!l.scratchTicket.done;
     return l;
   }
   function logPlay(g, v) { const l = L(); l.history.unshift({ g: g, v: Math.round(v || 0) }); l.history = l.history.slice(0, 6); }
@@ -230,47 +247,113 @@
     for (let i = 0; i < SCRATCH_ROWS.length; i++) { acc += SCRATCH_ROWS[i].p; if (r < acc) return SCRATCH_ROWS[i]; }
     return null;
   }
-  function makeScratch() {
-    const win = rollScratch();
-    const cells = new Array(9).fill('');
-    const counts = {};
-    if (win) {
-      shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 3).forEach(i => { cells[i] = win.sym; });
-      counts[win.sym] = 3;
+  function uniqueNums(n, ban) {
+    const out = [], blocked = new Set(ban || []);
+    while (out.length < n) {
+      const v = rand(1, 99);
+      if (blocked.has(v) || out.indexOf(v) !== -1) continue;
+      out.push(v);
     }
-    const ban = win ? win.sym : null;
-    for (let i = 0; i < 9; i++) {
-      if (cells[i]) continue;
-      const pool = SCRATCH_SYMBOLS.filter(s => s !== ban && (counts[s] || 0) < 2);
-      const sym = pool[Math.floor(Math.random() * pool.length)];
-      cells[i] = sym; counts[sym] = (counts[sym] || 0) + 1;
-    }
-    return { cells: cells, revealed: new Array(9).fill(false), prize: win ? win.prize : 0, name: win ? win.name : '', winSym: win ? win.sym : '', done: false };
+    return out;
   }
-  function buyScratch() {
+  const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+  function scratchParts(total) {
+    if (total > 0 && SCRATCH_PARTS[total]) return SCRATCH_PARTS[total].slice();
+    return total > 0 ? [Math.round(total)] : [];
+  }
+  function makeScratch(type, forcedPrize) {
+    type = SCRATCH_TYPES[type] ? type : 'mystery';
+    const row = forcedPrize === undefined || forcedPrize === null ? rollScratch() : null;
+    const total = row ? row.prize : Math.max(0, Math.round(forcedPrize || 0));
+    const base = {
+      type: type,
+      prize: total,
+      parts: scratchParts(total),
+      done: false,
+      voided: false,
+      claimed: false,
+      issued: Date.now(),
+      serial: 'TC' + rand(100000, 999999) + pad2(rand(1, 99))
+    };
+    return type === 'magic' ? makeMagicTicket(base) : makeMysteryTicket(base);
+  }
+  // Ô Số Bí Ẩn: 4 số trúng, 20 ô của bạn; trùng số nào ăn tiền in dưới ô đó
+  function makeMysteryTicket(base) {
+    const parts = base.parts.slice();
+    const win = shuffle(uniqueNums(4)).sort((a, b) => a - b);
+    const hitIdx = shuffle([...Array(20).keys()]).slice(0, parts.length).sort((a, b) => a - b);
+    const prizes = Array.from({ length: 20 }, () => pickOne(SCRATCH_PRINTS));
+    const nums = new Array(20).fill(0);
+    hitIdx.forEach((idx, k) => { prizes[idx] = parts[k]; nums[idx] = win[k]; });
+    const rest = uniqueNums(20 - parts.length, win);
+    let ri = 0;
+    for (let i = 0; i < 20; i++) if (!nums[i]) nums[i] = rest[ri++];
+    base.winNums = win;
+    base.cells = nums.map((n, i) => ({ n: n, prize: prizes[i], hit: hitIdx.indexOf(i) !== -1 }));
+    base.hits = base.cells.filter(c => c.hit);
+    return base;
+  }
+  // Số Thần Kỳ: 4 hàng độc lập, hàng có số may mắn thì ăn tiền của hàng đó
+  function makeMagicTicket(base) {
+    const parts = base.parts.slice();
+    const winIdx = shuffle([0, 1, 2, 3]).slice(0, parts.length);
+    base.rows = [0, 1, 2, 3].map(i => {
+      const prize = winIdx.indexOf(i) !== -1 ? parts[winIdx.indexOf(i)] : pickOne(SCRATCH_PRINTS);
+      const lucky = rand(1, 99);
+      const nums = uniqueNums(4, [lucky]);
+      if (winIdx.indexOf(i) !== -1) nums[rand(0, 3)] = lucky;
+      return { lucky: lucky, nums: nums, prize: prize, win: winIdx.indexOf(i) !== -1 };
+    });
+    base.prize = base.rows.reduce((s, r) => s + (r.win ? r.prize : 0), 0);
+    return base;
+  }
+  function buyScratch(type) {
     const l = L();
+    type = SCRATCH_TYPES[type] ? type : 'mystery';
     if (l.scratchTicket && !l.scratchTicket.done) return toast('Cào hết vé đang có trước nhé.');
     if (l.scratchLeft <= 0) return toast('Hết vé cào hôm nay, mai quay lại nhé.');
     if (!pay(SCRATCH_COST)) return;
     l.scratchLeft--;
-    l.scratchTicket = makeScratch();
+    l.scratchTicket = makeScratch(type);
     save(); sfx('scratch'); render();
   }
-  function scratchCell(i) {
-    const l = L(), t = l.scratchTicket;
-    if (!t || t.done || t.revealed[i]) return;
-    t.revealed[i] = true;
-    sfx('scratch');
-    if (t.revealed.every(Boolean)) {
-      t.done = true;
-      if (t.prize > 0) {
-        addMoney(t.prize); logPlay('Cào vé', t.prize); sfx('win');
-        toast('🎉 Trúng ' + money(t.prize) + '!');
-      } else {
-        logPlay('Cào vé', 0); sfx('lose');
-      }
+  function finishScratch(t) {
+    const l = L();
+    if (t.claimed) return;
+    t.claimed = true;
+    if (t.prize > 0 && !t.voided) {
+      addMoney(t.prize); logPlay('Cào vé', t.prize); sfx('win');
+      toast('🎉 Trúng ' + money(t.prize) + '!');
+    } else {
+      logPlay('Cào vé', 0); sfx('lose');
     }
-    save(); render();
+    save();
+    refreshWallets();
+  }
+  function scratchAll() {
+    const t = L().scratchTicket;
+    if (!t || t.done) return;
+    t.done = true;
+    finishScratch(t);
+    renderStall(true);
+  }
+  function completeScratch() {
+    const t = L().scratchTicket;
+    if (!t || t.done) return;
+    t.done = true;
+    finishScratch(t);
+    const cv = document.getElementById('scratch-canvas');
+    if (cv) { cv.style.opacity = '0'; cv.style.pointerEvents = 'none'; }
+    setTimeout(() => { if (currentStall === 'scratch') renderStall(true); }, 340);
+  }
+  function noScratch() {
+    const t = L().scratchTicket;
+    if (!t || t.done) return;
+    if (!window.confirm('Đây là mã bảo mật của đại lý. Cào vào là vé vô hiệu, mất luôn tiền thưởng. Vẫn cào?')) return;
+    t.voided = true; t.done = true; t.claimed = true; t.prize = 0;
+    logPlay('Cào vé', 0);
+    save(); sfx('error'); renderStall(true);
+    toast('Vé đã bị vô hiệu vì cào vào phần mã bảo mật.');
   }
   function pickNum(n) {
     const l = L();
@@ -422,6 +505,108 @@
     else b.innerHTML = vietPanel();
     b.scrollTop = keep;
     if (currentStall === 'xsk') startSellerTimer(); else stopSellerTimer();
+    if (currentStall === 'scratch') setupScratchCanvas();
+  }
+  // Lớp bạc phủ mặt vé: vẽ gradient + chữ, cào bằng con trỏ tới khi lộ hơn nửa vé
+  function drawFoil(ctx, w, h) {
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#c7cfdd'); g.addColorStop(.26, '#f3f6fb'); g.addColorStop(.5, '#a9b4c8');
+    g.addColorStop(.74, '#e9eef6'); g.addColorStop(1, '#b3bed1');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.32)'; ctx.lineWidth = 2;
+    for (let x = -h; x < w + h; x += 14) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h, h); ctx.stroke(); }
+    ctx.restore();
+    for (let i = 0; i < 46; i++) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.12 + Math.random() * 0.45).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 2.4 + 0.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(66,80,106,.5)';
+    ctx.font = '700 ' + Math.max(15, Math.round(w * 0.055)) + 'px system-ui, sans-serif';
+    for (let y = h * 0.16; y < h; y += h * 0.24) {
+      ctx.save(); ctx.translate(w / 2, y); ctx.rotate(-0.14);
+      ctx.fillText('CÀO LỚP BẠC', 0, 0);
+      ctx.restore();
+    }
+    ctx.font = '600 ' + Math.max(10, Math.round(w * 0.034)) + 'px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(66,80,106,.4)';
+    ctx.fillText('✦   ✦   ✦', w / 2, h * 0.08);
+    ctx.fillText('✦   ✦   ✦', w / 2, h * 0.93);
+    ctx.restore();
+  }
+  let scratchResize = null;
+  function setupScratchCanvas(retry) {
+    const cv = document.getElementById('scratch-canvas');
+    const face = document.getElementById('scratch-face');
+    const t = L().scratchTicket;
+    if (!cv || !face || !t || t.done) {
+      if (scratchResize) { window.removeEventListener('resize', scratchResize); scratchResize = null; }
+      return;
+    }
+    const w = Math.round(face.clientWidth), h = Math.round(face.clientHeight);
+    if (!w || !h) {
+      if ((retry || 0) < 120) requestAnimationFrame(() => setupScratchCanvas((retry || 0) + 1));
+      return;
+    }
+    if (!scratchResize) {
+      scratchResize = () => setupScratchCanvas();
+      window.addEventListener('resize', scratchResize);
+    }
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawFoil(ctx, w, h);
+    let down = false, lastX = 0, lastY = 0, moves = 0;
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const rub = (x1, y1, x2, y2) => {
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = 34; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x2, y2, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    };
+    const cleared = () => {
+      try {
+        const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+        let clear = 0, total = 0;
+        for (let i = 3; i < d.length; i += 64) { total++; if (d[i] < 40) clear++; }
+        return total ? clear / total : 0;
+      } catch (e) { return 0; }
+    };
+    const onDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      down = true; moves = 0;
+      const p = pos(e);
+      lastX = p.x; lastY = p.y;
+      rub(p.x, p.y, p.x, p.y);
+      try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    };
+    const onMove = (e) => {
+      if (!down) return;
+      const p = pos(e);
+      rub(lastX, lastY, p.x, p.y);
+      lastX = p.x; lastY = p.y;
+      moves++;
+      if (moves % 10 === 0) sfx('scratch');
+      if (moves % 16 === 0 && cleared() > 0.5) { down = false; completeScratch(); }
+      e.preventDefault();
+    };
+    const onUp = () => {
+      if (!down) return;
+      down = false;
+      if (cleared() > 0.5) completeScratch();
+    };
+    cv.addEventListener('pointerdown', onDown);
+    cv.addEventListener('pointermove', onMove);
+    cv.addEventListener('pointerup', onUp);
+    cv.addEventListener('pointercancel', onUp);
   }
   // Cô Bảy lâu lâu buột miệng câu khác, đổi mỗi 3 phút để không nhảy chữ liên tục
   function xskIdleSay() {
@@ -548,31 +733,68 @@
   }
   function scratchPanel() {
     const l = L(), t = l.scratchTicket;
-    let html;
-    if (!t) {
-      html = '<div class="scratch-empty"><div class="big">🎟️</div>'
-        + '<div class="p-sub">Cào 9 ô, ba biểu tượng trùng nhau là trúng vé.</div></div>'
-        + '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé · ' + money(SCRATCH_COST) + '</button>';
-    } else {
-      const cells = t.cells.map((sym, i) => {
-        const rv = t.revealed[i];
-        const win = rv && sym === t.winSym;
-        return '<button class="scratch-cell' + (rv ? ' revealed' : '') + (win ? ' win' : '') + '" onclick="Play.scratch(' + i + ')">' + (rv ? sym : '?') + '</button>';
-      }).join('');
-      const done = t.done;
-      html = '<div class="scratch-grid">' + cells + '</div>'
-        + '<div class="scratch-result ' + (done && t.prize > 0 ? 'win' : 'lose') + '">'
-        + (done
-          ? (t.prize > 0 ? '🎉 Trúng ' + money(t.prize) + ' · ' + t.name : 'Chưa trúng, chúc may mắn lần sau!')
-          : 'Cào hết 9 ô để xem kết quả')
-        + '</div>'
-        + (done ? '<button class="p-btn p-btn-gold" onclick="Play.buyScratch()">Mua vé khác · ' + money(SCRATCH_COST) + '</button>' : '');
-    }
-    return '<div class="lot-panel">'
-      + '<div class="lot-buy-head"><b>Cào vé may mắn</b><span>Còn ' + l.scratchLeft + '/' + SCRATCH_PER_DAY + ' vé hôm nay</span></div>'
-      + html
-      + '<div class="lot-board-off">Ba biểu tượng trùng nhau: 2 triệu · 300.000 · 80.000 · 20.000.</div>'
+    const head = '<div class="lot-buy-head"><b>Cào vé may mắn</b><span>Còn ' + Math.max(0, l.scratchLeft) + '/' + SCRATCH_PER_DAY + ' vé hôm nay</span></div>';
+    const buyBtns = (sub) => '<div class="sc-buys">'
+      + '<button class="sc-buy" onclick="Play.buyScratch(\'mystery\')"><b>Ô Số Bí Ẩn</b><span>' + (sub || '4 số trúng · 20 ô của bạn') + '</span><i>' + money(SCRATCH_COST) + '</i></button>'
+      + '<button class="sc-buy" onclick="Play.buyScratch(\'magic\')"><b>Số Thần Kỳ</b><span>' + (sub || '4 hàng · mỗi hàng một số may mắn') + '</span><i>' + money(SCRATCH_COST) + '</i></button>'
       + '</div>';
+    if (!t) {
+      return '<div class="lot-panel">' + head
+        + '<div class="scratch-empty"><div class="big">🎟️</div>'
+        + '<div class="p-sub">Chọn loại vé, rồi lấy ngón tay cào lớp bạc.</div></div>'
+        + buyBtns()
+        + '</div>';
+    }
+    const done = !!t.done;
+    const magic = t.type === 'magic';
+    const typeName = SCRATCH_TYPES[t.type] ? SCRATCH_TYPES[t.type].name : 'Ô Số Bí Ẩn';
+    const issued = new Date(t.issued || Date.now());
+    const deadline = new Date(issued.getTime() + 180 * 864e5);
+    const dateTxt = (d) => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+    let face;
+    if (magic) {
+      face = '<div class="sc-rows">' + t.rows.map(r =>
+        '<div class="sc-row' + (done && r.win ? ' hit' : '') + '">'
+        + '<span class="sc-lucky"><em>Số may mắn</em><b>' + pad2(r.lucky) + '</b></span>'
+        + '<span class="sc-nums">' + r.nums.map(n => '<i class="' + (n === r.lucky ? 'on' : '') + '">' + pad2(n) + '</i>').join('') + '</span>'
+        + '<span class="sc-val">' + money(r.prize) + '</span>'
+        + '</div>').join('') + '</div>';
+    } else {
+      face = '<div class="sc-wins"><span class="sc-lab">SỐ TRÚNG THƯỞNG</span>'
+        + '<div class="sc-win-nums">' + t.winNums.map(n => '<i>' + pad2(n) + '</i>').join('') + '</div></div>'
+        + '<div class="sc-sec"><span class="sc-lab">Ô SỐ CỦA BẠN <em>trùng số trúng là thắng</em></span>'
+        + '<div class="sc-grid">' + t.cells.map(c =>
+          '<div class="sc-cell' + (done && c.hit ? ' hit' : '') + '">'
+          + '<b>' + pad2(c.n) + '</b><span>' + money(c.prize) + '</span></div>').join('') + '</div></div>';
+    }
+    let result = '';
+    if (done) {
+      if (t.voided) {
+        result = '<div class="scratch-result lose"><b>Vé bị vô hiệu</b><span>Đã cào vào phần mã bảo mật của đại lý.</span></div>';
+      } else if (t.prize > 0) {
+        const detail = magic
+          ? t.rows.filter(r => r.win).map(r => pad2(r.lucky) + ' · ' + money(r.prize)).join('  •  ')
+          : t.hits.map(h => pad2(h.n) + ' · ' + money(h.prize)).join('  •  ');
+        result = '<div class="scratch-result win"><b>🎉 Trúng ' + money(t.prize) + '</b><span>' + detail + '</span></div>';
+      } else {
+        result = '<div class="scratch-result lose"><b>Chưa trúng thưởng</b><span>Chúc may mắn lần sau!</span></div>';
+      }
+    }
+    const ticket = '<div class="sc-ticket' + (done ? ' done' : '') + (t.voided ? ' void' : '') + '">'
+      + '<div class="sc-top"><span class="sc-brand">VÉ CÀO MAY MẮN</span><span class="sc-type">' + typeName + '</span></div>'
+      + '<div class="sc-id"><span>Seri ' + (t.serial || '') + '</span><span>Phát hành ' + dateTxt(issued) + '</span></div>'
+      + '<div class="sc-face" id="scratch-face">' + face + (done ? '' : '<canvas id="scratch-canvas" class="sc-foil"></canvas>') + '</div>'
+      + '<button class="sc-no' + (t.voided ? ' torn' : '') + '" onclick="Play.noScratch()">'
+      + '<span class="sc-no-lab">KHÔNG CÀO NƠI NÀY</span>'
+      + '<span class="sc-barcode"></span>'
+      + '<span class="sc-no-sub">Mã vạch · mã bảo mật của đại lý</span>'
+      + '</button>'
+      + '<div class="sc-claim">Nhận thưởng trong <b>180 ngày</b> kể từ ngày phát hành · hạn ' + dateTxt(deadline) + '</div>'
+      + '</div>';
+    const actions = done
+      ? buyBtns('Vé khác')
+      : '<button class="p-btn p-btn-ghost" onclick="Play.scratchAll()">Cào hết vé</button>';
+    return '<div class="lot-panel">' + head + ticket + result + actions + '</div>';
   }
   function vietPanel() {
     const l = L();
@@ -1030,7 +1252,7 @@
       render();
     },
     stop: () => { if (window.FarmGame) window.FarmGame.unmount(); stopFishLoop(); stopLotClock(); stopSellerTimer(); },
-    buyScratch, scratch: scratchCell,
+    buyScratch, scratchAll, noScratch, scratch: scratchAll,
     pickNum, luckyPick, buyViet, drawViet,
     fishCast, fishReel, fishSell, fishRelease, enterContest,
     mktBuy, mktSell,
