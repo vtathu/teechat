@@ -328,7 +328,10 @@
           const item = typeof themeGrantActivityItem === 'function' ? themeGrantActivityItem(story, ch) : null;
           story.activityUnlocks[ch.id] = true;
           if (hadItem) {
-            got.push(`🎭 ${ch.name} đã có phiếu ${theme.icon} ${theme.name} trong túi`);
+            const gift = typeof themeGrantGiftFallback === 'function' ? themeGrantGiftFallback() : null;
+            got.push(gift
+              ? `🎁 ${ch.name} đã có phiếu ${theme.icon} ${theme.name}, tặng kèm ${gift.singleName || gift.name}`
+              : `🎭 ${ch.name} đã có phiếu ${theme.icon} ${theme.name} trong túi`);
           } else {
             got.push(`🎭 ${ch.name} nhận phiếu ${theme.icon} ${theme.name}`);
             if (item) newActivityItems.push(item);

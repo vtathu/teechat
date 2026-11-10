@@ -691,6 +691,29 @@ function themeTicketDay() {
 
 // Phiếu chỉ rơi rất hiếm sau một ca làm, tối đa 3 phiếu/ngày.
 // Phiếu của nhân vật chưa đủ cấp là vé mở sớm, dùng một lần là mở luôn.
+// Nhân vật đã có phiếu trong túi thì món rơi đổi thành một món quà nhỏ.
+const THEME_TICKET_GIFT_IDS = ['item-601', 'item-602', 'item-603', 'item-604', 'item-101', 'item-103', 'item-104'];
+
+function themeGrantGiftFallback() {
+  const catalog = (typeof SHOP_CATALOG !== 'undefined') ? SHOP_CATALOG : [];
+  const pool = THEME_TICKET_GIFT_IDS.map(id => catalog.find(x => x.id === id)).filter(Boolean);
+  if (!pool.length) return null;
+  const g = pool[Math.floor(Math.random() * pool.length)];
+  if (!window.state.inventory) window.state.inventory = [];
+  const item = {
+    id: g.id,
+    name: `${g.name} (x1)`,
+    singleName: g.name,
+    qty: 1,
+    tag: g.tag,
+    cat: g.cat,
+    desc: g.desc,
+    uniqueId: 'inv-' + Date.now() + Math.random()
+  };
+  window.state.inventory.push(item);
+  return item;
+}
+
 function themeMaybeDropTicket() {
   const day = themeTicketDay();
   if (day.n >= THEME_TICKET_DAILY_CAP) return null;
@@ -704,7 +727,8 @@ function themeMaybeDropTicket() {
     if (!char.activityId || !CHAT_THEMES[char.activityId]) char.activityId = themeActivityIdFor(char, story);
     const theme = CHAT_THEMES[char.activityId];
     if (!theme) continue;
-    const item = themeGrantActivityItem(story, char, true);
+    const existing = themeActivityItemFor(story, char);
+    const item = existing ? themeGrantGiftFallback() : themeGrantActivityItem(story, char);
     if (!item) continue;
     day.n++;
     if (typeof saveStorage === 'function') saveStorage();
@@ -733,16 +757,18 @@ function ensureThemeStory(story) {
       const hadLegacy = Object.keys(un[c.id]).some(k => un[c.id][k] === true);
       if (hadLegacy && !story.activityUnlocks[c.id]) { story.activityUnlocks[c.id] = true; changed = true; }
     }
-    // Đủ cấp hoặc đã mở từ trước thì cấp một phiếu mỗi ngày, không tự mở hoạt động.
-    // Phiếu đã dùng hôm nay sẽ không được cấp lại cho tới ngày mai.
+    // Đủ cấp hoặc đã mở từ trước thì tặng một phiếu đầu tiên, không tự cấp lại hằng ngày.
     const theme = CHAT_THEMES[c.activityId];
     if (theme && themeIsUnlocked(theme, c, story)) {
-      if (!story.activityGrantDay || typeof story.activityGrantDay !== 'object') story.activityGrantDay = {};
+      if (!story.activityGranted || typeof story.activityGranted !== 'object') story.activityGranted = {};
       const hasItem = themeActivityItemFor(story, c);
-      if (!hasItem && story.activityGrantDay[c.id] !== themeTodayKey()) {
+      if (hasItem) {
+        if (!story.activityGranted[c.id]) { story.activityGranted[c.id] = true; changed = true; }
+        if (themeRefreshActivityItem(hasItem, story, c)) changed = true;
+      } else if (!story.activityGranted[c.id]) {
         const item = themeGrantActivityItem(story, c);
-        if (item) { story.activityGrantDay[c.id] = themeTodayKey(); changed = true; }
-      } else if (hasItem && themeRefreshActivityItem(hasItem, story, c)) changed = true;
+        if (item) changed = true;
+      }
     }
   });
   const am = window.state.activeMode && window.state.activeMode[story.id];
@@ -815,15 +841,13 @@ function themeRefreshActivityItem(item, story, char) {
   return changed;
 }
 
-// Phiếu dùng một lần: bấm Dùng là tiêu; rơi thêm cùng loại thì cộng dồn số lượng.
-function themeGrantActivityItem(story, char, stack) {
+// Phiếu dùng một lần: bấm Dùng là tiêu.
+function themeGrantActivityItem(story, char) {
   if (!story || !char) return null;
+  if (!story.activityGranted || typeof story.activityGranted !== 'object') story.activityGranted = {};
+  story.activityGranted[char.id] = true;
   const existing = themeActivityItemFor(story, char);
-  if (existing) {
-    themeRefreshActivityItem(existing, story, char);
-    if (stack) existing.qty = (existing.qty || 1) + 1;
-    return existing;
-  }
+  if (existing) { themeRefreshActivityItem(existing, story, char); return existing; }
   const theme = CHAT_THEMES[char.activityId] || CHAT_THEMES.daily;
   if (!window.state.inventory) window.state.inventory = [];
   const item = {
@@ -856,18 +880,13 @@ function themeCloseOverlay() {
 }
 
 // Phiếu dùng một lần: bấm Dùng là tiêu một phiếu, hết thì biến khỏi túi.
-// Mỗi ngày tự cấp lại một phiếu khi nhân vật đã mở hoạt động.
-function themeConsumeActivityItem(item, story, char) {
+function themeConsumeActivityItem(item) {
   const inv = window.state.inventory || [];
   const i = inv.indexOf(item);
   if (!item || i < 0) return false;
   const qty = item.qty || 1;
   if (qty <= 1) inv.splice(i, 1);
   else item.qty = qty - 1;
-  if (story && char) {
-    if (!story.activityGrantDay || typeof story.activityGrantDay !== 'object') story.activityGrantDay = {};
-    story.activityGrantDay[char.id] = themeTodayKey();
-  }
   if (typeof saveStorage === 'function') saveStorage();
   if (typeof window.refreshUiBag === 'function') window.refreshUiBag();
   return true;
@@ -887,7 +906,7 @@ function useActivityItem(uid) {
   if (!story.activityUnlocks) story.activityUnlocks = {};
   story.activityUnlocks[char.id] = true;
   window.__themeShowHome = false;
-  themeConsumeActivityItem(item, story, char);
+  themeConsumeActivityItem(item);
   if (typeof saveStorage === 'function') saveStorage();
   themeOpenOverlay();
   if (!story.themeSession) themeBeginSession(story, theme, char);
@@ -1667,6 +1686,7 @@ window.themeOpenOverlay = themeOpenOverlay;
 window.themeCloseOverlay = themeCloseOverlay;
 window.useActivityItem = useActivityItem;
 window.themeGrantActivityItem = themeGrantActivityItem;
+window.themeGrantGiftFallback = themeGrantGiftFallback;
 window.themeActivityItemFor = themeActivityItemFor;
 window.themeMaybeDropTicket = themeMaybeDropTicket;
 window.themeShowRewardItems = themeShowRewardItems;

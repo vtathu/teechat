@@ -129,8 +129,10 @@
       if (earned > 0) {
         try { if (typeof window.themeMaybeDropTicket === 'function') drop = window.themeMaybeDropTicket(); } catch (e) {}
       }
-      const canChoose = drop && typeof window.themeShowRewardItems === 'function';
-      alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}${drop && !canChoose ? `\n🎭 Nhặt được ${drop.name} (đã vào Túi)` : ''}`);
+      const isTicket = !!(drop && drop.cat === 'activity');
+      const canChoose = isTicket && typeof window.themeShowRewardItems === 'function';
+      const dropLine = drop && !canChoose ? `\n${isTicket ? '🎭 Nhặt được' : '🎁 Nhặt thêm'} ${drop.singleName || drop.name} (đã vào Túi)` : '';
+      alert(`${title}\n${msg}\nTiền kiếm được: ${earned.toLocaleString('vi-VN')} VNĐ${earned > 0 ? ' (đã cộng vào ví)' : ''}${dropLine}`);
       if (canChoose) {
         try { window.themeShowRewardItems([], [drop]); } catch (e) {}
       }
