@@ -1292,6 +1292,11 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .bag-ticket-sub { font-size: .7rem; color: var(--muted); margin-top: 2px; }
     .bag-ticket-wait { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 10px; background: #fff3d6; color: #8a6a2c; font-size: .68rem; font-weight: bold; white-space: nowrap; }
 
+    /* Phiếu hoạt động trong túi */
+    .bag-act .nm { font-weight: bold; }
+    .bag-act-sub { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+    .bag-act-qty { font-size: .68rem; font-weight: bold; color: #c2417a; margin-top: 3px; }
+
     @media (max-width: 360px) {
       .lot-street { height: 252px; }
       .lot-stalls { left: 5px; right: 5px; bottom: 42px; gap: 2px; }

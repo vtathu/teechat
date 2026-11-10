@@ -338,10 +338,14 @@
           : `<span class="bag-ticket-wait">Chờ 16:30</span>`}
       </div></div>`;
     }).join('');
-    const actRows = rest.filter(o => o.cat === 'activity').map(o => `<div class="bag-row"><div class="nm">${esc(o.name)}
-      <div style="font-size:.72rem;color:#718096;margin-top:2px;">${esc(o.desc || '')}</div></div><div class="bt">
+    const actRows = rest.filter(o => o.cat === 'activity').map(o => {
+      const qty = o.qty || 1;
+      return `<div class="bag-row bag-act"><div class="nm">${esc(o.name)}
+      <div class="bag-act-sub">${esc(o.desc || '')}</div>
+      ${qty > 1 ? `<div class="bag-act-qty">Còn ${qty} phiếu</div>` : ''}</div><div class="bt">
       <button class="btn btn-pink" onclick="UI.useActivity('${o.uniqueId}')">▶ Dùng</button>
-    </div></div>`).join('');
+    </div></div>`;
+    }).join('');
     gen.innerHTML = ticketRows + actRows + (rest.filter(o => o.cat !== 'activity').map(o => {
       const unit = sellUnit(o), qty = o.qty || 1;
       return `<div class="bag-row"><div class="nm">${esc(o.name)}</div><div class="bt">
