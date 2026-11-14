@@ -1183,7 +1183,7 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .diary-head-sub { font-size: 0.7rem; color: #937c54; }
     .diary-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 6px 16px 26px 42px; color: #3f362a; font-size: 0.9rem; line-height: 28px; background-color: #fffdf4; background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(166,144,101,0.22) 27px, rgba(166,144,101,0.22) 28px), linear-gradient(rgba(205,104,104,0.38), rgba(205,104,104,0.38)); background-size: 100% 28px, 1px 100%; background-position: 0 6px, 31px 0; background-repeat: repeat-y, no-repeat; }
     .diary-empty { line-height: 1.7; color: #99885f; font-size: 0.84rem; padding: 18px 0; }
-    .diary-day { line-height: 28px; font-size: 0.7rem; font-weight: bold; letter-spacing: 0.8px; text-transform: uppercase; color: #a58b5a; }
+    .diary-day { line-height: 28px; font-size: 0.8rem; font-weight: bold; letter-spacing: 0.2px; color: #a58b5a; padding-top: 6px; }
     .diary-entry { padding: 0 0 10px; }
     .diary-entry-top { display: flex; justify-content: flex-end; gap: 8px; font-size: 0.66rem; line-height: 24px; color: #a58b5a; }
     .diary-entry-who { font-size: 0.76rem; font-weight: bold; color: #6b5636; line-height: 24px; }

@@ -23,16 +23,15 @@ function diaryPlayerRef(story) {
   return (!n || /^bạn$/i.test(n)) ? 'cậu ấy' : n;
 }
 
-function diaryDateLabel(ts) {
-  const d = new Date(ts);
-  const sameDay = (a, b) => a.toDateString() === b.toDateString();
-  if (sameDay(d, new Date())) return 'Hôm nay';
-  if (sameDay(d, new Date(Date.now() - 86400000))) return 'Hôm qua';
-  return `${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
+function diaryDayKey(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function diaryTimeLabel(ts) {
-  return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+function diaryDayLabel(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  const year = d.getFullYear() === new Date().getFullYear() ? '' : `, ${d.getFullYear()}`;
+  return `Ngày ${d.getDate()} tháng ${d.getMonth() + 1}${year}`;
 }
 
 function diaryKeys() {
@@ -95,13 +94,13 @@ function diaryParsePassages(text) {
 }
 
 // Mọi đoạn của cùng một lần viết chia chung group để hiện thành một trang nhật ký.
-function diaryAddGroup(story, kind, char, texts) {
+function diaryAddGroup(story, kind, char, texts, ts) {
   if (!story) return [];
   const list = diaryEnsure(story);
   const clean = (texts || []).map(t => String(t || '').trim()).filter(Boolean);
   if (!clean.length) return [];
   const group = diaryNewGroup();
-  const base = Date.now();
+  const base = Number(ts) || Date.now();
   const made = clean.map((text, i) => ({
     id: group + '-' + i,
     ts: base + i,
@@ -187,7 +186,7 @@ function diaryActivityPrompt(story, theme, char, session, memory) {
 - Chỉ trả về các đoạn nhật ký, không thêm lời dẫn.`;
 }
 
-// ---- Nhật ký theo ngày: ghi lại đoạn chat từ đầu ngày tới lúc này ----
+// ---- Nhật ký theo ngày: mỗi nhân vật chỉ nhớ phần chuyện trò có mình, viết vào cuối ngày ----
 function diaryChatText(m) {
   let t = String((m && m.text) || '')
     .replace(/\[USER_TRANSFER:[^\]]*\]/gi, '')
@@ -202,72 +201,130 @@ function diaryChatQuote(t) {
   return s;
 }
 
-function diaryChatTranscript(story, char, msgs) {
-  const me = diaryPlayerRef(story);
-  return msgs.map(m => {
-    const t = diaryChatText(m);
-    if (!t) return m.img ? `${m.sender === 'user' ? me : char.name}: (một tấm ảnh)` : '';
-    if (m.sender === 'user') return `${me}: ${t}`;
-    return /^\s*\[[^\]]{1,40}\]/.test(t) ? t : `${char.name}: ${t}`;
-  }).filter(Boolean).join('\n');
+// Tách một tin của AI thành từng câu thoại kèm id nhân vật nói câu đó.
+// Dùng chung cách nhận tên với khung chat để "Văn An", "An" vẫn là cùng một người.
+function diaryMessageSegments(text, story) {
+  const segs = [];
+  String(text || '').split('\n').forEach(line => {
+    const s = line.trim();
+    if (!s) return;
+    const m = s.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
+    const speaker = m ? m[1].trim() : '';
+    const rest = m ? (m[2] || '').trim() : s;
+    if (!rest) return;
+    let speakers = [];
+    if (typeof resolveSpeakers === 'function') {
+      try { speakers = resolveSpeakers(speaker, rest, story) || []; } catch (e) { speakers = []; }
+    }
+    segs.push({ ids: speakers.filter(sp => sp && sp.id).map(sp => sp.id), text: rest });
+  });
+  return segs;
 }
 
-function diaryChatPrompt(story, char, transcript) {
+// Phần ký ức của một nhân vật trong ngày: chỉ giữ những lượt có nhân vật lên tiếng,
+// kèm lời người chơi ngay trước đó và phần dẫn truyện của chính lượt ấy.
+function diaryChatPortion(story, char, msgs) {
   const me = diaryPlayerRef(story);
-  return `Bạn viết nhật ký thay cho một nhân vật trong câu chuyện đời thường. Nhân vật tự ghi lại chuyện trò đã diễn ra trong ngày hôm nay.
+  const out = [];
+  const own = [];
+  const user = [];
+  let waiting = [];
+  msgs.forEach(m => {
+    if (!m) return;
+    if (m.sender === 'user') { waiting.push(m); return; }
+    if (m.sender !== 'ai') return;
+    const segs = diaryMessageSegments(m.text || '', story);
+    if (!segs.some(sg => sg.ids.indexOf(char.id) >= 0)) { waiting = []; return; }
+    waiting.forEach(u => {
+      const t = diaryChatText(u);
+      const line = t || (u.img ? '(gửi một tấm ảnh)' : '');
+      if (!line) return;
+      out.push(`${me}: ${line}`);
+      user.push(line);
+    });
+    waiting = [];
+    segs.forEach(sg => {
+      const t = diaryChatText({ text: sg.text });
+      if (!t) return;
+      if (sg.ids.indexOf(char.id) >= 0) { out.push(`${char.name}: ${t}`); own.push(t); }
+      else if (!sg.ids.length) out.push(`(cảnh) ${t}`);
+    });
+  });
+  return { transcript: out.join('\n').slice(0, 6000), own, user };
+}
+
+function diaryChatFallback(story, char, portion) {
+  const me = diaryPlayerRef(story);
+  const firstUser = portion.user.length ? diaryChatQuote(portion.user[0]) : '';
+  const ownQuote = portion.own.length ? diaryChatQuote(portion.own[0]) : '';
+  const said = (q) => /[.!?…]$/.test(q) ? `"${q}"` : `"${q}".`;
+  const p1 = firstUser
+    ? `Hôm đó ${me} nói với mình: ${said(firstUser)} Mình nghe rồi ngồi một lúc mới trả lời.`
+    : `Hôm đó mình có nói chuyện với ${me} một lúc.`;
+  const p2 = ownQuote
+    ? `Mình nói: ${said(ownQuote)} Nhớ lại thì vẫn thấy đúng như vậy.`
+    : `Chuyện trò dừng ở đó. Mình ngồi lại một mình, nghĩ về những gì ${me} kể.`;
+  return [p1, p2];
+}
+
+function diaryChatPrompt(story, char, transcript, dayLabel) {
+  const me = diaryPlayerRef(story);
+  return `Bạn viết nhật ký thay cho một nhân vật trong câu chuyện đời thường. Nhân vật mở sổ riêng và ghi lại phần chuyện trò của mình trong một ngày đã qua.
 
 [NGƯỜI VIẾT] ${diaryCharLine(char)}
 [NGƯỜI NÓI CHUYỆN CÙNG] ${me}
-[CHUYỆN ĐÃ XẢY RA HÔM NAY - TỪ ĐẦU NGÀY]
+[NGÀY] ${dayLabel}
+[PHẦN CHUYỆN TRÒ CÓ NHÂN VẬT TRONG NGÀY]
 ${transcript}
 
 [QUY TẮC]
-- Kể lại trung thực chuyện đã xảy ra trong ngày đúng thứ tự từ lúc bắt đầu tới lúc kết thúc, giữ đúng chi tiết quan trọng; không thêm chuyện không có trong đoạn chat.
+- Đây là ký ức riêng của nhân vật: chỉ kể phần mình có mặt, những gì mình nghe và thấy trong đoạn trên; không kể chuyện của người khác khi mình không có ở đó, không thêm chuyện ngoài đoạn chat.
+- Kể đúng thứ tự từ lúc bắt đầu tới lúc kết thúc, giữ chi tiết quan trọng.
 - Ngôi thứ nhất, nhân vật xưng "mình", gọi người kia là "${me}" hoặc "cậu ấy". Viết như tự nhủ, không phải kể cho ai nghe.
 - Viết thành 2-3 đoạn ngắn liền nhau, cách nhau một dòng trống: đoạn đầu là lúc câu chuyện bắt đầu, đoạn sau là cảm xúc lúc nhớ lại hoặc chuyện lúc về.
 - Câu ngắn, đời thường, có một chi tiết nhỏ đáng nhớ và một chút cảm xúc thật.
 - Đôi khi nhân vật thấy ngại nên gạch bỏ giữa chừng: dùng ~~cụm từ~~ cho một cụm từ bị gạch. Chỉ thỉnh thoảng, không phải đoạn nào cũng có.
-- Không tiêu đề, không nhắc điểm số, phần thưởng, hệ thống hay tên game.
+- Không ghi ngày, không tiêu đề, không nhắc điểm số, phần thưởng, hệ thống hay tên game.
 - Chỉ trả về các đoạn nhật ký, không thêm lời dẫn.`;
 }
 
 function diaryChatSync(story, char) {
-  if (!story || !char) return;
+  if (!story || !char || !char.id) return;
   const hist = (window.state.chatHistories || {})[story.id] || [];
-  const dayStart = new Date();
-  dayStart.setHours(0, 0, 0, 0);
-  const covered = (story.diaryChatMarks && story.diaryChatMarks[char.id]) || 0;
-  const from = Math.max(dayStart.getTime(), covered + 1);
-  const msgs = hist.filter(m => m && m.ts >= from && (m.sender === 'user' || m.sender === 'ai') && !m.opening && !m.event).slice(-60);
-  if (msgs.length < 2) return;
-  const transcript = diaryChatTranscript(story, char, msgs).slice(0, 6000);
-  if (!transcript) return;
+  const todayKey = diaryDayKey(Date.now());
+  const byDay = {};
+  hist.forEach(m => {
+    if (!m || !m.ts) return;
+    if (m.sender !== 'user' && m.sender !== 'ai') return;
+    if (m.opening || m.event) return;
+    const key = diaryDayKey(m.ts);
+    if (key >= todayKey) return; // hôm nay chưa kết thúc thì chưa viết
+    (byDay[key] || (byDay[key] = [])).push(m);
+  });
 
-  if (!story.diaryChatMarks || typeof story.diaryChatMarks !== 'object') story.diaryChatMarks = {};
-  story.diaryChatMarks[char.id] = msgs[msgs.length - 1].ts;
+  if (!story.diaryDays || typeof story.diaryDays !== 'object') story.diaryDays = {};
+  let done = story.diaryDays[char.id];
+  if (!Array.isArray(done)) done = story.diaryDays[char.id] = [];
+  const keys = Object.keys(byDay).sort().slice(-10).filter(k => done.indexOf(k) < 0);
+  if (!keys.length) return;
 
-  const me = diaryPlayerRef(story);
-  const firstUser = msgs.find(m => m.sender === 'user');
-  const lastAi = [...msgs].reverse().find(m => m.sender === 'ai');
-  const users = msgs.filter(m => m.sender === 'user');
-  const midUser = users.length > 2 ? users[Math.floor(users.length / 2)] : null;
-  const firstQuote = firstUser ? diaryChatQuote(diaryChatText(firstUser)) : '';
-  const midQuote = midUser && midUser !== firstUser ? diaryChatQuote(diaryChatText(midUser)) : '';
-  const lastQuote = lastAi ? diaryChatQuote(diaryChatText(lastAi)) : '';
-  const p1 = firstQuote
-    ? `Hôm nay ${me} mở lời trước: "${firstQuote}". Mình đọc xong, ngồi một lúc mới trả lời.`
-    : `Hôm nay mình nói chuyện với ${me} một lúc.`;
-  const pMid = midQuote
-    ? `Giữa buổi, ${me} còn kể: "${midQuote}". Mình nghe rồi ghi lại trong đầu, sợ quên.`
-    : '';
-  const p2 = lastQuote
-    ? `Tới cuối buổi, mình nói với ${me}: "${lastQuote}". Nói xong vẫn thấy còn điều chưa kịp nói.`
-    : `Chuyện trò dừng ở đó. Mình ngồi lại một lúc, nghĩ về những gì ${me} kể.`;
-
-  const entries = diaryAddGroup(story, 'chat', char, [p1, pMid, p2].filter(Boolean));
-  if (!entries.length) return;
-  diaryRefreshIfOpen();
-  if (diaryKeys().length) diaryRewriteGroup(story, entries, diaryChatPrompt(story, char, transcript));
+  const existing = diaryEnsure(story);
+  keys.forEach(key => {
+    done.push(key);
+    const already = existing.some(e => e && e.kind === 'chat'
+      && (e.authorId || e.charId) === char.id && diaryDayKey(e.ts) === key);
+    if (already) return;
+    const msgs = byDay[key];
+    const portion = diaryChatPortion(story, char, msgs);
+    if (!portion.own.length || !portion.transcript) return; // không xuất hiện thì thôi
+    const ts = msgs[msgs.length - 1].ts;
+    const entries = diaryAddGroup(story, 'chat', char, diaryChatFallback(story, char, portion), ts);
+    if (!entries.length) return;
+    diaryRefreshIfOpen();
+    if (diaryKeys().length) diaryRewriteGroup(story, entries, diaryChatPrompt(story, char, portion.transcript, diaryDayLabel(ts)));
+  });
+  if (done.length > 60) done.splice(0, done.length - 60);
+  if (typeof saveStorage === 'function') saveStorage();
 }
 
 function diaryGiftPrompt(story, char, itemName, shared, names) {  const me = diaryPlayerRef(story);
@@ -339,9 +396,9 @@ function diaryAddGift(story, targets, itemName, shared) {
   return made;
 }
 
-// Gom các đoạn cùng group thành một trang, hiện mới nhất trước.
+// Gom các đoạn cùng group thành một trang, xếp theo thời gian.
 function diaryPages(story) {
-  const list = diaryEnsure(story);
+  const list = diaryEnsure(story).slice().sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
   const pages = [];
   list.forEach(e => {
     const last = pages[pages.length - 1];
@@ -387,38 +444,36 @@ function renderDiary() {
   const char = charId && story ? (story.characters || []).find(c => c.id === charId) : null;
   diaryRenderHead(story, char);
 
-  let pages = diaryPages(story).reverse();
+  let pages = diaryPages(story);
   if (charId) pages = pages.filter(p => diaryPageChar(p) === charId);
+  // Nhật ký chat chỉ mở vào cuối ngày: phần của hôm nay để hôm sau mới đọc
+  const todayKey = diaryDayKey(Date.now());
+  pages = pages.filter(p => {
+    const first = p.items[0] || {};
+    return !(first.kind === 'chat' && diaryDayKey(first.ts) === todayKey);
+  });
   if (!pages.length) {
     body.innerHTML = `<div class="diary-empty">${char
-      ? `Trang này còn trống. Mỗi buổi đi chơi hay món quà tặng sẽ được ${esc(char.name)} ghi lại ở đây.`
-      : 'Nhật ký còn trống. Mỗi buổi đi chơi hay món quà tặng đều được nhân vật tự ghi lại ở đây.'}</div>`;
+      ? `Sổ còn trống. Ngày nào ${esc(char.name)} có chuyện để kể, nhật ký sẽ được viết vào cuối ngày.`
+      : 'Nhật ký còn trống.'}</div>`;
     return;
   }
 
-  let dayKey = '';
-  body.innerHTML = pages.map(page => {
-    const items = page.items;
-    const last = items[items.length - 1];
-    const t1 = diaryTimeLabel(items[0].ts);
-    const t2 = diaryTimeLabel(last.ts);
-    const when = items.length > 1 && t1 !== t2 ? `${t1} – ${t2}` : t2;
-    const dk = new Date(last.ts).toDateString();
-    let dayLabel = '';
-    if (dk !== dayKey) {
-      dayKey = dk;
-      dayLabel = `<div class="diary-day">${esc(diaryDateLabel(last.ts))}</div>`;
-    }
-    const legacy = !last.authorId;
-    const who = (!charId || legacy)
-      ? `<div class="diary-entry-who">✎ ${esc(last.authorName || 'Bạn')} viết</div>`
-      : '';
-    const paras = items.map(e => `<p>${diaryStrike(e.text)}</p>`).join('');
-    return `${dayLabel}<div class="diary-entry">
-      <div class="diary-entry-top"><span class="diary-entry-time">${esc(when)}</span></div>
-      ${who}
-      <div class="diary-entry-text">${paras}</div>
-    </div>`;
+  const days = [];
+  pages.forEach(page => {
+    const ts = page.items[0].ts;
+    const key = diaryDayKey(ts);
+    const last = days[days.length - 1];
+    if (last && last.key === key) last.pages.push(page);
+    else days.push({ key, ts, pages: [page] });
+  });
+  days.reverse();
+  body.innerHTML = days.map(day => {
+    const blocks = day.pages.map(page => {
+      const paras = page.items.map(e => `<p>${diaryStrike(e.text)}</p>`).join('');
+      return `<div class="diary-entry"><div class="diary-entry-text">${paras}</div></div>`;
+    }).join('');
+    return `<div class="diary-day">${esc(diaryDayLabel(day.ts))}</div>${blocks}`;
   }).join('');
 }
 
