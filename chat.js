@@ -1716,21 +1716,72 @@ Trả về ĐÚNG JSON thuần:
         String(msg.text || '').trim() === String(story.openingScene || '').trim();
     }
 
-    function renderOpeningScene(text, story, container) {
-      const lines = String(text || '').split('\n').filter(l => l.trim() !== '');
+    // "Lời Mở Đầu" của nhân vật (truyện không có cảnh mở đầu) cũng do người chơi viết,
+    // có thể chỉ là ngoặc kép không kèm tên, nên phải vẽ bằng bộ phân tích thoại.
+    function isFirstMsgMessage(msg, idx, story) {
+      if (!msg || idx !== 0 || msg.sender !== 'ai' || msg.event) return false;
+      const t = String(msg.text || '').trim();
+      if (!t || !story || !Array.isArray(story.characters)) return false;
+      return story.characters.some(c => String(c.firstMsg || '').trim() === t);
+    }
+
+    // Ngoặc kép trong cảnh mở đầu luôn là lời thoại, kể cả khi phía trước là câu tả
+    // ("Cô ấy mỉm cười: ...") hoặc không có tên ai. Tên gọi kiểu "Cô ấy mỉm cười" không được
+    // biến thành tên nhân vật phụ; chỉ nhãn vai ngắn ("Bác sĩ", "Người phục vụ") mới là người nói.
+    const OPENING_PRONOUN_LABEL = /^(cô ấy|anh ấy|ông ấy|bà ấy|chị ấy|em ấy|anh ta|cô ta|ông ta|bà ta|người ấy|hắn|gã|nàng|chàng|nó)$/i;
+    const OPENING_VERB_TAIL = /\s+(bước tới|bước vào|bước lại|tiến lại|đi tới|chạy tới|chạy lại|mỉm cười|khẽ cười|nở nụ cười|cười|nói|nói tiếp|hỏi|hỏi lại|đáp|đáp lại|trả lời|lên tiếng|thì thầm|gật đầu|lắc đầu|cúi đầu|ngẩng lên|nhìn|lườm|thở dài|quay lại|quay sang|đứng dậy|ngồi xuống|kêu|la lớn|hét|tiếp lời)$/i;
+
+    function openingNpcLabel(prefix) {
+      const p = String(prefix || '').replace(/\*[^*]*\*/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s+(rồi|liền|xong)$/i, '');
+      const label = p.replace(OPENING_VERB_TAIL, '').replace(/[\s,;:.\-–—]+$/, '').trim();
+      if (!label || OPENING_PRONOUN_LABEL.test(label)) return '';
+      return label.split(/\s+/).length <= 3 ? label : '';
+    }
+
+    function openingSpeechParts(rest) {
+      const parts = [];
+      const re = /"([^"]*)"/g;
+      let last = 0, m;
+      while ((m = re.exec(rest)) !== null) {
+        if (m.index > last) parts.push({ text: rest.slice(last, m.index) });
+        parts.push({ quote: m[1].replace(/\s+/g, ' ').trim() });
+        last = re.lastIndex;
+      }
+      if (last < rest.length) parts.push({ text: rest.slice(last) });
+      const plain = parts.filter(p => p.text !== undefined).map(p => p.text).join(' ').replace(/\s+/g, ' ').trim().replace(/^[\s,;:.\-–—]+|[\s,;:\-–—]+$/g, '');
+      const qCount = parts.filter(p => p.quote !== undefined && p.quote).length;
+      parts.forEach(p => { if (p.quote !== undefined) p.speech = !!p.quote && openingLooksLikeSpeech(p.quote, qCount === 1 && !plain); });
+      return { parts, plain };
+    }
+
+    // Câu trong ngoặc là thoại khi đứng một mình, hoặc có dấu kết câu / đủ dài;
+    // còn "cụm ngắn trong ngoặc" giữa câu tả là nhấn mạnh, không phải thoại.
+    function openingLooksLikeSpeech(q, onlyQuote) {
+      if (onlyQuote) return true;
+      if (/[.!?…]["'”’)]?$/.test(q)) return true;
+      return q.length >= 18;
+    }
+
+    function renderOpeningScene(text, story, container, barMsgIndex) {
+      const raw = String(text || '').replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+      const lines = raw.split('\n').filter(l => l.trim() !== '');
       const wrap = document.createElement('div');
       wrap.className = 'opening-scene';
       const speakerRe = /^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/;
-      lines.forEach(line => {
-        const cm = line.match(speakerRe);
-        const speakers = cm ? resolveSpeakers(cm[1].trim(), (cm[2] || '').trim(), story) : [];
-        if (!speakers.length) {
-          const div = document.createElement('div');
-          div.className = 'narrative-block ai-action';
-          div.innerText = line.replace(/\*/g, '').trim();
-          if (div.innerText) wrap.appendChild(div);
-          return;
-        }
+      const chars = (story && story.characters) || [];
+      const persona = foldVi(activeStoryPersona(story).name || '');
+      let lastSp = null;
+
+      const addNarration = (t) => {
+        const clean = String(t || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+        if (!clean) return;
+        const div = document.createElement('div');
+        div.className = 'narrative-block ai-action';
+        div.innerText = clean;
+        wrap.appendChild(div);
+      };
+      const asSpeaker = (c) => ({ id: c.id, name: splitCharName(c.name).primary, avatar: c.avatar || DEFAULT_LOGO });
+      const addBubble = (sp, line) => {
         const tmp = document.createElement('div');
         parseAndRenderAiMessage(line, story, tmp, -1, null, null);
         Array.from(tmp.childNodes).forEach(node => {
@@ -1739,7 +1790,67 @@ Trả về ĐÚNG JSON thuần:
           node.querySelectorAll('.msg-action-bar').forEach(b => b.remove());
           wrap.appendChild(node);
         });
+        if (sp && sp.id) lastSp = sp;
+      };
+      const charByMention = (t) => {
+        const hay = foldVi(t || '');
+        if (!hay) return null;
+        let best = null, at = -1;
+        chars.forEach(c => {
+          charAliases(c.name).forEach(a => {
+            if (a.length < 2) return;
+            const i = hay.indexOf(a);
+            if (i >= 0 && (at < 0 || i < at)) { at = i; best = c; }
+          });
+        });
+        return best;
+      };
+
+      lines.forEach(rawLine => {
+        const line = rawLine.trim();
+        const cm = line.match(speakerRe);
+        const prefix = cm ? cm[1].trim() : '';
+        const rest = cm ? (cm[2] || '').trim() : line;
+
+        const direct = resolveSpeakers(prefix, rest, story).filter(sp => sp.id);
+        if (direct.length) { addBubble(direct[0], line); return; }
+
+        // Người chơi tự viết lời của mình: giữ là văn kể, không gán cho nhân vật
+        if (prefix && persona && foldVi(prefix) === persona) {
+          addNarration(prefix + ': ' + rest.replace(/"/g, ''));
+          return;
+        }
+
+        const { parts, plain } = openingSpeechParts(rest);
+        const speech = parts.filter(p => p.quote !== undefined && p.speech).map(p => p.quote);
+        const mention = charByMention(prefix + ' ' + plain);
+        const npcLabel = openingNpcLabel(prefix);
+        const sp = mention ? asSpeaker(mention)
+          : ((npcLabel ? { name: npcLabel, avatar: npcAvatar(npcLabel) } : null) || lastSp || (chars.length ? asSpeaker(chars[0]) : null));
+
+        const narrBody = parts.map(p => p.quote === undefined ? p.text : (p.speech ? ' ' : `"${p.quote}"`)).join('')
+          .replace(/\s+/g, ' ').trim().replace(/^[\s,;:.\-–—]+|[\s,;:\-–—]+$/g, '');
+        const narration = [prefix, narrBody].filter(Boolean).join(' ');
+        const spLabel = sp ? String(sp.name || '') : '';
+        const narrationIsName = !!spLabel && (sp.id
+          ? charAliases(spLabel).indexOf(foldVi(narration)) >= 0
+          : foldVi(narration) === foldVi(spLabel));
+        if (narration.trim() && !narrationIsName) addNarration(narration);
+
+        if (!speech.length) {
+          if (!narration.trim()) addNarration(rest);
+          return;
+        }
+        if (!sp) { addNarration(speech.map(q => `"${q}"`).join(' ')); return; }
+        addBubble(sp, `${spLabel}: ` + speech.map(q => `"${q}"`).join(' '));
       });
+      if (barMsgIndex >= 0) {
+        const bar = document.createElement('div');
+        bar.className = 'msg-action-bar';
+        bar.style.cssText = 'margin:2px 0 8px 46px;';
+        bar.innerHTML = `<button class="action-text-btn" onclick="editMessage(${barMsgIndex})">Sửa</button><button class="action-text-btn" onclick="regenerateAiResponse(${barMsgIndex})">Tạo lại</button><button class="action-text-btn" onclick="deleteMessage(${barMsgIndex})">Xóa</button>`;
+        wrap.appendChild(bar);
+      }
       container.appendChild(wrap);
     }
 
@@ -1752,7 +1863,9 @@ Trả về ĐÚNG JSON thuần:
 
       history.forEach((msg, idx) => {
         if (isOpeningSceneMessage(msg, idx, story)) {
-          renderOpeningScene(msg.text, story, container);
+          renderOpeningScene(msg.text, story, container, -1);
+        } else if (isFirstMsgMessage(msg, idx, story)) {
+          renderOpeningScene(msg.text, story, container, idx);
         } else if (msg.sender === 'system') {
           const div = document.createElement('div'); 
           div.className = 'narrative-block system-action'; 
