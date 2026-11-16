@@ -2583,7 +2583,7 @@ ${beatsBlock}
 - Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
 - Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
 - Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
-- Cuối câu trả lời, CHỈ KHI thái độ/tình cảm của nhân vật dành cho người chơi thay đổi rõ rệt do lời nói hoặc hành động trong lượt này, thêm thẻ ở dòng cuối: [AFFECTION: Tên Nhân Vật | +2] (số nguyên từ -3 đến +3: dương = thân mật hơn, âm = giảm; mức thường dùng là +2, khoảnh khắc đặc biệt xúc động/ngọt ngào là +3, bị tổn thương hay giận dỗi thì -1 đến -3). Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Tuyệt đối KHÔNG viết số điểm thân mật (+2, -1...) hay chữ "thân mật" kèm số ở bất kỳ chỗ nào khác trong câu trả lời, chỉ dùng đúng định dạng thẻ này. Mỗi nhân vật tối đa một thẻ. Không có biến động thì KHÔNG thêm thẻ.
+- Cuối câu trả lời, LUÔN đặt một thẻ thân mật ở dòng cuối cho từng nhân vật vừa lên tiếng: [AFFECTION: Tên Nhân Vật | +3] (số nguyên từ -5 đến +5; dương = thân mật hơn, âm = xa cách hơn). Lượt trò chuyện bình thường dùng +2 hoặc +3; khoảnh khắc đặc biệt xúc động, ngọt ngào dùng +4 hoặc +5; lượt gần như trung tính vẫn dùng +1; bị tổn thương, giận dỗi hay xúc phạm thì dùng -2 đến -5. Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Tuyệt đối KHÔNG viết số điểm thân mật (+2, -1...) hay chữ "thân mật" kèm số ở bất kỳ chỗ nào khác trong câu trả lời, chỉ dùng đúng định dạng thẻ này. Mỗi nhân vật đúng một thẻ ở mỗi lượt; nhân vật không lên tiếng thì không có thẻ.
 ${dramaBlock}${modeBlock}${hintBlock}
       `;
       let rawHistory = window.state.chatHistories[storyId].slice(histStart);
@@ -2697,7 +2697,7 @@ ${dramaBlock}${modeBlock}${hintBlock}
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
 
-        // THÂN MẬT KHI CHAT: đọc thẻ [AFFECTION: Tên | +n] đúng 1 lần, ép về -3..+3
+        // THÂN MẬT KHI CHAT: đọc thẻ [AFFECTION: Tên | +n] đúng 1 lần, ép về -5..+5
         const affChanges = [];
         const are = /\[\s*AFFECTION\s*[:：]\s*([^|\]]+?)\s*\|\s*([+\-−–]?\s*\d+)\s*\]/gi;
         let am;
@@ -2707,8 +2707,19 @@ ${dramaBlock}${modeBlock}${hintBlock}
           let v = parseInt(am[2].replace(/[−–]/g, '-').replace(/\s/g, ''), 10);
           if (isNaN(v) || v === 0) continue;
           if (v === 1) v = 2; // mỗi lần thân mật tăng ít nhất +2
-          v = Math.max(-3, Math.min(3, v));
+          v = Math.max(-5, Math.min(5, v));
           affChanges.push({ id: ch.id, name: ch.name, pts: v });
+        }
+        // AI quên thẻ: nhân vật nào có thoại trong lượt vẫn được +2 để thân mật không bị đứng
+        if (story && Array.isArray(story.characters)) {
+          cleaned.split(/\n+/).forEach(line => {
+            const lm = /^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/.exec(line);
+            if (!lm) return;
+            resolveSpeakers(lm[1], lm[2], story).forEach(sp => {
+              if (!sp.id || affChanges.some(a => a.id === sp.id)) return;
+              affChanges.push({ id: sp.id, name: sp.name, pts: 2 });
+            });
+          });
         }
         affChanges.forEach(a => addAffectionPoints(a.id, a.pts));
 

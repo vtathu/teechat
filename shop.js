@@ -671,11 +671,28 @@
     }
 
     function affectionNeeded(level) {
-      return Math.floor(15 * Math.pow(level, 1.4));
+      return Math.floor(8 * Math.pow(level, 1.1));
     }
 
     // Điểm thân mật cộng vào được nhân đôi (điểm trừ giữ nguyên)
     const AFFECTION_GAIN_X = 2;
+
+    // Bảng chi phí thân mật đổi: dồn điểm dư của dữ liệu cũ lên cấp, không mất tiến độ
+    function normalizeAffectionLevels() {
+      const map = window.state.affectionLevels;
+      if (!map || typeof map !== 'object') return;
+      Object.keys(map).forEach(id => {
+        const aff = map[id];
+        if (!aff || typeof aff !== 'object') return;
+        aff.level = Math.max(1, Math.floor(Number(aff.level) || 1));
+        aff.points = Math.max(0, Number(aff.points) || 0);
+        let guard = 0;
+        while (aff.points >= affectionNeeded(aff.level) && guard++ < 500) {
+          aff.points -= affectionNeeded(aff.level);
+          aff.level += 1;
+        }
+      });
+    }
 
     function addAffectionPoints(charId, points) {
       if (!window.state.affectionLevels) window.state.affectionLevels = {};
@@ -849,6 +866,7 @@
       if (typeof window.state.walletBalance !== 'number') window.state.walletBalance = 10000000;
       if (!window.state.inventory) window.state.inventory = [];
       if (!window.state.affectionLevels) window.state.affectionLevels = {};
+      normalizeAffectionLevels();
       if (!window.state.currentJob || !JOBS[window.state.currentJob]) window.state.currentJob = 'barista';
       if (typeof window.state.jobChangeTimestamp !== 'number') window.state.jobChangeTimestamp = 0;
       if (typeof window.state.jobPicked !== 'boolean') window.state.jobPicked = false;
