@@ -1725,9 +1725,9 @@ Trả về ĐÚNG JSON thuần:
       return story.characters.some(c => String(c.firstMsg || '').trim() === t);
     }
 
-    // Ngoặc kép trong cảnh mở đầu luôn là lời thoại, kể cả khi phía trước là câu tả
-    // ("Cô ấy mỉm cười: ...") hoặc không có tên ai. Tên gọi kiểu "Cô ấy mỉm cười" không được
-    // biến thành tên nhân vật phụ; chỉ nhãn vai ngắn ("Bác sĩ", "Người phục vụ") mới là người nói.
+    // Ngoặc kép trong cảnh mở đầu luôn là lời thoại, *...* là hành động, giống hệt chat thường.
+    // Tên gọi kiểu "Cô ấy mỉm cười" không được biến thành tên nhân vật phụ; chỉ nhãn vai
+    // ngắn ("Bác sĩ", "Người phục vụ") mới là người nói.
     const OPENING_PRONOUN_LABEL = /^(cô ấy|anh ấy|ông ấy|bà ấy|chị ấy|em ấy|anh ta|cô ta|ông ta|bà ta|người ấy|hắn|gã|nàng|chàng|nó)$/i;
     const OPENING_VERB_TAIL = /\s+(bước tới|bước vào|bước lại|tiến lại|đi tới|chạy tới|chạy lại|mỉm cười|khẽ cười|nở nụ cười|cười|nói|nói tiếp|hỏi|hỏi lại|đáp|đáp lại|trả lời|lên tiếng|thì thầm|gật đầu|lắc đầu|cúi đầu|ngẩng lên|nhìn|lườm|thở dài|quay lại|quay sang|đứng dậy|ngồi xuống|kêu|la lớn|hét|tiếp lời)$/i;
 
@@ -1738,30 +1738,6 @@ Trả về ĐÚNG JSON thuần:
       return label.split(/\s+/).length <= 3 ? label : '';
     }
 
-    function openingSpeechParts(rest) {
-      const parts = [];
-      const re = /"([^"]*)"/g;
-      let last = 0, m;
-      while ((m = re.exec(rest)) !== null) {
-        if (m.index > last) parts.push({ text: rest.slice(last, m.index) });
-        parts.push({ quote: m[1].replace(/\s+/g, ' ').trim() });
-        last = re.lastIndex;
-      }
-      if (last < rest.length) parts.push({ text: rest.slice(last) });
-      const plain = parts.filter(p => p.text !== undefined).map(p => p.text).join(' ').replace(/\s+/g, ' ').trim().replace(/^[\s,;:.\-–—]+|[\s,;:\-–—]+$/g, '');
-      const qCount = parts.filter(p => p.quote !== undefined && p.quote).length;
-      parts.forEach(p => { if (p.quote !== undefined) p.speech = !!p.quote && openingLooksLikeSpeech(p.quote, qCount === 1 && !plain); });
-      return { parts, plain };
-    }
-
-    // Câu trong ngoặc là thoại khi đứng một mình, hoặc có dấu kết câu / đủ dài;
-    // còn "cụm ngắn trong ngoặc" giữa câu tả là nhấn mạnh, không phải thoại.
-    function openingLooksLikeSpeech(q, onlyQuote) {
-      if (onlyQuote) return true;
-      if (/[.!?…]["'”’)]?$/.test(q)) return true;
-      return q.length >= 18;
-    }
-
     function renderOpeningScene(text, story, container, barMsgIndex) {
       const raw = String(text || '').replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
       const lines = raw.split('\n').filter(l => l.trim() !== '');
@@ -1770,7 +1746,7 @@ Trả về ĐÚNG JSON thuần:
       const speakerRe = /^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/;
       const chars = (story && story.characters) || [];
       const persona = foldVi(activeStoryPersona(story).name || '');
-      let lastSp = null;
+      let lastSp = null, lastMention = null;
 
       const addNarration = (t) => {
         const clean = String(t || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim();
@@ -1781,7 +1757,8 @@ Trả về ĐÚNG JSON thuần:
         wrap.appendChild(div);
       };
       const asSpeaker = (c) => ({ id: c.id, name: splitCharName(c.name).primary, avatar: c.avatar || DEFAULT_LOGO });
-      const addBubble = (sp, line) => {
+      // Dòng có thoại/hành động đi qua đúng bộ chia đoạn của chat để giữ thứ tự *hđ1* "thoại" *hđ2*
+      const addChatLine = (sp, line) => {
         const tmp = document.createElement('div');
         parseAndRenderAiMessage(line, story, tmp, -1, null, null);
         Array.from(tmp.childNodes).forEach(node => {
@@ -1790,7 +1767,7 @@ Trả về ĐÚNG JSON thuần:
           node.querySelectorAll('.msg-action-bar').forEach(b => b.remove());
           wrap.appendChild(node);
         });
-        if (sp && sp.id) lastSp = sp;
+        if (sp) lastSp = sp;
       };
       const charByMention = (t) => {
         const hay = foldVi(t || '');
@@ -1813,36 +1790,30 @@ Trả về ĐÚNG JSON thuần:
         const rest = cm ? (cm[2] || '').trim() : line;
 
         const direct = resolveSpeakers(prefix, rest, story).filter(sp => sp.id);
-        if (direct.length) { addBubble(direct[0], line); return; }
+        if (direct.length) { lastMention = direct[0]; addChatLine(direct[0], line); return; }
 
         // Người chơi tự viết lời của mình: giữ là văn kể, không gán cho nhân vật
         if (prefix && persona && foldVi(prefix) === persona) {
-          addNarration(prefix + ': ' + rest.replace(/"/g, ''));
+          addNarration(prefix + ': ' + rest);
           return;
         }
 
-        const { parts, plain } = openingSpeechParts(rest);
-        const speech = parts.filter(p => p.quote !== undefined && p.speech).map(p => p.quote);
+        // Câu tả có nhắc tên ai thì nhớ người đó cho câu thoại ngay sau
+        const plain = rest.replace(/"[^"]*"/g, ' ').replace(/\s+/g, ' ').trim();
         const mention = charByMention(prefix + ' ' + plain);
+        if (mention) lastMention = asSpeaker(mention);
+
+        if (!/"[^"]*"/.test(rest)) { addNarration(line); return; }
+
         const npcLabel = openingNpcLabel(prefix);
         const sp = mention ? asSpeaker(mention)
-          : ((npcLabel ? { name: npcLabel, avatar: npcAvatar(npcLabel) } : null) || lastSp || (chars.length ? asSpeaker(chars[0]) : null));
+          : ((npcLabel ? { name: npcLabel, avatar: npcAvatar(npcLabel) } : null) || lastMention || lastSp || (chars.length ? asSpeaker(chars[0]) : null));
+        if (!sp) { addNarration(line.replace(/["*]/g, '')); return; }
 
-        const narrBody = parts.map(p => p.quote === undefined ? p.text : (p.speech ? ' ' : `"${p.quote}"`)).join('')
-          .replace(/\s+/g, ' ').trim().replace(/^[\s,;:.\-–—]+|[\s,;:\-–—]+$/g, '');
-        const narration = [prefix, narrBody].filter(Boolean).join(' ');
-        const spLabel = sp ? String(sp.name || '') : '';
-        const narrationIsName = !!spLabel && (sp.id
-          ? charAliases(spLabel).indexOf(foldVi(narration)) >= 0
-          : foldVi(narration) === foldVi(spLabel));
-        if (narration.trim() && !narrationIsName) addNarration(narration);
-
-        if (!speech.length) {
-          if (!narration.trim()) addNarration(rest);
-          return;
-        }
-        if (!sp) { addNarration(speech.map(q => `"${q}"`).join(' ')); return; }
-        addBubble(sp, `${spLabel}: ` + speech.map(q => `"${q}"`).join(' '));
+        const spLabel = String(sp.name || '');
+        const narrationIsName = sp.id ? charAliases(spLabel).indexOf(foldVi(prefix)) >= 0 : foldVi(prefix) === foldVi(spLabel);
+        if (prefix && !narrationIsName) addNarration(prefix);
+        addChatLine(sp, `${spLabel}: ${rest}`);
       });
       if (barMsgIndex >= 0) {
         const bar = document.createElement('div');
