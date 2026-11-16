@@ -703,7 +703,7 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .fg-worker .fg-warn { pointer-events: auto; border: 0; background: transparent; cursor: pointer; }
     .fg-worker.flip .fg-w-e { transform: scaleX(-1); }
     .fg-w-e { font-size: 1.5rem; display: inline-block; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2)); }
-    .fg-w-img { height: 34px; width: auto; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25)); }
+    .fg-w-img { height: 38px; width: auto; display: block; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25)); }
     .fg-worker.flip .fg-w-img { transform: scaleX(-1); }
     .fg-say { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: var(--glass-strong); border: 1px solid var(--border); border-radius: 10px; padding: 3px 8px; font-size: 0.62rem; white-space: normal; width: 130px; text-align: center; color: var(--text-2); box-shadow: 0 2px 6px rgba(0,0,0,0.12); animation: fgPop 0.25s ease; z-index: 5; pointer-events: none; }
     .fg-say.big { font-size: 0.68rem; width: 175px; max-width: 190px; white-space: normal; text-align: left; }

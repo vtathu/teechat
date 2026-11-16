@@ -157,7 +157,7 @@
   const BUILD_ORDER = ['kho', 'nha', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
   // ---- ảnh nông trại: công nhân, luống cây, công trình ----
   const FARM_IMG = 'img/farm/';
-  const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '.png');
+  const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '-v2.png');
   const CROP_IMGS = { empty: FARM_IMG + 'plot-empty-v2.png', sprout: FARM_IMG + 'plot-sprout-v2.png', rau: FARM_IMG + 'crop-bapcai-v2.png', ngo: FARM_IMG + 'crop-ngo-v2.png', ca: FARM_IMG + 'crop-ca-v2.png', dua: FARM_IMG + 'crop-dua-v2.png' };
   // mỗi loại có 2 kiểu luống: cây đang lớn (sắp chín) và cây chín
   const CROP_STAGES = {
