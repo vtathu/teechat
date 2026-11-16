@@ -158,20 +158,20 @@
   // ---- ảnh nông trại: công nhân, luống cây, công trình ----
   const FARM_IMG = 'img/farm/';
   const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '.png');
-  const CROP_IMGS = { empty: FARM_IMG + 'plot-empty.png', sprout: FARM_IMG + 'plot-sprout.png', rau: FARM_IMG + 'crop-rau.png', ngo: FARM_IMG + 'crop-ngo.png', ca: FARM_IMG + 'crop-ca.png', dua: FARM_IMG + 'crop-dua.png' };
+  const CROP_IMGS = { empty: FARM_IMG + 'plot-empty-v2.png', sprout: FARM_IMG + 'plot-sprout-v2.png', rau: FARM_IMG + 'crop-bapcai-v2.png', ngo: FARM_IMG + 'crop-ngo-v2.png', ca: FARM_IMG + 'crop-ca-v2.png', dua: FARM_IMG + 'crop-dua-v2.png' };
   // mỗi loại có 2 kiểu luống: cây đang lớn (sắp chín) và cây chín
   const CROP_STAGES = {
-    rau: { young: 'crop-rau-young', ripe: 'crop-bapcai' },
-    ngo: { young: 'crop-ngo-young', ripe: 'crop-ngo' },
-    ca: { young: 'crop-ca-young', ripe: 'crop-ca' },
-    dua: { young: 'crop-dua-young', ripe: 'crop-dua' }
+    rau: { young: 'crop-rau-young-v2', ripe: 'crop-bapcai-v2' },
+    ngo: { young: 'crop-ngo-young-v2', ripe: 'crop-ngo-v2' },
+    ca: { young: 'crop-ca-young-v2', ripe: 'crop-ca-v2' },
+    dua: { young: 'crop-dua-young-v2', ripe: 'crop-dua-v2' }
   };
   // công trình theo 3 bậc: cấp 1-2, 3-5, 6-8
   const BLD_TIERS = {
-    kho: ['bld-kho-1', 'bld-kho-2', 'bld-kho-3'],
-    nha: ['bld-nha', 'bld-ketoan', 'bld-giamdoc'],
-    donggoi: ['bld-donggoi-1', 'bld-kho-blue', 'bld-cskh'],
-    giaohang: ['bld-donggoi-2', 'bld-nha-cu', 'bld-giaohang']
+    kho: ['bld-kho-1-v2', 'bld-kho-2-v2', 'bld-kho-3-v2'],
+    nha: ['bld-nha-v2', 'bld-ketoan-v2', 'bld-giamdoc-v2'],
+    donggoi: ['bld-donggoi-1-v2', 'bld-kho-blue-v2', 'bld-cskh-v2'],
+    giaohang: ['bld-donggoi-2-v2', 'bld-nha-cu-v2', 'bld-giaohang-v2']
   };
   const bldImg = (key, lv) => {
     const arr = BLD_TIERS[key];
@@ -2265,7 +2265,11 @@
   })();
 
   function applyCam() {
-    if (worldEl) worldEl.style.transform = 'translate3d(' + Math.round(cam.x) + 'px,' + Math.round(cam.y) + 'px,0) scale(' + cam.z + ')';
+    if (!worldEl) return;
+    worldEl.style.transform = 'translate3d(' + Math.round(cam.x) + 'px,' + Math.round(cam.y) + 'px,0) scale(' + cam.z + ')';
+    // thu nhỏ đủ để thấy mép sân thì mới làm mờ mép, phóng to thì không đụng tới
+    const vw = camEl ? camEl.clientWidth : 0, vh = camEl ? camEl.clientHeight : 0;
+    worldEl.classList.toggle('far', !!vw && (WORLD_W * cam.z < vw - 1 || WORLD_H * cam.z < vh - 1));
   }
   function clampZoom(z) { return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)); }
   function clampCam() {
