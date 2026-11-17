@@ -891,7 +891,7 @@
           setting: 'Cốt truyện',
           openingScene: 'Bối cảnh',
           characters: [
-            { id: 'char-1', name: 'Tên nhân vật', avatar: DEFAULT_LOGO, personality: 'Thân thế, tính cách, xưng hô mối quan hệ', firstMsg: 'Trần Hạo Nam: "Cô có vẻ... biết chọn món."' }
+            { id: 'char-1', name: 'Tên nhân vật', avatar: DEFAULT_LOGO, personality: 'Thân thế, tính cách, xưng hô mối quan hệ', firstMsg: '[Trần Hạo Nam]: "Cô có vẻ... biết chọn món."' }
           ]
         });
         saveStorage();

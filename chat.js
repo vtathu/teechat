@@ -34,7 +34,7 @@ function stripUserVoice(text, name) {
   const two = parts.length > 2 ? parts.slice(-2).join(' ') : '';
   const names = esc(name) + (two ? '|' + esc(two) : '') + (given && given.length >= 2 ? '|' + esc(given) : '');
   const VERB = '(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|gật|lắc|mỉm|cười|khóc|nghĩ|cảm thấy|quyết định|ngước|cúi|quay|bước|đứng|ngồi|nhìn|ôm|nắm|siết|đưa|run|đỏ mặt|im lặng|khẽ|bật|tựa|vòng|gục|nhắm|mở|thở|chớp|cắn|mím|lẩm bẩm|nức nở|thút thít|vội|chạy|kéo|đẩy|hôn|gọi|reo|ngập ngừng)';
-  const head = new RegExp('^\\s*(?:\\[\\s*' + esc(name) + '\\s*\\]|' + esc(name) + ')\\s*[:：]', 'iu');
+  const head = new RegExp('^\\s*(?:\\[\\s*' + esc(name) + '\\s*\\]|' + esc(name) + ')\\s*(?:[:：]|(?=["“]))', 'iu');
   const act = new RegExp('^\\s*\\*+\\s*' + esc(name) + '(?![\\p{L}])', 'iu');
   const nar = new RegExp('^\\s*[\\*_\\[]*\\s*(?:' + names + ')(?![\\p{L}])\\s*[\\*_\\]]*\\s*' + VERB, 'iu');
   const inline = new RegExp('(?:' + names + ')\\s+(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|lẩm bẩm)[^"“”\\n]{0,25}[:,]?\\s*["“][^"”\\n]*["”]', 'giu');
@@ -1827,7 +1827,7 @@ Trả về ĐÚNG JSON thuần:
 
 [QUY TẮC]
 - Giữ nguyên nội dung, cảm xúc, tên riêng và thứ tự các dòng; không thêm lời bình, không giải thích.
-- Giữ nguyên định dạng: dòng [Tên Nhân Vật]:, đoạn *hành động*, lời thoại "...", các thẻ [SYSTEM_TRANSFER: ...] và [AFFECTION: ...] nếu có.
+- Giữ nguyên định dạng: dòng [Tên Nhân Vật]: (giữ nguyên ngoặc vuông quanh tên), đoạn *hành động*, lời thoại "...", các thẻ [SYSTEM_TRANSFER: ...] và [AFFECTION: ...] nếu có.
 - Chỉ dùng tiếng Việt có dấu, câu đủ chủ ngữ - vị ngữ, đúng chính tả và đúng ngữ cảnh.
 - Từ nào dùng sai nghĩa, sai từ loại, sai ngữ cảnh hoặc không có trong từ điển thì thay bằng từ đúng nghĩa và tự nhiên hơn; câu lủng củng, lặp từ, thiếu ý thì viết lại cho mượt mà đúng ngữ pháp, ý nghĩa không đổi.
 - Chỉ trả về đoạn văn đã sửa, không kèm gì khác.
@@ -2184,7 +2184,7 @@ ${out}`;
         if (story && story.characters && story.characters.length) {
           let found = null;
           for (const ln of lines) {
-            const cm = ln.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:/);
+            const cm = ln.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?/);
             if (cm) {
               found = story.characters.find(c => (c.name || '').trim().toLowerCase() === cm[1].trim().toLowerCase());
               if (found) break;
@@ -2214,7 +2214,8 @@ ${out}`;
       }
 
       lines.forEach((line, lineIdx) => {
-        const charMatch = line.match(/^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/);
+        // Tên người nói luôn nằm trong ngoặc vuông [Tên]; quên dấu hai chấm vẫn nhận đúng người nói.
+        const charMatch = line.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?\s*(.*)$/);
 
         {
           let speakerRaw = charMatch ? charMatch[1].trim() : '';
@@ -2574,11 +2575,12 @@ ${beatsBlock}
 - Dấu * chỉ dùng để bao quanh đoạn hành động/cử chỉ. KHÔNG dùng * hay ** để nhấn mạnh, in đậm hay che chữ trong lời thoại (không viết kiểu đ**, c*c).
 
 [ĐỊNH DẠNG ĐẦU RA - BẮT BUỘC]
+- Tên người nói LUÔN đặt trong ngoặc vuông [ ] ở đầu dòng, dấu hai chấm ngay sau ngoặc: [Tên Nhân Vật]:. Không viết tên trần trước dấu hai chấm, không in đậm hay bọc ** quanh tên người nói.
 - Mỗi nhân vật phát ngôn nằm riêng trên một dòng dạng:
 [Tên Nhân Vật]: *Tên Nhân Vật + hành động ngắn* "lời thoại ngắn"
 - Hai nhân vật cùng nói thì viết MỖI NGƯỜI MỘT DÒNG RIÊNG, tuyệt đối không ghép tên bằng dấu & hoặc chữ "và".
 - Nhân vật phụ chưa có trong danh sách (bác sĩ, y tá, phục vụ, bảo vệ...) khi NÓI phải viết thành dòng riêng dạng [Tên hoặc chức danh]: "lời thoại" (dùng một tên nhất quán). KHÔNG nhét lời thoại của họ vào câu hành động hay đoạn tả.
-- Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có tiền tố "Tên:" phía trước.
+- Đoạn tả cảnh/dẫn truyện viết thành dòng riêng, KHÔNG có ngoặc vuông [Tên] phía trước.
 - Cuối câu trả lời, LUÔN đặt một thẻ thân mật ở dòng cuối cho từng nhân vật vừa lên tiếng: [AFFECTION: Tên Nhân Vật | +3] (số nguyên từ -5 đến +5; dương = thân mật hơn, âm = xa cách hơn). Lượt trò chuyện bình thường dùng +2 hoặc +3; khoảnh khắc đặc biệt xúc động, ngọt ngào dùng +4 hoặc +5; lượt gần như trung tính vẫn dùng +1; bị tổn thương, giận dỗi hay xúc phạm thì dùng -2 đến -5. Thẻ này chỉ để hệ thống đọc, người chơi không nhìn thấy. Tuyệt đối KHÔNG viết số điểm thân mật (+2, -1...) hay chữ "thân mật" kèm số ở bất kỳ chỗ nào khác trong câu trả lời, chỉ dùng đúng định dạng thẻ này. Mỗi nhân vật đúng một thẻ ở mỗi lượt; nhân vật không lên tiếng thì không có thẻ.
 ${dramaBlock}${modeBlock}${hintBlock}
       `;
@@ -2709,7 +2711,7 @@ ${dramaBlock}${modeBlock}${hintBlock}
         // AI quên thẻ: nhân vật nào có thoại trong lượt vẫn được +2 để thân mật không bị đứng
         if (story && Array.isArray(story.characters)) {
           cleaned.split(/\n+/).forEach(line => {
-            const lm = /^\s*[\[\*]*([^:\[\]\*"\n]{1,40}?)[\]\*]*\s*:\s*(.*)$/.exec(line);
+            const lm = /^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?\s*(.*)$/.exec(line);
             if (!lm) return;
             resolveSpeakers(lm[1], lm[2], story).forEach(sp => {
               if (!sp.id || affChanges.some(a => a.id === sp.id)) return;
