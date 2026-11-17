@@ -1731,6 +1731,48 @@ Trả về ĐÚNG JSON thuần:
     const OPENING_PRONOUN_LABEL = /^(cô ấy|anh ấy|ông ấy|bà ấy|chị ấy|em ấy|anh ta|cô ta|ông ta|bà ta|người ấy|hắn|gã|nàng|chàng|nó)$/i;
     const OPENING_VERB_TAIL = /\s+(bước tới|bước vào|bước lại|tiến lại|đi tới|chạy tới|chạy lại|mỉm cười|khẽ cười|nở nụ cười|cười|nói|nói tiếp|hỏi|hỏi lại|đáp|đáp lại|trả lời|lên tiếng|thì thầm|gật đầu|lắc đầu|cúi đầu|ngẩng lên|nhìn|lườm|thở dài|quay lại|quay sang|đứng dậy|ngồi xuống|kêu|la lớn|hét|tiếp lời)$/i;
 
+    // Người nói trong cảnh mở đầu thường là nhân vật phụ chưa được thêm vào danh sách nhân vật.
+    // Nhận diện tên riêng trong câu kể (các từ viết hoa liền nhau) để chia đúng thoại của từng người.
+    const OPENING_ROLE_WORDS = new Set(['co giao', 'me ke', 'cha duong', 'chu tich', 'tong giam doc', 'pho giam doc', 'giam doc', 'phu nhan',
+      'thieu gia', 'tieu thu', 'bac si', 'ong', 'ba', 'co', 'chu', 'di', 'cau', 'mo', 'bac', 'thay', 'me', 'ma', 'cha', 'bo', 'chi',
+      'em', 'vo', 'chong', 'ban', 'con', 'chau']);
+    // Đừng biến địa danh / tổ chức thành người nói ("ở Phú Nhuận", "tập đoàn Kiều", "nhà họ Tô")
+    const OPENING_PLACE_CUES = new Set(['o', 'tai', 'den', 'tu', 've', 'toi', 'sang', 'tren', 'duoi', 'trong', 'ngoai', 'giua', 'phia', 'canh',
+      'truoc', 'sau', 'gan', 'nha', 'ho', 'tap', 'doan', 'cong', 'ty', 'hang', 'truong', 'benh', 'vien', 'thanh', 'pho', 'thi', 'tran', 'quan',
+      'huyen', 'phuong', 'duong', 'xa', 'tinh', 'nuoc', 'dao', 'bien', 'song', 'nui', 'cung', 'phu', 'khach', 'san', 'tiem', 'khu', 'cho', 'ben',
+      'ga', 'bay']);
+    const OPENING_PLACES = new Set(['ha noi', 'sai gon', 'phu nhuan', 'da nang', 'hai phong', 'can tho', 'hue', 'nha trang', 'da lat', 'vung tau',
+      'binh duong', 'dong nai', 'long an', 'my tho', 'singapore', 'paris', 'london', 'tokyo', 'seoul', 'bac kinh', 'thuong hai', 'hong kong',
+      'dai bac', 'new york', 'nuoc my', 'viet nam']);
+    const OPENING_CAP_NAME = /\p{Lu}[\p{L}']*(?:\s+\p{Lu}[\p{L}']*){1,3}/gu;
+
+    function openingNames(text) {
+      const src = String(text || '').replace(/\*[^*]*\*/g, ' ').replace(/"[^"]*"/g, ' ');
+      const out = [];
+      let m;
+      OPENING_CAP_NAME.lastIndex = 0;
+      while ((m = OPENING_CAP_NAME.exec(src)) !== null) {
+        const before = src.slice(0, m.index).match(/[\p{L}\p{N}]+$/u);
+        if (before && OPENING_PLACE_CUES.has(foldVi(before[0]))) continue;
+        const toks = m[0].split(/\s+/);
+        while (toks.length > 1 && OPENING_ROLE_WORDS.has(foldVi(toks[0]))) toks.shift();
+        const name = toks.join(' ').trim();
+        if (!name || OPENING_PLACES.has(foldVi(name))) continue;
+        out.push(name);
+      }
+      return out;
+    }
+
+    // Câu tả chỉ gọi vai ("Mẹ kế đặt chén xuống bàn.", "Bà nhìn ra cửa.") vẫn là một người nói cụ thể
+    const OPENING_ROLE_LABEL = /^(mẹ kế|cha dượng|cô giáo|tổng giám đốc|phó giám đốc|giám đốc|chủ tịch|phu nhân|thiếu gia|tiểu thư|bác sĩ|ông|bà|cô|chú|dì|cậu|mợ|bác|thầy|mẹ|má|ba|bố|cha|vợ|chồng)(?=[\s,.]|$)/i;
+    function openingRoleLabel(text) {
+      const t = String(text || '').replace(/\*[^*]*\*/g, ' ').replace(/"[^"]*"/g, ' ').trim();
+      const m = t.match(OPENING_ROLE_LABEL);
+      if (!m) return '';
+      if (/^(ấy|ta|kia|nó)\b/i.test(t.slice(m[0].length).trim())) return '';
+      return m[0];
+    }
+
     function openingNpcLabel(prefix) {
       const p = String(prefix || '').replace(/\*[^*]*\*/g, ' ').replace(/\s+/g, ' ').trim().replace(/\s+(rồi|liền|xong)$/i, '');
       const label = p.replace(OPENING_VERB_TAIL, '').replace(/[\s,;:.\-–—]+$/, '').trim();
@@ -1782,6 +1824,21 @@ Trả về ĐÚNG JSON thuần:
         });
         return best;
       };
+      // Nhân vật phụ chưa có trong danh sách vẫn được nhớ theo tên để các câu thoại sau không dồn về một người
+      const npcCache = new Map();
+      const npcSpeaker = (name) => {
+        const key = foldVi(name).trim();
+        if (!key) return null;
+        for (const [k, v] of npcCache) {
+          if (k === key || k.endsWith(' ' + key)) return v;
+        }
+        for (const [k, v] of npcCache) {
+          if (key.endsWith(' ' + k)) { npcCache.delete(k); v.name = name; npcCache.set(key, v); return v; }
+        }
+        const sp = { name, avatar: npcAvatar(name) };
+        npcCache.set(key, sp);
+        return sp;
+      };
 
       lines.forEach(rawLine => {
         const line = rawLine.trim();
@@ -1798,17 +1855,36 @@ Trả về ĐÚNG JSON thuần:
           return;
         }
 
-        // Câu tả có nhắc tên ai thì nhớ người đó cho câu thoại ngay sau
         const plain = rest.replace(/"[^"]*"/g, ' ').replace(/\s+/g, ' ').trim();
-        const mention = charByMention(prefix + ' ' + plain);
-        if (mention) lastMention = asSpeaker(mention);
 
-        if (!/"[^"]*"/.test(rest)) { addNarration(line); return; }
+        // Câu tả: nhớ người vừa được nhắc (kể cả nhân vật phụ) cho câu thoại ngay sau
+        if (!/"[^"]*"/.test(rest)) {
+          const reg = charByMention(line);
+          if (reg) lastMention = asSpeaker(reg);
+          else {
+            const names = openingNames(plain);
+            const role = names.length ? '' : openingRoleLabel(plain);
+            const npc = names.length ? npcSpeaker(names[names.length - 1]) : (role ? npcSpeaker(role) : null);
+            if (npc) lastMention = npc;
+          }
+          addNarration(line);
+          return;
+        }
 
+        // Câu có thoại: nhãn đầu dòng > người được nhắc ngay trước ngoặc kép > người vừa nói
+        const head = cm ? prefix + ' ' + plain : rest.slice(0, Math.max(0, rest.indexOf('"')));
+        const regHead = charByMention(head);
+        const prefixNpc = prefix ? openingNames(prefix)[0] : '';
+        const headNames = openingNames(head);
         const npcLabel = openingNpcLabel(prefix);
-        const sp = mention ? asSpeaker(mention)
-          : ((npcLabel ? { name: npcLabel, avatar: npcAvatar(npcLabel) } : null) || lastMention || lastSp || (chars.length ? asSpeaker(chars[0]) : null));
+        const sp = (regHead ? asSpeaker(regHead) : null)
+          || (prefixNpc ? npcSpeaker(prefixNpc) : null)
+          || (headNames.length ? npcSpeaker(headNames[headNames.length - 1]) : null)
+          || (npcLabel ? npcSpeaker(npcLabel) : null)
+          || lastMention || lastSp || (chars.length ? asSpeaker(chars[0]) : null);
         if (!sp) { addNarration(line.replace(/["*]/g, '')); return; }
+        // Lời của chính người chơi (persona) trong cảnh mở đầu: giữ là văn kể để không bị bộ lọc giọng người chơi cắt mất
+        if (!sp.id && persona && foldVi(sp.name) === persona) { addNarration(line); return; }
 
         const spLabel = String(sp.name || '');
         const narrationIsName = sp.id ? charAliases(spLabel).indexOf(foldVi(prefix)) >= 0 : foldVi(prefix) === foldVi(spLabel);
