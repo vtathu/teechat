@@ -141,6 +141,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
     function setSyncStatus(err) {
       const box = document.getElementById('auth-status-box');
       const u = auth.currentUser;
+      if (err) updateAutoSyncLine(err);
+      else if (u) { window.__lastSyncAt = Date.now(); updateAutoSyncLine(null); }
+      else updateAutoSyncLine(null);
       if (!box || !u) return;
       box.innerText = 'Đã đăng nhập: ' + u.email + (err ? ' — ⚠️ Lỗi đồng bộ: ' + (err.message || err) : ' — ✅ đã đồng bộ');
     }
@@ -151,6 +154,38 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         window.__syncErrWarned = true;
         alert('⚠️ Không sao lưu được lên cloud: ' + ((err && err.message) || err) + '\nTin nhắn vẫn được lưu trên máy này.');
       }
+    }
+
+    // ---------- Tự động đồng bộ: công tắc + trạng thái ----------
+    const AUTOSYNC_KEY = 'teechat_autosync_v1';
+    function autoSyncOn() {
+      try { return localStorage.getItem(AUTOSYNC_KEY) !== '0'; } catch (e) { return true; }
+    }
+    function clockText(ts) {
+      try { return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return '—'; }
+    }
+    function updateAutoSyncLine(err) {
+      const toggle = document.getElementById('auto-sync-toggle');
+      const time = document.getElementById('auto-sync-time');
+      if (toggle) toggle.checked = autoSyncOn();
+      if (!time) return;
+      if (!autoSyncOn()) { time.innerText = 'Đang tắt'; return; }
+      if (err) { time.innerText = '⚠️ Lỗi: ' + String((err && err.message) || err).slice(0, 40); return; }
+      if (!auth.currentUser) { time.innerText = 'Đăng nhập để bật'; return; }
+      time.innerText = window.__lastSyncAt ? ('Đã lưu ' + clockText(window.__lastSyncAt)) : 'Đang chờ…';
+    }
+    window.toggleAutoSync = function (on) {
+      try { localStorage.setItem(AUTOSYNC_KEY, on ? '1' : '0'); } catch (e) {}
+      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      updateAutoSyncLine(null);
+      if (on && auth.currentUser) window.autoSyncToCloud(true);
+    };
+    // Dữ liệu đầy đủ để đẩy lên cloud: mọi truyện, tin nhắn, thân mật, ví, ván sudoku, tiệm mỳ cay…
+    function fullPayload() {
+      try {
+        if (typeof window.getSyncableState === 'function') return window.getSyncableState();
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(window.state || {}));
     }
 
     // ---------- Đối chiếu khi mở app / đăng nhập ----------
@@ -221,6 +256,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         statusBox.innerText = "Chưa đăng nhập";
         formContainer.classList.remove('hidden');
         actionContainer.classList.add('hidden');
+        updateAutoSyncLine(null);
       }
     });
 
@@ -234,19 +270,31 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
         if (!window.__cloudReady) await reconcile(user);   // chưa đối chiếu xong thì đối chiếu trước, không ghi đè mù
         else {
           try { if (window.syncBizSave) window.syncBizSave(); } catch (e) {}
-          await set(ref(db, userPath(user.uid)), cloudCopy(window.state));
+          // Đẩy TOÀN BỘ dữ liệu (mọi truyện + tin nhắn), không chỉ đoạn chat đang mở
+          await set(ref(db, userPath(user.uid)), cloudCopy(fullPayload()));
         }
         setSyncStatus(null);
       } catch (err) { reportSyncError(err); }
     }
     // now=true: đẩy ngay (dùng khi thoát app); mặc định gom lại ~1.5s để đỡ ghi liên tục
     window.autoSyncToCloud = function(now) {
-      if (!auth.currentUser) return;
+      if (!autoSyncOn() || !auth.currentUser) return;
       if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
       if (now) return doSync();
       syncTimer = setTimeout(doSync, 1500);
     };
     window.addEventListener('pagehide', () => { if (window.autoSyncToCloud) window.autoSyncToCloud(true); });
+    window.addEventListener('online', () => { if (window.autoSyncToCloud) window.autoSyncToCloud(true); });
+    // Quay lại tab: kéo thay đổi từ máy khác về (tối đa 1 phút/lần) rồi mới đẩy tiếp
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !autoSyncOn()) return;
+      const u = auth.currentUser;
+      if (!u || !window.__cloudReady) return;
+      if (Date.now() - (window.__lastPullAt || 0) < 60000) return;
+      window.__lastPullAt = Date.now();
+      reconcile(u).catch(reportSyncError);
+    });
+    updateAutoSyncLine(null);
 
     window.handleFirebaseRegister = async function() {
       const email = document.getElementById('fb-email').value.trim();
@@ -267,9 +315,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
       try {
         if (typeof window.saveStorage === 'function') window.saveStorage();
         try { if (window.syncBizSave) window.syncBizSave(); } catch (e) {}
-        await set(ref(db, userPath(user.uid)), cloudCopy(window.state));
+        const pathRef = ref(db, userPath(user.uid));
+        const snap = await get(pathRef);
+        const cloud = snap.exists() ? stripKeys(snap.val()) : null;
+        // Bấm Đồng bộ là đẩy TOÀN BỘ dữ liệu: gộp với bản trên cloud trước để không mất đoạn nào của bên kia
+        const local = fullPayload();
+        const merged = cloud && !isBlank(cloud) ? mergeStates(local, cloud) : local;
+        merged.lastUpdated = Date.now();
+        await set(pathRef, cloudCopy(merged));
+        // Máy này cũng nhận luôn phần gộp (gồm dữ liệu chỉ có trên cloud) để hai bên giống nhau
+        try {
+          window.state = merged;
+          window.persistState(JSON.stringify(merged));
+          window.loadStorage();
+          if (window.renderStoryList) window.renderStoryList();
+          const det = document.getElementById('page-story-detail');
+          if (det && det.classList.contains('active') && typeof window.renderChatHistory === 'function') window.renderChatHistory();
+        } catch (e) {}
         setSyncStatus(null);
-        alert("Đã đồng bộ lên Cloud thành công!");
+        let msgs = 0;
+        Object.keys(merged.chatHistories || {}).forEach(k => { msgs += (merged.chatHistories[k] || []).length; });
+        alert('☁️ Đã đồng bộ toàn bộ: ' + (merged.stories || []).length + ' truyện · ' + msgs + ' tin nhắn.');
       } catch (err) { alert("Lỗi đồng bộ: " + err.message); }
     };
     window.downloadDataFromFirebase = async function() {

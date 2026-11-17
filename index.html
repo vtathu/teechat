@@ -32,8 +32,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Font và style chính tải không chặn vẽ: màn hình chờ đã có CSS riêng ở dưới nên hiện được ngay -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" media="print" onload="this.media='all'; window.__fontCssReady = true;">
-  <link rel="stylesheet" href="style.css?v=72" media="print" onload="this.media='all'; window.__cssReady = true;">
-  <noscript><link rel="stylesheet" href="style.css?v=72"></noscript>
+  <link rel="stylesheet" href="style.css?v=73" media="print" onload="this.media='all'; window.__cssReady = true;">
+  <noscript><link rel="stylesheet" href="style.css?v=73"></noscript>
 
   <style>
     /* CSS tối thiểu của màn hình chờ, nằm ngay trong trang để không phải chờ mạng */
@@ -913,6 +913,13 @@
         <button class="btn btn-outline" onclick="closeModal('modal-auth')">✖</button>
       </div>
       <div id="auth-status-box" class="status-badge">Chưa đăng nhập</div>
+      <div id="auto-sync-box" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:8px 10px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface-2);">
+        <label for="auto-sync-toggle" style="display:flex;align-items:center;gap:8px;font-size:0.82rem;font-weight:bold;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="auto-sync-toggle" checked onchange="toggleAutoSync(this.checked)" style="width:16px;height:16px;accent-color:var(--app-green);margin:0;">
+          🔄 Tự động đồng bộ
+        </label>
+        <span id="auto-sync-time" style="font-size:0.7rem;color:var(--muted);">—</span>
+      </div>
       <div id="auth-form-container">
         <div class="form-group"><label>Email:</label><input type="email" id="fb-email"></div>
         <div class="form-group"><label>Mật khẩu:</label><input type="password" id="fb-password"></div>
@@ -950,7 +957,7 @@
   </div>
 
   <script src="theme.js?v=2"></script>
-  <script type="module" src="firebase.js?v=6"></script>
+  <script type="module" src="firebase.js?v=7"></script>
   <script src="core.js?v=2"></script>
   <script src="data-shop.js?v=7"></script>
   <script src="shop.js?v=20"></script>
