@@ -208,7 +208,7 @@ function diaryMessageSegments(text, story) {
   String(text || '').split('\n').forEach(line => {
     const s = line.trim();
     if (!s) return;
-    const m = s.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?\s*(.*)$/);
+    const m = s.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*[:：.,;!?…–—-]*\s*(.*)$/);
     const speaker = m ? m[1].trim() : '';
     const rest = m ? (m[2] || '').trim() : s;
     if (!rest) return;

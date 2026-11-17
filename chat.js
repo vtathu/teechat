@@ -2169,12 +2169,44 @@ ${out}`;
       return charAliases(name).some(a => f === a || f.startsWith(a + ' '));
     }
 
+    // Cảnh mở đầu hay được viết liền một đoạn: dẫn truyện rồi [Tên]: "thoại" ngay giữa câu.
+    // Mỗi nhãn [Tên] đứng ngay trước thoại/hành động được tách ra đầu dòng để bộ đọc theo dòng nhận đúng người nói;
+    // chữ nằm sau lời thoại cuối của lượt là dẫn truyện nên cũng tách ra dòng riêng.
+    function breakInlineSpeakers(text) {
+      const src = String(text || '');
+      const re = /\[\s*[^\[\]\n]{1,40}?\s*\]/g;
+      const marks = [];
+      let m;
+      while ((m = re.exec(src)) !== null) {
+        if (m.index === 0 || /(?:^|\n)[^\S\n]*$/.test(src.slice(0, m.index))) continue;
+        const tail = src.slice(m.index + m[0].length);
+        // Nhãn mở lượt nói khi theo sau là dấu hai chấm, hoặc là ngoặc kép / dấu * (bỏ qua dấu câu chen giữa)
+        const isTurn = /^[^\S\n]*[:：]/.test(tail) || /^[\s.,;!?…–—-]*["“'*]/.test(tail);
+        if (!isTurn) continue;
+        marks.push({ start: m.index, end: m.index + m[0].length });
+      }
+      if (!marks.length) return src;
+      const cuts = marks.map(mk => mk.start);
+      marks.forEach((mk, i) => {
+        const seg = src.slice(mk.end, i + 1 < marks.length ? marks[i + 1].start : src.length);
+        if ((seg.match(/["“”]/g) || []).length < 2) return;
+        const q = Math.max(seg.lastIndexOf('"'), seg.lastIndexOf('”'));
+        if (q < 0 || !/\p{L}/u.test(seg.slice(q + 1))) return;
+        cuts.push(mk.end + q + 1);
+      });
+      cuts.sort((a, b) => a - b);
+      let out = '', last = 0;
+      cuts.forEach(c => { if (c <= last) return; out += src.slice(last, c) + '\n'; last = c; });
+      return out + src.slice(last);
+    }
+
     function parseAndRenderAiMessage(fullText, story, container, msgIndex, transfers, affection, keepUserVoice) {
       const barsBefore = container.querySelectorAll('.msg-action-bar').length;
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
       fullText = cleanAiTags(fullText);
       // Cảnh mở đầu do người chơi viết thì giữ nguyên lời của persona, không lọc như phản hồi AI
       if (!keepUserVoice) fullText = stripUserVoice(fullText, activeStoryPersona(story).name);
+      fullText = breakInlineSpeakers(fullText);
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
 
@@ -2184,7 +2216,7 @@ ${out}`;
         if (story && story.characters && story.characters.length) {
           let found = null;
           for (const ln of lines) {
-            const cm = ln.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?/);
+            const cm = ln.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*[:：.,;!?…–—-]*/);
             if (cm) {
               found = story.characters.find(c => (c.name || '').trim().toLowerCase() === cm[1].trim().toLowerCase());
               if (found) break;
@@ -2214,8 +2246,8 @@ ${out}`;
       }
 
       lines.forEach((line, lineIdx) => {
-        // Tên người nói luôn nằm trong ngoặc vuông [Tên]; quên dấu hai chấm vẫn nhận đúng người nói.
-        const charMatch = line.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?\s*(.*)$/);
+        // Tên người nói nằm trong ngoặc vuông [Tên]; quên dấu hai chấm (hoặc bị chèn dấu câu) vẫn nhận đúng người nói.
+        const charMatch = line.match(/^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*[:：.,;!?…–—-]*\s*(.*)$/);
 
         {
           let speakerRaw = charMatch ? charMatch[1].trim() : '';
@@ -2711,7 +2743,7 @@ ${dramaBlock}${modeBlock}${hintBlock}
         // AI quên thẻ: nhân vật nào có thoại trong lượt vẫn được +2 để thân mật không bị đứng
         if (story && Array.isArray(story.characters)) {
           cleaned.split(/\n+/).forEach(line => {
-            const lm = /^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*:?\s*(.*)$/.exec(line);
+            const lm = /^\s*\[\s*([^\[\]\n]{1,40}?)\s*\]\s*[:：.,;!?…–—-]*\s*(.*)$/.exec(line);
             if (!lm) return;
             resolveSpeakers(lm[1], lm[2], story).forEach(sp => {
               if (!sp.id || affChanges.some(a => a.id === sp.id)) return;
