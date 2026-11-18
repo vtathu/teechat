@@ -115,6 +115,7 @@ function diaryAddGroup(story, kind, char, texts, ts) {
   }));
   list.push(...made);
   if (list.length > DIARY_MAX) list.splice(0, list.length - DIARY_MAX);
+  story.updatedAt = Date.now(); // nhật ký đổi thì truyện phải thắng khi gộp máy ↔ cloud
   if (typeof saveStorage === 'function') saveStorage();
   return made;
 }
@@ -140,6 +141,7 @@ function diaryApplyPassages(story, group, meta, passages) {
   let out = head.concat(fresh, rest);
   if (out.length > DIARY_MAX) out = out.slice(out.length - DIARY_MAX);
   story.diary = out;
+  story.updatedAt = Date.now(); // bản viết lại của AI cũng là thay đổi phải đồng bộ
   if (typeof saveStorage === 'function') saveStorage();
 }
 
@@ -324,6 +326,7 @@ function diaryChatSync(story, char) {
     if (diaryKeys().length) diaryRewriteGroup(story, entries, diaryChatPrompt(story, char, portion.transcript, diaryDayLabel(ts)));
   });
   if (done.length > 60) done.splice(0, done.length - 60);
+  story.updatedAt = Date.now(); // đã đánh dấu ngày đã viết thì bản này phải thắng khi gộp
   if (typeof saveStorage === 'function') saveStorage();
 }
 

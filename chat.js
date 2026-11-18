@@ -664,6 +664,7 @@ Trả về ĐÚNG JSON thuần, không markdown:
             && confirm('Xóa luôn nhật ký của các nhân vật để viết lại từ đầu không?')) {
             story.diary = [];
             if (story.diaryDays && typeof story.diaryDays === 'object') story.diaryDays = {};
+            story.updatedAt = Date.now(); // để bản đã xóa nhật ký thắng bản cloud cũ, không bị viết lại
           }
           window.state.chatHistories[storyId] = [];
           if (story) {
