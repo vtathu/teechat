@@ -659,6 +659,12 @@ Trả về ĐÚNG JSON thuần, không markdown:
         if (confirm('Bạn có chắc muốn reset lại toàn bộ cuộc trò chuyện về từ đầu không?')) {
           const storyId = window.state.activeStoryId;
           const story = window.state.stories.find(s => s.id === storyId);
+          // Nhật ký được viết từ chuyện cũ nên hỏi riêng: xóa để các nhân vật viết lại từ đầu
+          if (story && Array.isArray(story.diary) && story.diary.length
+            && confirm('Xóa luôn nhật ký của các nhân vật để viết lại từ đầu không?')) {
+            story.diary = [];
+            if (story.diaryDays && typeof story.diaryDays === 'object') story.diaryDays = {};
+          }
           window.state.chatHistories[storyId] = [];
           if (story) {
             if (story.openingScene) window.state.chatHistories[storyId].push({ sender: 'system', text: story.openingScene, opening: true });
