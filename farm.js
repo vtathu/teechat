@@ -160,6 +160,8 @@
   const BUILD_ORDER = ['kho', 'nha', 'nhadan', 'tramdien', 'thapnuoc', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
   // ---- ảnh nông trại: công nhân, luống cây, công trình ----
   const FARM_IMG = 'img/farm/';
+  const CITY_IMG = FARM_IMG + 'city/';
+  const RES_IMGS = Array.from({ length: 6 }, (_, i) => CITY_IMG + 'res-' + (i + 1) + '.png');
   const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '-v2.png');
   const CROP_IMGS = { empty: FARM_IMG + 'plot-empty-v2.png', sprout: FARM_IMG + 'plot-sprout-v2.png', rau: FARM_IMG + 'crop-bapcai-v2.png', ngo: FARM_IMG + 'crop-ngo-v2.png', ca: FARM_IMG + 'crop-ca-v2.png', dua: FARM_IMG + 'crop-dua-v2.png' };
   // mỗi loại có 2 kiểu luống: cây đang lớn (sắp chín) và cây chín
@@ -450,6 +452,7 @@
     f.residents.forEach(r => {
       if (typeof r.name !== 'string' || !r.name) r.name = pick(RES_NAMES);
       if (typeof r.emoji !== 'string' || !r.emoji) r.emoji = pick(RES_EMOJI);
+      if (!(r.img >= 1 && r.img <= 6)) r.img = 1 + (hashNum(r.id) % 6);
       if (typeof r.mor !== 'number') r.mor = 70;
       if (typeof r.house !== 'string') r.house = '';
       if (typeof r.at !== 'number') r.at = 0;
@@ -972,7 +975,9 @@
     const free = homes.find(h => residentsOf(f, h.id).length < (BUILDINGS.nhadan.slots[h.lv] || 0));
     if (!free) return null;
     const used = f.residents.map(r => r.name);
-    const r = { id: 'rd' + Date.now() + '-' + rand(0, 999), name: RES_NAMES.find(n => used.indexOf(n) < 0) || pick(RES_NAMES), emoji: pick(RES_EMOJI), house: free.id, mor: 70, tx: null, ty: null, at: 0 };
+    const usedImg = f.residents.map(r => r.img);
+    const freeImg = [1, 2, 3, 4, 5, 6].filter(n => usedImg.indexOf(n) < 0);
+    const r = { id: 'rd' + Date.now() + '-' + rand(0, 999), name: RES_NAMES.find(n => used.indexOf(n) < 0) || pick(RES_NAMES), emoji: pick(RES_EMOJI), img: freeImg.length ? pick(freeImg) : pick([1, 2, 3, 4, 5, 6]), house: free.id, mor: 70, tx: null, ty: null, at: 0 };
     f.residents.push(r);
     return r;
   }
@@ -1055,9 +1060,11 @@
       const inst = f.blds.find(b => b.id === r.house);
       if (!inst) return;
       const s = FOOT.nhadan;
-      r.tx = Math.max(18, Math.min(WORLD_W - 18, inst.c * TILE + s[0] * TILE / 2 + rand(-30, 30)));
-      r.ty = Math.max(18, Math.min(WORLD_H - 18, inst.r * TILE + s[1] * TILE + rand(-16, 22)));
-      if (issue && Math.random() < 0.6) {
+      const idx = residentsOf(f, inst.id).indexOf(r);
+      const side = idx % 2 ? 1 : -1;
+      r.tx = Math.max(18, Math.min(WORLD_W - 18, inst.c * TILE + s[0] * TILE / 2 + side * rand(34, 52) + rand(-6, 6)));
+      r.ty = Math.max(18, Math.min(WORLD_H - 18, inst.r * TILE + s[1] * TILE + rand(8, 22)));
+      if (issue && side < 0 && Math.random() < 0.6) {
         f.residents.forEach(x => { if (x !== r) x.say = ''; });
         r.say = pick(CITY_COMPLAIN[issue]); r.sayU = now + rand(4500, 7000);
       }
@@ -1162,7 +1169,7 @@
     f.residents.forEach(r => {
       const inst = f.blds.find(b => b.id === r.house);
       const x = r.tx != null ? r.tx : (inst ? (inst.c + 1) * TILE : WORLD_W / 2);
-      const y = r.ty != null ? r.ty : (inst ? (inst.r + 2) * TILE : WORLD_H / 2);
+      const y = r.ty != null ? r.ty : (inst ? (inst.r + 2) * TILE + 10 : WORLD_H / 2);
       want[r.id] = 1;
       let el = layer.querySelector('[data-res="' + r.id + '"]');
       if (!el) {
@@ -1173,7 +1180,11 @@
         layer.appendChild(el);
       }
       const say = r.say && r.sayU > Date.now() ? '<span class="fg-r-say">' + esc(r.say) + '</span>' : '';
-      if (el.__say !== say) { el.innerHTML = '<span class="fg-r-e">' + r.emoji + '</span>' + say; el.__say = say; }
+      const key = (r.img || 1) + '|' + say;
+      if (el.__say !== key) {
+        el.innerHTML = '<img class="fg-r-img' + (r.img === 3 ? ' short' : '') + '" src="' + RES_IMGS[(r.img || 1) - 1] + '" alt="" draggable="false">' + say;
+        el.__say = key;
+      }
       el.style.left = x + 'px';
       el.style.top = y + 'px';
       el.style.zIndex = 1200 + Math.round(y);
@@ -2614,15 +2625,23 @@
 
   const DECO = (() => {
     const d = [];
-    d.push('<div class="fg-pond" style="left:560px;top:830px"></div><span class="fg-duck" style="left:604px;top:872px">🦆</span>');
-    d.push('<button class="fg-stall" style="left:590px;top:468px" onclick="FarmGame.open(\'board\')"><span>🏪</span><small>Chợ làng</small></button>');
-    d.push('<div class="fg-gate" style="left:650px;top:1052px">🚧<small>Cổng trại</small></div>');
-    [[28, 258, '🌳'], [368, 58, '🌳'], [818, 250, '🌳'], [826, 556, '🌴'], [36, 1072, '🌳'], [300, 1100, '🌿'], [560, 1102, '🌳'], [822, 886, '🌳'], [472, 402, '🌼'], [560, 300, '🌼'], [486, 560, '🌼'], [596, 620, '🌳'], [744, 700, '🌳'], [468, 1180, '🌳'], [702, 566, '🌿'], [520, 660, '🌿'], [752, 1000, '🌿'], [664, 760, '🌼']].forEach(t => {
-      d.push('<span class="' + (t[2] === '🌼' ? 'fg-flower' : 'fg-tree') + '" style="left:' + t[0] + 'px;top:' + t[1] + 'px">' + t[2] + '</span>');
-    });
-    [[600, 330, '🚜'], [700, 128, '🪣'], [500, 238, '🌾'], [530, 1000, '🐔'], [420, 1050, '🐕'], [618, 168, '🌾'], [684, 132, '🌾'], [736, 178, '🌾'], [624, 392, '🐄'], [722, 414, '🐖'], [562, 706, '🐐'], [706, 948, '🪵']].forEach(t => {
-      d.push('<span class="fg-prop" style="left:' + t[0] + 'px;top:' + t[1] + 'px">' + t[2] + '</span>');
-    });
+    const deco = (img, x, y, w, cls) => '<span class="fg-deco' + (cls ? ' ' + cls : '') + '" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px">'
+      + '<img src="' + CITY_IMG + img + '.png" alt="" draggable="false"></span>';
+    d.push('<div class="fg-pond" style="left:560px;top:830px"></div>');
+    d.push(deco('animal-duck', 646, 908, 26, 'water'));
+    d.push('<button class="fg-stall pic" style="left:633px;top:558px" title="Chợ làng" onclick="FarmGame.open(\'board\')">'
+      + '<img src="' + CITY_IMG + 'prop-stall.png" alt="" draggable="false"></button>');
+    d.push(deco('prop-gate', 685, 1094, 92));
+    [[28, 290, 'prop-tree', 62], [368, 90, 'prop-tree', 60], [818, 282, 'prop-tree', 58], [826, 590, 'prop-palm', 58],
+      [36, 1106, 'prop-tree', 62], [560, 1136, 'prop-tree', 58], [822, 918, 'prop-tree', 60], [596, 654, 'prop-tree', 60],
+      [744, 734, 'prop-tree', 58], [468, 1130, 'prop-tree', 54], [60, 762, 'prop-cypress', 40],
+      [300, 1128, 'prop-bush', 34], [702, 592, 'prop-bush', 32], [520, 686, 'prop-bush', 30], [752, 1026, 'prop-bush', 32],
+      [472, 412, 'prop-flowers', 26], [560, 310, 'prop-flowers', 24], [486, 570, 'prop-flowers', 26], [664, 772, 'prop-flowers', 24],
+      [588, 968, 'prop-rock', 22], [742, 958, 'prop-rock', 20]].forEach(t => d.push(deco(t[2], t[0], t[1], t[3])));
+    [[420, 880, 'prop-tractor', 68], [705, 152, 'prop-bucket', 20],
+      [500, 264, 'prop-hay', 24], [618, 194, 'prop-hay', 22], [684, 158, 'prop-hay', 22], [736, 204, 'prop-hay', 22],
+      [535, 1032, 'animal-hen', 26], [425, 1082, 'animal-dog', 30], [624, 442, 'animal-cow', 46],
+      [722, 460, 'animal-pig', 30], [562, 752, 'animal-goat', 32], [706, 992, 'prop-logs', 36], [744, 620, 'prop-crate', 26]].forEach(t => d.push(deco(t[2], t[0], t[1], t[3])));
     return d.join('');
   })();
 
@@ -3209,7 +3228,7 @@
         + ((w.morale ?? 70) < 35 ? '<span class="fg-w-mood">' + mood[1] + '</span>' : '')
         + (isFieldWorker(w)
           ? '<img class="fg-w-img" src="' + farmerImg(w.id) + '" alt="" draggable="false">'
-          : '<span class="fg-w-e">' + w.emoji + '</span>')
+          : '<img class="fg-w-img staff" src="' + RES_IMGS[hashNum(w.id) % 6] + '" alt="" draggable="false">')
         + (w.post ? '<span class="fg-w-post">' + BUILDINGS[w.post].e + '</span>' : '')
         + '</div>';
     });
@@ -3221,7 +3240,7 @@
     if (f.buildings.cskh) {
       assistant = '<div class="fg-assistant" style="left:' + astLeft + 'px;top:' + astTop + 'px;z-index:1400;">'
         + (tip.txt ? '<div class="fg-say big">' + esc(tip.txt) + '</div>' : '')
-        + '<span class="fg-w-e">🧑‍💼</span></div>';
+        + '<img class="fg-w-img staff" src="' + RES_IMGS[5] + '" alt="" draggable="false"></div>';
     }
 
     const orderChips = openOrders.length ? openOrders.map(o => {
@@ -3302,7 +3321,7 @@
       node.style.left = astLeft + 'px';
       node.style.top = astTop + 'px';
       node.style.zIndex = 1400;
-      node.innerHTML = (tip.txt ? '<div class="fg-say big">' + esc(tip.txt) + '</div>' : '') + '<span class="fg-w-e">🧑‍💼</span>';
+      node.innerHTML = (tip.txt ? '<div class="fg-say big">' + esc(tip.txt) + '</div>' : '') + '<img class="fg-w-img staff" src="' + RES_IMGS[5] + '" alt="" draggable="false">';
     } else if (oldAst) oldAst.remove();
 
     worldEl.classList.toggle('placing', !!place || !!plotPlace || roadMode);
