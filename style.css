@@ -774,8 +774,24 @@ html[data-mode="dark"] .farm-pest { background: rgba(254, 178, 178, .18); color:
     .fg-badge { position: absolute; top: -6px; right: -4px; background: var(--app-pink); color: #fff; font-size: 0.6rem; font-weight: bold; min-width: 16px; height: 16px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-style: normal; }
     .fg-badge.warn { background: #e0564b; }
 
-    .fg-orders { position: absolute; z-index: 20; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .fg-orders { position: absolute; z-index: 20; left: 8px; right: 56px; bottom: 74px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
     .fg-orders::-webkit-scrollbar { display: none; }
+    .fg-citydock { position: absolute; z-index: 21; left: 8px; right: 56px; bottom: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 4px; -webkit-overflow-scrolling: touch; }
+    .fg-citydock::-webkit-scrollbar { display: none; }
+    .fg-citydock:empty { display: none; }
+    .fg-city-chip { position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; min-width: 62px; padding: 5px 9px 4px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.85); background: rgba(255,251,240,0.94); box-shadow: 0 4px 12px rgba(60,90,50,0.18); cursor: pointer; touch-action: manipulation; color: var(--text-2); }
+    .fg-city-chip:active { transform: translateY(1px); }
+    .fg-city-chip .fg-cc-e { font-size: 1rem; line-height: 1.15; }
+    .fg-city-chip b { font-size: 0.54rem; font-weight: 600; color: var(--text-2); white-space: nowrap; line-height: 1.2; }
+    .fg-city-chip small { font-size: 0.58rem; font-weight: bold; color: var(--app-dark-green); white-space: nowrap; line-height: 1.2; }
+    .fg-city-chip.bad { border-color: rgba(226,88,74,0.6); background: rgba(255,246,242,0.96); }
+    .fg-city-chip.bad small { color: #c14f43; }
+    .fg-cc-warn { position: absolute; top: -5px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: #e2584a; color: #fff; font-size: 0.52rem; font-weight: bold; font-style: normal; line-height: 14px; text-align: center; box-shadow: 0 2px 4px rgba(120,35,25,0.3); }
+    .fg-city-warn { display: flex; flex-direction: column; gap: 3px; margin: 6px 0 2px; padding: 7px 9px; border-radius: 11px; background: rgba(255,244,238,0.9); border: 1px solid rgba(226,88,74,0.35); font-size: 0.62rem; color: #8a3b31; }
+    .fg-city-tabs { margin-top: 4px; }
+    .fg-red { color: #c14f43; }
+    .fg-r-say { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; background: rgba(255,251,240,0.97); border: 1px solid rgba(226,88,74,0.45); border-radius: 10px; padding: 3px 7px; font-size: 0.56rem; line-height: 1.2; width: 120px; text-align: center; color: #8a3b31; box-shadow: 0 3px 8px rgba(80,40,20,0.16); pointer-events: none; white-space: normal; }
+    .fg-r-say::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: rgba(255,251,240,0.97); }
     .fg-ochip { position: relative; flex-shrink: 0; background: rgba(255,251,240,0.94); border: 2px solid rgba(255,255,255,0.85); border-radius: 14px; padding: 6px 10px 9px; font-size: 0.65rem; font-weight: bold; color: var(--text-2); cursor: pointer; overflow: hidden; box-shadow: 0 3px 10px rgba(60,90,50,0.2); }
     .fg-ochip.offer { border-color: var(--pastel-yellow); background: #fffbe8; }
     .fg-ochip.pack { border-color: var(--pastel-blue); background: #eef7ff; }

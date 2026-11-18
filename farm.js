@@ -149,13 +149,15 @@
     nhansu: { n: 'Phòng nhân sự', s: 'Nhân sự', e: '🧑‍💼', lvl: 3, max: MAX_BLD_LV, cost: [0, 1500000, 4000000, 9000000, 18000000, 29000000, 45000000, 66000000, 95000000], cvN: [0, 3, 4, 5, 6, 7, 8, 9, 10], q: [0, 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35], d: 'Đăng tin tuyển người, quản lý lương thưởng và thăng chức.' },
     cskh: { n: 'Phòng CSKH', s: 'CSKH', e: '🎧', lvl: 5, max: MAX_BLD_LV, cost: [0, 2500000, 6000000, 13000000, 24000000, 36000000, 54000000, 80000000, 110000000], d: 'Trợ lý nhắc việc, giữ mối khách quen.' },
     ketoan: { n: 'Phòng kế toán', s: 'Kế toán', e: '📒', lvl: 4, max: MAX_BLD_LV, cost: [0, 2000000, 5000000, 11000000, 21000000, 33000000, 50000000, 76000000, 105000000], d: 'Sổ sách rõ ràng, thanh tra không lo.' },
-    congvien: { n: 'Công viên', s: 'Công viên', e: '🌳', lvl: 1, max: MAX_BLD_LV, cost: [0, 1200000, 3000000, 7000000, 14000000, 22000000, 33000000, 48000000, 65000000], d: 'Chỗ nghỉ ngơi, tinh thần cả đội tăng đều mỗi ngày.' },
-    ghe: { n: 'Ghế đá', s: 'Ghế đá', e: '🪑', lvl: 1, max: MAX_BLD_LV, cost: [0, 150000, 400000, 900000, 1800000, 3000000, 4500000, 6500000, 9000000], d: 'Góc ngồi xả hơi cho người đang mệt.' },
+    congvien: { n: 'Công viên', s: 'Công viên', e: '🌳', lvl: 1, max: MAX_BLD_LV, cost: [0, 1200000, 3000000, 7000000, 14000000, 22000000, 33000000, 48000000, 65000000], d: 'Chỗ nghỉ ngơi cho cả đội lẫn cư dân, tăng vui vẻ mỗi ngày.' },
+    ghe: { n: 'Ghế đá', s: 'Ghế đá', e: '🪑', lvl: 1, max: MAX_BLD_LV, cost: [0, 150000, 400000, 900000, 1800000, 3000000, 4500000, 6500000, 9000000], d: 'Góc ngồi xả hơi cho người mệt, cư dân quanh đây cũng thích.' },
     giamdoc: { n: 'Phòng giám đốc', s: 'Giám đốc', e: '🧑‍💼', lvl: 6, max: MAX_BLD_LV, cost: [0, 3000000, 7000000, 15000000, 27000000, 42000000, 60000000, 85000000, 115000000], d: 'Giám đốc tự quyết trồng gì, nhận đơn nào khi bạn vắng.' },
-    nhadan: { n: 'Nhà dân', s: 'Nhà dân', e: '🏡', lvl: 1, max: MAX_BLD_LV, cost: [0, 800000, 1600000, 3000000, 5000000, 8000000, 12000000, 17000000, 24000000], slots: [0, 2, 2, 3, 3, 4, 4, 5, 5], d: 'Nhà cho dân cư về ở, mỗi ngày thu tiền thuê.' }
+    nhadan: { n: 'Nhà dân', s: 'Nhà dân', e: '🏡', lvl: 1, max: MAX_BLD_LV, cost: [0, 800000, 1600000, 3000000, 5000000, 8000000, 12000000, 17000000, 24000000], slots: [0, 2, 2, 3, 3, 4, 4, 5, 5], d: 'Nhà cho dân cư về ở, mỗi ngày thu tiền thuê.' },
+    tramdien: { n: 'Trạm điện', s: 'Trạm điện', e: '⚡', lvl: 1, max: MAX_BLD_LV, cost: [0, 650000, 1500000, 3200000, 5800000, 9000000, 13500000, 19000000, 26000000], supply: [0, 3, 5, 7, 9, 11, 13, 15, 17], d: 'Cấp điện cho cả khu dân cư. Thiếu điện là dân phàn nàn.' },
+    thapnuoc: { n: 'Tháp nước', s: 'Tháp nước', e: '💧', lvl: 1, max: MAX_BLD_LV, cost: [0, 550000, 1300000, 2800000, 5000000, 8000000, 12000000, 17000000, 23000000], supply: [0, 3, 5, 7, 9, 11, 13, 15, 17], d: 'Cấp nước sạch cho dân cư quanh khu.' }
   };
   // thứ tự trưng bày: kế toán đứng trước CSKH, mở dần theo cấp
-  const BUILD_ORDER = ['kho', 'nha', 'nhadan', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
+  const BUILD_ORDER = ['kho', 'nha', 'nhadan', 'tramdien', 'thapnuoc', 'donggoi', 'giaohang', 'congvien', 'ghe', 'nhansu', 'ketoan', 'cskh', 'giamdoc'];
   // ---- ảnh nông trại: công nhân, luống cây, công trình ----
   const FARM_IMG = 'img/farm/';
   const FARMER_IMGS = Array.from({ length: 18 }, (_, i) => FARM_IMG + 'farmer-' + ('0' + (i + 1)).slice(-2) + '-v2.png');
@@ -173,7 +175,11 @@
     nha: ['bld-nha-v2', 'bld-ketoan-v2', 'bld-giamdoc-v2'],
     donggoi: ['bld-donggoi-1-v2', 'bld-kho-blue-v2', 'bld-cskh-v2'],
     giaohang: ['bld-donggoi-2-v2', 'bld-nha-cu-v2', 'bld-giaohang-v2'],
-    nhadan: ['city/house-1', 'city/house-2', 'city/house-3']
+    nhadan: ['city/house-1', 'city/house-2', 'city/house-3'],
+    tramdien: ['city/tram-dien', 'city/tram-dien', 'city/tram-dien'],
+    thapnuoc: ['city/thap-nuoc', 'city/thap-nuoc', 'city/thap-nuoc'],
+    congvien: ['city/cong-vien', 'city/cong-vien', 'city/cong-vien'],
+    ghe: ['city/ghe-da', 'city/ghe-da', 'city/ghe-da']
   };
   const bldImg = (key, lv) => {
     const arr = BLD_TIERS[key];
@@ -284,8 +290,8 @@
     { c0: 14, r0: 23, c1: 16, r1: 25 },
     { c0: 18, r0: 0, c1: 19, r1: 25 }
   ];
-  const FOOT = { kho: [2, 2], nha: [2, 2], donggoi: [2, 2], giaohang: [2, 2], nhansu: [1, 1], cskh: [1, 1], ketoan: [1, 1], congvien: [2, 2], ghe: [1, 1], giamdoc: [2, 2], nhadan: [2, 2] };
-  const HOME_POS = { kho: { c: 2, r: 2 }, donggoi: { c: 5, r: 2 }, nhansu: { c: 4, r: 3 }, cskh: { c: 4, r: 2 }, ketoan: { c: 4, r: 4 }, nha: { c: 2, r: 5 }, giaohang: { c: 5, r: 5 }, congvien: { c: 8, r: 2 }, ghe: { c: 11, r: 2 }, giamdoc: { c: 8, r: 5 }, nhadan: { c: 12, r: 2 } };
+  const FOOT = { kho: [2, 2], nha: [2, 2], donggoi: [2, 2], giaohang: [2, 2], nhansu: [1, 1], cskh: [1, 1], ketoan: [1, 1], congvien: [2, 2], ghe: [1, 1], giamdoc: [2, 2], nhadan: [2, 2], tramdien: [1, 1], thapnuoc: [1, 1] };
+  const HOME_POS = { kho: { c: 2, r: 2 }, donggoi: { c: 5, r: 2 }, nhansu: { c: 4, r: 3 }, cskh: { c: 4, r: 2 }, ketoan: { c: 4, r: 4 }, nha: { c: 2, r: 5 }, giaohang: { c: 5, r: 5 }, congvien: { c: 8, r: 2 }, ghe: { c: 11, r: 2 }, giamdoc: { c: 8, r: 5 }, nhadan: { c: 12, r: 2 }, tramdien: { c: 16, r: 2 }, thapnuoc: { c: 16, r: 4 } };
   const PLOT_COLS = 4, PLOT_ROW = 10, PLOT_STEP = 84;
   const PLOT_W = 78, PLOT_GRID = 14;
   // bố cục ruộng cũ (4×7) chỉ còn dùng để chuyển vị trí cho save cũ
@@ -309,9 +315,14 @@
   const WALK_SPEED = 62;
   const RIPEN_GRACE = 20000;
   const ROAD_COST = 5000;
-  const RES_FEE = 300000;
   const RES_NAMES = ['Bà Tư', 'Chú Bảy', 'Cô Út', 'Anh Hùng', 'Chị Lan', 'Bé Na', 'Ông Sáu', 'Bà Năm', 'Chú Tám', 'Cô Hạnh', 'Anh Dũng', 'Chị Thảo', 'Ông Mười', 'Bà Bảy', 'Chị Hoa', 'Anh Kiệt', 'Cô Thắm', 'Chú Hải'];
   const RES_EMOJI = ['👩', '🧑', '👨', '👵', '👴', '🧒', '👩‍🦰', '👨‍🦱', '👱‍♀️', '🧓'];
+  const CITY_COMPLAIN = {
+    dien: ['Nhà tối om, đèn đâu mà đèn.', 'Cúp điện hoài, nồi cơm cũng không nấu được.', 'Không có điện, tối thui cả xóm.', 'Quạt không chạy, nóng muốn xỉu.'],
+    nuoc: ['Giếng cạn rồi, thiếu nước quá.', 'Tắm cũng không xong vì thiếu nước.', 'Nước yếu quá, hứng cả buổi chưa đầy xô.', 'Giặt đồ gì nổi khi không có nước.'],
+    duong: ['Đường lầy quá, đi chợ xa muốn khóc.', 'Ngõ nhà tui tối mà còn lội bùn.', 'Lát thêm đường đi chứ, dép dính bùn hoài.'],
+    vui: ['Quanh đây chẳng có chỗ ngồi chơi.', 'Thành phố gì mà buồn thiu.', 'Thiếu chỗ nghỉ chân với cây xanh ghê.']
+  };
   const NAMES = ['Chị Hai', 'Anh Ba', 'Cô Tư', 'Chú Năm', 'Bé Sáu', 'Anh Bảy', 'Chị Tám', 'Chú Chín', 'Bé Mười', 'Anh Hai Một', 'Cô Ba Mốt', 'Chú Tư Bốn'];
   const WORKER_EMOJI = { vuon: ['🧑‍🌾', '👩‍🌾', '👨‍🌾'], donggoi: ['🧑‍🏭', '👩‍🏭', '👨‍🏭'] };
   const QUIRKS = [
@@ -956,29 +967,89 @@
   }
 
   // ===================== THÀNH PHỐ: DÂN CƯ =====================
-  function hireResident(id) {
-    const f = FM(), inst = bldOf(f, id);
-    if (!inst || inst.key !== 'nhadan') return;
-    const cap = BUILDINGS.nhadan.slots[inst.lv] || 0;
-    if (residentsOf(f, inst.id).length >= cap) { toast('Nhà này đủ người ở rồi, nâng cấp hoặc xây thêm nhà.'); sfx('error'); return; }
-    if (!pay(RES_FEE)) return;
+  function addResident(f) {
+    const homes = bldInsts(f, 'nhadan');
+    const free = homes.find(h => residentsOf(f, h.id).length < (BUILDINGS.nhadan.slots[h.lv] || 0));
+    if (!free) return null;
     const used = f.residents.map(r => r.name);
-    const r = { id: 'rd' + Date.now() + '-' + rand(0, 999), name: RES_NAMES.find(n => used.indexOf(n) < 0) || pick(RES_NAMES), emoji: pick(RES_EMOJI), house: inst.id, mor: 70, tx: null, ty: null, at: 0 };
+    const r = { id: 'rd' + Date.now() + '-' + rand(0, 999), name: RES_NAMES.find(n => used.indexOf(n) < 0) || pick(RES_NAMES), emoji: pick(RES_EMOJI), house: free.id, mor: 70, tx: null, ty: null, at: 0 };
     f.residents.push(r);
-    save(); sfx('buy'); render();
-    toast('🏡 ' + r.name + ' dọn về ở, mỗi ngày đóng ' + money(24000 + inst.lv * 6000) + ' tiền thuê.');
+    return r;
   }
-  function evictResident(rid) {
-    const f = FM(), r = f.residents.find(x => x.id === rid);
-    if (!r) return;
-    f.residents = f.residents.filter(x => x.id !== rid);
-    save(); sfx('click'); render();
-    toast('👋 ' + r.name + ' dọn đi nơi khác.');
+  // ---- chỉ số thành phố: điện, nước, đường, vui vẻ ----
+  function houseRoadOk(f, inst) {
+    const s = FOOT.nhadan;
+    for (let c = inst.c - 1; c <= inst.c + s[0]; c++) {
+      for (let r = inst.r - 1; r <= inst.r + s[1]; r++) {
+        const edge = c < inst.c || c >= inst.c + s[0] || r < inst.r || r >= inst.r + s[1];
+        if (edge && f.roads[c + ',' + r]) return true;
+      }
+    }
+    return false;
+  }
+  function cityStats(f) {
+    const pop = f.residents.length;
+    const cap = residentCap(f);
+    const homes = bldInsts(f, 'nhadan');
+    const roadOk = homes.filter(h => houseRoadOk(f, h)).length;
+    const roadPct = homes.length ? Math.round(roadOk / homes.length * 100) : 100;
+    const supply = (key) => bldInsts(f, key).reduce((s, b) => s + (BUILDINGS[key].supply[b.lv] || 0), 0);
+    const dien = supply('tramdien'), nuoc = supply('thapnuoc');
+    const park = Math.min(20, bldInsts(f, 'congvien').reduce((s, b) => s + 6 + b.lv * 2, 0));
+    const bench = Math.min(9, bldInsts(f, 'ghe').length * 3);
+    const dienShort = pop > 0 ? Math.max(0, (pop - Math.min(pop, dien)) / pop) : 0;
+    const nuocShort = pop > 0 ? Math.max(0, (pop - Math.min(pop, nuoc)) / pop) : 0;
+    const happy = !pop ? 100 : Math.round(Math.max(0, Math.min(100, 55 + roadPct * 0.15 + park + bench - dienShort * 35 - nuocShort * 35)));
+    return { pop, cap, homes: homes.length, roadOk, roadPct, dien, nuoc, need: pop, dienShort, nuocShort, park, bench, happy };
+  }
+  function cityIssues(f) {
+    const st = cityStats(f), out = [];
+    if (!st.pop) return out;
+    if (st.dienShort > 0) out.push({ id: 'dien', txt: 'Thiếu điện: mới có ' + st.dien + '/' + st.pop + ' người dùng được.' });
+    if (st.nuocShort > 0) out.push({ id: 'nuoc', txt: 'Thiếu nước: mới có ' + st.nuoc + '/' + st.pop + ' người dùng được.' });
+    if (st.homes && st.roadPct < 100) out.push({ id: 'duong', txt: 'Còn ' + (st.homes - st.roadOk) + ' nhà chưa có đường ra.' });
+    if (st.happy < 50) out.push({ id: 'vui', txt: 'Cư dân chưa vui: thiếu công viên, ghế đá hoặc tiện nghi.' });
+    return out;
+  }
+  function cityIssueKey(st) {
+    if (st.dienShort > 0) return 'dien';
+    if (st.nuocShort > 0) return 'nuoc';
+    if (st.homes && st.roadPct < 100) return 'duong';
+    if (st.happy < 50) return 'vui';
+    return '';
+  }
+  function cityTick(f, now) {
+    const st = cityStats(f);
+    if (st.pop < st.cap) {
+      if (!f.__moveInAt) f.__moveInAt = now + 7000;
+      else if (now >= f.__moveInAt) {
+        const r = addResident(f);
+        if (r) {
+          f.__moveInAt = now + rand(12000, 20000);
+          save();
+          sfx('click');
+          toast('🏡 ' + r.name + ' dọn vào thành phố.');
+        } else f.__moveInAt = now + 12000;
+      }
+    } else f.__moveInAt = 0;
+    if (st.pop > 0 && st.happy < 20) {
+      if (!f.__leaveAt) f.__leaveAt = now + 50000;
+      else if (now >= f.__leaveAt) {
+        const r = f.residents[rand(0, f.residents.length - 1)];
+        f.residents = f.residents.filter(x => x !== r);
+        f.__leaveAt = now + 70000;
+        save();
+        toast('👋 ' + r.name + ' thấy thiếu tiện nghi quá nên dọn đi.');
+      }
+    } else f.__leaveAt = 0;
   }
   function residentTick(f, now) {
     if (!f.residents.length) return;
+    const issue = cityIssueKey(cityStats(f));
+    const nowMs = Date.now();
     let moved = false;
     f.residents.forEach(r => {
+      if (r.say && r.sayU && nowMs > r.sayU) { r.say = ''; moved = true; }
       if (now < (r.at || 0)) return;
       r.at = now + rand(6000, 14000);
       const inst = f.blds.find(b => b.id === r.house);
@@ -986,9 +1057,81 @@
       const s = FOOT.nhadan;
       r.tx = Math.max(18, Math.min(WORLD_W - 18, inst.c * TILE + s[0] * TILE / 2 + rand(-30, 30)));
       r.ty = Math.max(18, Math.min(WORLD_H - 18, inst.r * TILE + s[1] * TILE + rand(-16, 22)));
+      if (issue && Math.random() < 0.6) {
+        f.residents.forEach(x => { if (x !== r) x.say = ''; });
+        r.say = pick(CITY_COMPLAIN[issue]); r.sayU = now + rand(4500, 7000);
+      }
       moved = true;
     });
     if (moved) renderResidents();
+  }
+  function cityChip(tab, e, n, v, bad) {
+    return '<button class="fg-city-chip' + (bad ? ' bad' : '') + '" onclick="FarmGame.openCity(\'' + tab + '\')">'
+      + '<span class="fg-cc-e">' + e + '</span><b>' + n + '</b><small>' + v + '</small>'
+      + (bad ? '<i class="fg-cc-warn">!</i>' : '') + '</button>';
+  }
+  function cityDock(f) {
+    const st = cityStats(f);
+    return cityChip('nha', '🏡', 'Nhà dân', st.pop + '/' + st.cap, false)
+      + cityChip('dien', '⚡', 'Điện', st.pop ? st.dien + '/' + st.pop : '—', st.pop > 0 && st.dien < st.pop)
+      + cityChip('nuoc', '💧', 'Nước', st.pop ? st.nuoc + '/' + st.pop : '—', st.pop > 0 && st.nuoc < st.pop)
+      + cityChip('duong', '🛣️', 'Đường', st.homes ? st.roadPct + '%' : '—', st.homes > 0 && st.roadPct < 100)
+      + cityChip('vui', '🌳', 'Công viên', st.park + ' đ', false)
+      + cityChip('vui', '🪑', 'Ghế đá', st.bench + ' đ', false)
+      + cityChip('vui', '😊', 'Vui vẻ', st.happy + '%', st.pop > 0 && st.happy < 50);
+  }
+  function cityBuildBtns(f, key) {
+    const insts = bldInsts(f, key), b = BUILDINGS[key];
+    if (!b) return '';
+    const up = insts.slice().sort((a, c) => a.lv - c.lv)[0];
+    let out = '';
+    if (up && up.lv < MAX_BLD_LV) out += '<button class="fg-btn" onclick="FarmGame.build(\'' + up.id + '\')">Nâng cấp · ' + bigMoney(b.cost[up.lv + 1]) + '</button>';
+    if (insts.length < bldCap(key)) out += '<button class="fg-btn ghost" onclick="FarmGame.startPlace(\'' + key + '\')">+ Căn · ' + bigMoney(insts.length ? newBldCost(f, key) : b.cost[1]) + '</button>';
+    return '<div class="fg-bld-acts">' + out + '</div>';
+  }
+  function cityPanel(f) {
+    const st = cityStats(f), issues = cityIssues(f);
+    const tabs = [['nha', '🏡 Nhà'], ['dien', '⚡ Điện'], ['nuoc', '💧 Nước'], ['duong', '🛣️ Đường'], ['vui', '😊 Vui']];
+    const tab = tabs.some(t => t[0] === cityTab) ? cityTab : 'nha';
+    const stat = (e, label, txt, fill, bad) => '<div class="fg-row"><span>' + e + ' ' + label + '</span>'
+      + '<span class="fg-prog"><i style="width:' + Math.round(Math.max(0, Math.min(1, fill)) * 100) + '%"></i></span>'
+      + '<b class="' + (bad ? 'fg-red' : 'fg-money') + '">' + txt + '</b></div>';
+    let svc = '';
+    if (tab === 'nha') {
+      svc = '<div class="fg-row"><span>Dân số</span><b class="fg-money">' + st.pop + '/' + st.cap + ' người</b></div>'
+        + '<div class="fg-row"><span>Tiền thuê mỗi ngày</span><b class="fg-money">' + money(rentTotal(f)) + '</b></div>'
+        + '<div class="fg-note">Dân tự dọn vào khi nhà còn chỗ. Thiếu điện, nước, đường hay chỗ chơi là họ phàn nàn và bỏ đi.</div>'
+        + cityBuildBtns(f, 'nhadan');
+    } else if (tab === 'dien' || tab === 'nuoc') {
+      const key = tab === 'dien' ? 'tramdien' : 'thapnuoc';
+      const insts = bldInsts(f, key);
+      const have = tab === 'dien' ? st.dien : st.nuoc;
+      const lack = Math.max(0, st.pop - have);
+      svc = '<div class="fg-row"><span>Công suất</span><b class="fg-money">' + have + ' người</b></div>'
+        + '<div class="fg-row"><span>Đang dùng</span><b class="fg-money">' + Math.min(st.pop, have) + '/' + st.pop + ' người</b></div>'
+        + '<div class="fg-row"><span>Đã xây</span><b>' + insts.length + ' căn</b></div>'
+        + '<div class="fg-note">' + (lack ? 'Còn thiếu cho ' + lack + ' người. Xây thêm hoặc nâng cấp căn có sẵn.' : 'Đủ dùng cho cả khu dân cư hiện tại.') + '</div>'
+        + cityBuildBtns(f, key);
+    } else if (tab === 'duong') {
+      svc = '<div class="fg-row"><span>Nhà có đường ra</span><b class="fg-money">' + st.roadOk + '/' + st.homes + ' nhà</b></div>'
+        + '<div class="fg-row"><span>Ô đường đã lát</span><b>' + Object.keys(f.roads || {}).length + ' ô</b></div>'
+        + '<div class="fg-row"><span>Giá mỗi ô</span><b class="fg-money">' + money(ROAD_COST) + '</b></div>'
+        + '<div class="fg-note">Lát đường sát nhà dân để dân có lối ra. Chạm ô đã lát để bỏ, không hoàn tiền.</div>'
+        + '<button class="fg-btn wide" onclick="FarmGame.roadFromCity()">🛣️ Lát đường</button>';
+    } else {
+      svc = '<div class="fg-row"><span>Công viên</span><b class="fg-money">' + st.park + ' điểm</b></div>'
+        + '<div class="fg-row"><span>Ghế đá</span><b class="fg-money">' + st.bench + ' điểm</b></div>'
+        + '<div class="fg-note">Công viên, ghế đá, điện, nước và đường đủ thì dân mới vui. Vui dưới 50% là bắt đầu phàn nàn, dưới 20% là dọn đi.</div>'
+        + cityBuildBtns(f, 'congvien') + cityBuildBtns(f, 'ghe');
+    }
+    return '<div class="fg-h">🏙️ Thành phố</div>'
+      + stat('😊', 'Vui vẻ', st.happy + '%', st.happy / 100, st.pop > 0 && st.happy < 50)
+      + stat('⚡', 'Điện', st.pop ? st.dien + '/' + st.pop : '—', st.pop ? st.dien / st.pop : 1, st.dienShort > 0)
+      + stat('💧', 'Nước', st.pop ? st.nuoc + '/' + st.pop : '—', st.pop ? st.nuoc / st.pop : 1, st.nuocShort > 0)
+      + stat('🛣️', 'Đường', st.homes ? st.roadOk + '/' + st.homes + ' nhà' : '—', st.homes ? st.roadPct / 100 : 1, st.homes > 0 && st.roadPct < 100)
+      + (issues.length ? '<div class="fg-city-warn">' + issues.map(i => '<span>' + i.txt + '</span>').join('') + '</div>' : '')
+      + '<div class="fg-tabs fg-city-tabs">' + tabs.map(t => '<button class="fg-tb' + (t[0] === tab ? ' on' : '') + '" onclick="FarmGame.openCity(\'' + t[0] + '\')">' + t[1] + '</button>').join('') + '</div>'
+      + svc;
   }
   function renderRoads() {
     if (!worldEl) return;
@@ -1027,9 +1170,10 @@
         el.className = 'fg-resident';
         el.dataset.res = r.id;
         el.title = r.name;
-        el.innerHTML = '<span class="fg-r-e">' + r.emoji + '</span>';
         layer.appendChild(el);
       }
+      const say = r.say && r.sayU > Date.now() ? '<span class="fg-r-say">' + esc(r.say) + '</span>' : '';
+      if (el.__say !== say) { el.innerHTML = '<span class="fg-r-e">' + r.emoji + '</span>' + say; el.__say = say; }
       el.style.left = x + 'px';
       el.style.top = y + 'px';
       el.style.zIndex = 1200 + Math.round(y);
@@ -1378,7 +1522,9 @@
                   : key === 'congvien' ? 'tinh thần +' + parkBoost(f) + ' mỗi ngày'
                     : key === 'ghe' ? 'chỗ nghỉ cho người đang mệt'
                       : key === 'giamdoc' ? (directorOf(f) ? 'giám đốc ' + directorOf(f).name : 'chưa có giám đốc')
-                        : key === 'nhadan' ? (short ? 'ở ' : 'dân số ') + f.residents.length + '/' + residentCap(f) + (short ? ' · ' : ' · thuê ') + money(rentTotal(f)) + '/ngày'
+                        : key === 'nhadan' ? (short ? 'ở ' + f.residents.length + '/' + residentCap(f) + ' người' : 'dân số ' + f.residents.length + '/' + residentCap(f) + ' · thuê ' + money(rentTotal(f)) + '/ngày')
+                          : key === 'tramdien' ? 'đủ cho ' + cityStats(f).dien + ' người'
+                            : key === 'thapnuoc' ? 'đủ cho ' + cityStats(f).nuoc + ' người'
                           : '';
   }
   const AV_BG = ['#fbd5d5', '#d6e8fb', '#dcefcf', '#fde9c4', '#e6d9f7', '#cfece5'];
@@ -2359,6 +2505,7 @@
   let alertEv = null, alertTimer = null;
   let plotSel = null;
   let bldSel = null, bldTab = null;
+  let cityTab = 'nha';
   let workerSel = null;
   let uiKey = '';
   let uiSeed = 0;
@@ -2425,6 +2572,7 @@
     // công nhân
     workerTick(f, now);
     residentTick(f, now);
+    cityTick(f, now);
     if (now - lastWork > 3000) { workTick(f); lastWork = now; }
     // sự cố
     maybeSpawnEvent(f, now);
@@ -2462,6 +2610,7 @@
   const ptrs = new Map();
   let pinch = null;
   let place = null;
+  let placeReturn = 'build';
 
   const DECO = (() => {
     const d = [];
@@ -2754,6 +2903,7 @@
       }
     }
     if (!spot) { toast('Hết chỗ trống để xây rồi.'); sfx('error'); return; }
+    placeReturn = fgPanel || 'build';
     fgPanel = null; neg = null;
     place = { key: key, c: spot.c, r: spot.r, cost: cost, again: have > 0, ok: canPlace(f, key, spot.c, spot.r) };
     render();
@@ -2774,7 +2924,7 @@
     save(); sfx('merge'); render();
     toast(b.e + ' ' + b.n + ' dựng xong!');
   }
-  function placeCancel() { place = null; fgPanel = 'build'; render(); }
+  function placeCancel() { place = null; fgPanel = placeReturn || 'build'; placeReturn = 'build'; render(); }
 
   // ============ ĐÈ CÔNG TRÌNH: kê lên để dời / xoay hướng / tháo ============
   let lift = null, bldHold = null, bldTapBlock = 0;
@@ -3105,11 +3255,14 @@
         + '<button class="fg-btn" onclick="FarmGame.bldDone()">✓ Xong</button>'
         + '</div></div>') : '';
 
+    const cityBar = place || plotPlace || lift || roadMode ? '' : cityDock(f);
+
     const set = (sel, html) => { const el = root.querySelector(sel); if (el) el.innerHTML = html; };
     set('.fg-hud', hud);
     set('.fg-tools', tools);
     set('.fg-orders', orders);
     set('.fg-placebar', bar);
+    set('.fg-citydock', cityBar);
     set('.fg-blds', blds);
     set('.fg-plots', plots);
     set('.fg-bar-slot', plotbar);
@@ -3203,7 +3356,9 @@
     congvien: [['info', '🌳 Công viên']],
     ghe: [['info', '🪑 Ghế đá']],
     giamdoc: [['dir', '🎯 Điều hành'], ['team', '🧑‍💼 Nhân viên'], ['info', 'ℹ️ Thông tin']],
-    nhadan: [['pop', '🏡 Dân cư']]
+    nhadan: [['pop', '🏡 Dân cư']],
+    tramdien: [['info', '⚡ Trạm điện']],
+    thapnuoc: [['info', '💧 Tháp nước']]
   };
   const roleName = (r) => r === 'vuon' ? 'Làm vườn' : r === 'donggoi' ? 'Đóng gói' : r === 'giamdoc' ? 'Giám đốc' : 'Nhân viên';
   const postRole = (w) => w.post === 'giamdoc' ? 'Giám đốc' : w.post ? 'Nhân viên ' + (BUILDINGS[w.post] ? BUILDINGS[w.post].s : '') : roleName(w.role);
@@ -3232,6 +3387,14 @@
     const f = FM(), inst = bldOf(f, 'nhansu');
     if (inst) { bldSel = inst.id; bldTab = 'cv'; openPanel('bld'); }
     else openPanel('hire');
+  }
+  function openCity(tab) {
+    cityTab = tab || cityTab || 'nha';
+    openPanel('city');
+  }
+  function roadFromCity() {
+    fgPanel = null;
+    roadToggle(true);
   }
   function bldHead(f, sel) {
     const inst = bldOf(f, sel);
@@ -3317,17 +3480,9 @@
     const list = residentsOf(f, inst.id);
     const boost = 1 + Math.min(0.4, parkBoost(f) * 0.03);
     const houseRent = Math.round(list.length * (24000 + inst.lv * 6000) * boost);
-    const rows = list.length ? list.map(r => '<div class="fg-row"><span>' + r.emoji + ' ' + esc(r.name) + '</span>'
-      + '<span class="fg-sub">thuê ' + money(Math.round((24000 + inst.lv * 6000) * boost)) + '/ngày · ' + r.mor + '♥</span>'
-      + '<button class="fg-btn ghost" onclick="FarmGame.evictResident(\'' + r.id + '\')">Mời ra</button></div>').join('')
-      : '<div class="fg-note">Nhà còn trống, đón người về ở để có thêm tiền thuê mỗi ngày.</div>';
     return '<div class="fg-row"><span>Đang ở</span><b class="fg-money">' + list.length + '/' + cap + ' người</b></div>'
       + '<div class="fg-row"><span>Thuê nhà này</span><b class="fg-money">' + money(houseRent) + '/ngày</b></div>'
-      + '<div class="fg-sec">Dân cư</div>' + rows
-      + (list.length < cap
-        ? '<button class="fg-btn wide" onclick="FarmGame.hireResident(\'' + inst.id + '\')">🏡 Đón dân mới · ' + bigMoney(RES_FEE) + '</button>'
-        : '<div class="fg-note">Nhà đầy rồi. Nâng cấp nhà hoặc xây thêm căn.</div>')
-      + '<div class="fg-note">Dân cư đóng tiền thuê mỗi sáng. Có công viên gần đó thì giá thuê nhích lên, nâng cấp nhà để đón thêm người.</div>';
+      + '<div class="fg-note">Dân tự dọn vào khi nhà còn chỗ và tự đi nếu thành phố thiếu điện, nước, đường hoặc chỗ vui chơi.</div>';
   }
   function cskhTab(f, tab) {
     if (!f.contracts.length) {
@@ -3395,6 +3550,13 @@
     if (key === 'ghe') {
       return '<div class="fg-row"><span>Chỗ nghỉ</span><b class="fg-money">' + bldCount(f, 'ghe') + ' ghế</b></div>'
         + '<div class="fg-note">Người mệt sẽ ra ghế ngồi thay vì lang thang. Ghế đá cũng góp phần hồi tinh thần mỗi ngày.</div>';
+    }
+    if (key === 'tramdien' || key === 'thapnuoc') {
+      const st = cityStats(f), have = key === 'tramdien' ? st.dien : st.nuoc;
+      const lack = Math.max(0, st.pop - have);
+      return '<div class="fg-row"><span>Công suất</span><b class="fg-money">' + have + ' người</b></div>'
+        + '<div class="fg-row"><span>Đang dùng</span><b class="fg-money">' + Math.min(st.pop, have) + '/' + st.pop + ' người</b></div>'
+        + (lack ? '<div class="fg-note">Còn thiếu cho ' + lack + ' người. Nâng cấp hoặc xây thêm căn.</div>' : '<div class="fg-note">Đủ dùng cho cả khu dân cư hiện tại.</div>');
     }
     if (key === 'giamdoc') {
       const dir = directorOf(f);
@@ -3835,6 +3997,8 @@
           + '<div class="fg-row"><span>Chi</span><b class="fg-money out">' + money(f.ledger.out) + '</b></div>'
           + (f.ledgerHist.length ? '<div class="fg-note">' + f.ledgerHist.slice(0, 4).map(h => h.day.slice(5) + ': thu ' + money(h.in) + ' · chi ' + money(h.out)).join('<br>') + '</div>' : '')
           : '<div class="fg-note">Xây Phòng kế toán để xem sổ sách và đỡ lo thanh tra.</div>');
+    } else if (fgPanel === 'city') {
+      inner = cityPanel(f);
     } else if (fgPanel === 'board') {
       const vill = f.villagers.filter(v => !v.gone).map(v => {
         const c = cropOf(v.crop);
@@ -3925,7 +4089,7 @@
         + '<div class="fg-tools"></div><div class="fg-zoom">'
         + '<button class="fg-zbtn" onclick="FarmGame.zoomBy(1.25)" title="Phóng to">＋</button>'
         + '<button class="fg-zbtn" onclick="FarmGame.zoomBy(0.8)" title="Thu nhỏ">－</button>'
-        + '</div><div class="fg-orders"></div><div class="fg-placebar"></div><div class="fg-modal-host"></div>'
+        + '</div><div class="fg-orders"></div><div class="fg-citydock"></div><div class="fg-placebar"></div><div class="fg-modal-host"></div>'
         + '<div class="fg-pack-host"></div><div class="fg-alert-host"></div>';
       camEl = root.querySelector('.fg-cam');
       worldEl = root.querySelector('.fg-world');
@@ -3950,6 +4114,7 @@
     drag = null; place = null; plotPlace = null; fgPanel = null; neg = null; plotSel = null;
     lift = null; endBldHold(); detachLift();
     roadMode = false; roadPaint = null; roadLast = ''; farmResetArmed = false;
+    placeReturn = 'build';
     seedDrag = null;
     if (seedGhostEl) { seedGhostEl.remove(); seedGhostEl = null; }
     window.removeEventListener('pointermove', seedMove);
@@ -4004,8 +4169,7 @@
     pick: (id) => { farmPick = id; sfx('click'); render(); },
     plant, water, treat, fertilize, harvest, buyLand, buyItem, sellCrop, build, upgradeSeed,
     startPlotPlace, plotPlaceConfirm, plotPlaceCancel, plotMoveStart,
-    roadToggle, farmReset,
-    hireResident, evictResident,
+    roadToggle, farmReset, openCity, roadFromCity,
     withdraw,
     zoomBy: (f) => zoom(Number(f) || 1.25),
     zoomReset: () => zoom(1 / cam.z),
@@ -4038,7 +4202,10 @@
       residents: () => FM().residents.map(r => ({ id: r.id, name: r.name, house: r.house })),
       residentCap: () => residentCap(FM()),
       rentTotal: () => rentTotal(FM()),
-      hireResident: (id) => { hireResident(id || (bldInsts(FM(), 'nhadan')[0] || {}).id); return FM().residents.length; },
+      cityStats: () => cityStats(FM()),
+      cityIssues: () => cityIssues(FM()),
+      moveIn: () => { const r = addResident(FM()); save(); render(); return r ? r.name : ''; },
+      complain: (key) => { const f = FM(); if (!f.residents.length) return false; const r = f.residents[0]; f.residents.forEach(x => { if (x !== r) x.say = ''; }); r.say = pick(CITY_COMPLAIN[key || 'dien']); r.sayU = Date.now() + 60000; renderResidents(); return r.say; },
       resetFarm: () => { farmReset(); farmReset(); },
       newBldCap: (key) => bldCap(key),
       houseInfo: () => bldInsts(FM(), 'nhadan').map(b => ({ id: b.id, lv: b.lv, c: b.c, r: b.r, pop: residentsOf(FM(), b.id).length, cap: BUILDINGS.nhadan.slots[b.lv] })),
