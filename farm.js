@@ -1182,7 +1182,7 @@
       const say = r.say && r.sayU > Date.now() ? '<span class="fg-r-say">' + esc(r.say) + '</span>' : '';
       const key = (r.img || 1) + '|' + say;
       if (el.__say !== key) {
-        el.innerHTML = '<img class="fg-r-img' + (r.img === 3 ? ' short' : '') + '" src="' + RES_IMGS[(r.img || 1) - 1] + '" alt="" draggable="false">' + say;
+        el.innerHTML = '<img class="fg-r-img' + (r.img >= 5 ? ' short' : '') + '" src="' + RES_IMGS[(r.img || 1) - 1] + '" alt="" draggable="false">' + say;
         el.__say = key;
       }
       el.style.left = x + 'px';
