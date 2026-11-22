@@ -25,25 +25,57 @@ function naturalizeEventText(t) {
   return `${m[1].trim()} ${choice}`.replace(/\s+/g, ' ').trim();
 }
 // Lọc bằng code: nếu AI lỡ viết thay người chơi thì cắt từ dòng đó trở đi, và xóa các câu "Tên nói: ..." nằm lẫn trong dòng
-function stripUserVoice(text, name) {
+function stripUserVoice(text, name, story) {
   name = (name || '').trim();
-  if (name.length < 2 || !text) return text;
+  if (!text) return text;
   const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   const parts = name.split(/\s+/).filter(Boolean);
   const given = parts.length > 1 ? parts[parts.length - 1] : '';
   const two = parts.length > 2 ? parts.slice(-2).join(' ') : '';
-  const names = esc(name) + (two ? '|' + esc(two) : '') + (given && given.length >= 2 ? '|' + esc(given) : '');
-  const VERB = '(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|gật|lắc|mỉm|cười|khóc|nghĩ|cảm thấy|quyết định|ngước|cúi|quay|bước|đứng|ngồi|nhìn|ôm|nắm|siết|đưa|run|đỏ mặt|im lặng|khẽ|bật|tựa|vòng|gục|nhắm|mở|thở|chớp|cắn|mím|lẩm bẩm|nức nở|thút thít|vội|chạy|kéo|đẩy|hôn|gọi|reo|ngập ngừng)';
-  const head = new RegExp('^\\s*(?:\\[\\s*' + esc(name) + '\\s*\\]|' + esc(name) + ')\\s*(?:[:：]|(?=["“]))', 'iu');
-  const act = new RegExp('^\\s*\\*+\\s*' + esc(name) + '(?![\\p{L}])', 'iu');
-  const nar = new RegExp('^\\s*[\\*_\\[]*\\s*(?:' + names + ')(?![\\p{L}])\\s*[\\*_\\]]*\\s*' + VERB, 'iu');
-  const inline = new RegExp('(?:' + names + ')\\s+(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|lẩm bẩm)[^"“”\\n]{0,25}[:,]?\\s*["“][^"”\\n]*["”]', 'giu');
-  text = text.replace(inline, '').replace(/[ \t]{2,}/g, ' ');
-  const lines = text.split('\n'), bad = lines.map(l => head.test(l) || act.test(l) || nar.test(l)), first = bad.indexOf(true);
+  const nameList = [name, two, given].filter(x => x && x.length >= 2);
+  const names = nameList.map(esc).join('|');
+
+  const aiNames = ((story && story.characters) || [])
+    .map(c => splitCharName(c.name).primary)
+    .filter(Boolean)
+    .map(n => foldVi(n));
+
+  const VERB = '(?:nói|đáp|trả lời|hỏi|thì thầm|thì thào|bảo|thốt|hét|gật|lắc|mỉm|cười|khóc|nghĩ|cảm thấy|quyết định|ngước|cúi|quay|bước|đứng|ngồi|nhìn|ôm|nắm|siết|đưa|run|đỏ mặt|im lặng|khẽ|bật|tựa|vòng|gục|nhắm|mở|thở|chớp|cắn|mím|lẩm bẩm|nức nở|thút thít|vội|chạy|kéo|đẩy|hôn|gọi|reo|ngập ngừng|nhíu|chau|liếc|vươn|rút|buông|đặt|cầm|lấy)';
+
+  if (names) {
+    const inline = new RegExp('(?:' + names + ')\\s+' + VERB + '[^"“”\\n]{0,30}[:,]?\\s*["“][^"”\\n]*["”]', 'giu');
+    text = text.replace(inline, '').replace(/[ \t]{2,}/g, ' ');
+  }
+
+  const head = names ? new RegExp('^\\s*(?:\\[\\s*(?:' + names + ')\\s*\\]|(?:' + names + '))\\s*(?:[:：]|(?=["“]))', 'iu') : null;
+  const act = names ? new RegExp('^\\s*\\*+\\s*(?:' + names + ')(?![\\p{L}])', 'iu') : null;
+  const nar = names ? new RegExp('(?:^|[,;])\\s*[\\*_\\[]*\\s*(?:' + names + ')(?![\\p{L}])\\s*[\\*_\\]]*\\s*' + VERB, 'iu') : null;
+
+  const lines = text.split('\n');
+  const bad = lines.map(l => {
+    const trimmed = l.trim();
+    if (!trimmed) return false;
+
+    const tagMatch = trimmed.match(/^\[\s*([^\[\]]+?)\s*\]/);
+    if (tagMatch) {
+      const speakerFold = foldVi(tagMatch[1]);
+      if (names && nameList.some(n => foldVi(n) === speakerFold)) return true;
+      if (aiNames.includes(speakerFold)) return false;
+    }
+
+    if (/^["“][^"”]+["”]$/.test(trimmed)) return true;
+
+    if (head && head.test(trimmed)) return true;
+    if (act && act.test(trimmed)) return true;
+    if (nar && nar.test(trimmed)) return true;
+    return false;
+  });
+
+  const first = bad.indexOf(true);
   if (first === -1) return text;
   const before = lines.slice(0, first).join('\n').trim();
-  const out = before || lines.filter((l, i) => !bad[i]).join('\n').trim();
-  return out || text;
+  return before || lines.filter((_, i) => !bad[i]).join('\n').trim() || text;
 }
 // Hồ sơ người chơi riêng của từng truyện; truyện chưa có thì lấy hồ sơ chung làm gốc
 function activeStoryPersona(story) {
@@ -2212,7 +2244,7 @@ ${out}`;
       // ⚡ LỌC ẨN TOÀN BỘ CÁC THẺ LỆNH HỆ THỐNG / ACTION / EVENT KHỎI MÀN HÌNH CHÁT
       fullText = cleanAiTags(fullText);
       // Cảnh mở đầu do người chơi viết thì giữ nguyên lời của persona, không lọc như phản hồi AI
-      if (!keepUserVoice) fullText = stripUserVoice(fullText, activeStoryPersona(story).name);
+      if (!keepUserVoice) fullText = stripUserVoice(fullText, activeStoryPersona(story).name, story);
       fullText = breakInlineSpeakers(fullText);
 
       const lines = fullText.split('\n').filter(p => p.trim() !== '');
@@ -2651,7 +2683,9 @@ ${dramaBlock}${modeBlock}${hintBlock}
 
       if (isAutoPlay) {
         // Nếu có lệnh ẩn (VD: phản ứng với sự kiện) thì dùng lệnh đó thay cho câu mặc định
-        const autoText = overrideText ? overrideText : 'Tự tiếp tục diễn biến câu chuyện.';
+        const autoText = overrideText
+          ? overrideText
+          : `(Hệ thống: Chỉ các nhân vật AI tiếp tục phản ứng hoặc gợi mở tình huống, tuyệt đối không viết lời thoại hay hành động của ${me.name || 'người chơi'}.)`;
         if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
           contents[contents.length - 1].parts[0].text += "\n" + autoText;
         } else {
@@ -2659,10 +2693,18 @@ ${dramaBlock}${modeBlock}${hintBlock}
         }
       }
 
+      const userStopNames = [me.name, ...(me.name || '').split(/\s+/).slice(-1)]
+        .map(s => String(s || '').trim())
+        .filter(s => s.length >= 2);
+      const stopSequences = [...new Set(userStopNames.flatMap(n => [`[${n}]:`, `[${n}] :`, `\n${n}:`]))].slice(0, 5);
+
       const payload = {
         system_instruction: { parts: [{ text: systemInstruction }] },
         contents: contents,
-        generationConfig: { temperature: 0.85 },
+        generationConfig: {
+          temperature: 0.85,
+          ...(stopSequences.length ? { stopSequences } : {})
+        },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -2729,7 +2771,7 @@ ${dramaBlock}${modeBlock}${hintBlock}
           const amt = parseInt(tm[1].replace(/[^\d]/g, ''), 10);
           if (amt > 0) transfers.push({ amount: amt, note: (tm[2] || '').trim() || 'Chuyển khoản', ts: Date.now() });
         }
-        const cleaned = stripUserVoice(cleanAiTags(responseText), me.name);
+        const cleaned = stripUserVoice(cleanAiTags(responseText), me.name, story);
 
         const totalIn = transfers.reduce((s, t) => s + t.amount, 0);
         if (totalIn > 0) window.state.walletBalance = (window.state.walletBalance || 0) + totalIn;
