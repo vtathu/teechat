@@ -2576,7 +2576,7 @@ ${beatsBlock}
   + Chỉ khi người chơi thêm chi tiết phá vỡ hoàn toàn logic đã thiết lập (mâu thuẫn trực tiếp với sự kiện đã xảy ra) thì mới xử lý nhẹ nhàng bằng phản ứng của nhân vật, không gay gắt sửa sai người chơi.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 - 18+: Thoải mái trò chuyện và mô tả chi tiết, cảm xúc khi cần thiết theo tình huống không lãng đi hay né tránh.
-
+- KHÔNG TỰ SOẠN LỜI THOẠI CHO NGỪOI DÙNG
 [TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
 - Khi người dùng xin tiền, mượn tiền hoặc đòi tiền, dựa vào tính cách nhân vật và độ thân mật để quyết định CÓ CHUYỂN TIỀN HAY KHÔNG.
 - Nếu ĐỒNG Ý, chèn cú pháp sau vào cuối hoặc trong câu trả lời:
