@@ -10,6 +10,8 @@ function cleanAiTags(t) {
     .replace(/[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm\s*)?thân mật\s*[\]\)]?/gi, '')
     .replace(/^[ \t]*[\[\(]?\s*[+\-−–]\s*\d+\s*(?:điểm|pts?)?\s*[\]\)]?[ \t]*$/gim, '')
     .replace(/\{\{[\s\S]*?\}\}/g, '')
+    .replace(/\(\([\s\S]*?\)\)/g, '')
+    .replace(/\[\[[\s\S]*?\]\]/g, '')
     .replace(/\(\s*Lv\.?\s*\d+[^)\n]{0,40}\)/gi, '')
     .replace(/[+\-−–]\s*\d+\s*(?:điểm\s*)?[❤💕💗💖💘]\uFE0F?/g, '')
     .replace(/[\[\(（]\s*[+\-−–]\s*\d+\s*(?:điểm|pts?|❤\uFE0F?)?\s*[\]\)）]/gi, '')
@@ -799,8 +801,8 @@ Trả về ĐÚNG JSON thuần, không markdown:
         ins = '**';
         delta = 1;
       } else if (type === 'direction') {
-        ins = '(Diễn biến: )';
-        delta = 11;
+        ins = '(())';
+        delta = 2;
       }
 
       input.value = val.slice(0, pos) + ins + val.slice(pos);
@@ -1955,8 +1957,21 @@ ${out}`;
     }
     function restoreStars(t) { return (t || '').replace(/\uE000/g, '*'); }
 
+    function stripDirections(t) {
+      return (t || '')
+        .replace(/\(\([\s\S]*?\)\)/g, '')
+        .replace(/\[\[[\s\S]*?\]\]/g, '')
+        .replace(/[\[\(]?\s*(?:diễn biến|hướng phát triển|bối cảnh|cảnh tiếp theo)\s*[:：][^\]\)\n]*[\]\)]?/gi, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim();
+    }
+
     function renderUserFormattedMessage(rawText, imgData, container, idx, ts) {
-      const text = normQuotes(rawText);
+      // Ẩn hoàn toàn chỉ đạo diễn biến ((...)) khỏi giao diện chat để màn hình không bị xấu
+      const displayRaw = stripDirections(rawText);
+      if (!displayRaw && !imgData) return;
+
+      const text = normQuotes(displayRaw);
       const me = activeStoryPersona();
 
       const userTransferMatch = text.match(/\[USER_TRANSFER:\s*(\d+)\s*\|\s*(.*?)\s*\|\s*(.*?)\]/);
@@ -1977,25 +1992,15 @@ ${out}`;
         return;
       }
 
-      // Tin dạng [nội dung] (tặng quà, voice...) hoặc (Diễn biến: ...) hiển thị như hành động / chỉ đạo cảnh
+      // Tin dạng [nội dung] (tặng quà, voice...) hiển thị như hành động, không kèm ngoặc vuông
       const trimmed = text.trim();
-      const isDirection = /^\(?\[?\s*(?:diễn biến|hướng phát triển|bối cảnh|cảnh tiếp theo)\s*[:：]/i.test(trimmed);
-      if (!imgData && (/^\[[\s\S]*\]$/.test(trimmed) || isDirection)) {
-        let inner = trimmed;
-        if (/^\[[\s\S]*\]$/.test(trimmed)) inner = trimmed.slice(1, -1);
-        else if (/^\([\s\S]*\)$/.test(trimmed)) inner = trimmed.slice(1, -1);
-        inner = inner.replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim(); /*aff*/
+      if (!imgData && /^\[[\s\S]*\]$/.test(trimmed)) {
+        const inner = trimmed.slice(1, -1).replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim(); /*aff*/
         const actDiv = document.createElement('div');
-        actDiv.className = isDirection ? 'narrative-block user-action direction-block' : 'narrative-block user-action';
-        if (isDirection) {
-          actDiv.style.border = '1px dashed var(--app-green)';
-          actDiv.style.alignSelf = 'center';
-          actDiv.style.textAlign = 'center';
-          actDiv.style.background = 'color-mix(in srgb, var(--app-green) 12%, var(--glass))';
-        }
+        actDiv.className = 'narrative-block user-action';
         actDiv.innerText = inner;
         const wrapDiv = document.createElement('div');
-        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = isDirection ? 'center' : 'flex-end'; wrapDiv.style.width = '100%';
+        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
         wrapDiv.appendChild(actDiv);
         const bar = document.createElement('div');
         bar.className = 'msg-action-bar';
@@ -2449,8 +2454,16 @@ actDiv.innerText = actText;
     function deleteMessage(idx) {
       if (confirm('Xóa tin nhắn?')) {
         const hist = window.state.chatHistories[window.state.activeStoryId];
-        revertTransfers(hist[idx]);
+        if (!hist || !hist[idx]) return;
+        const msg = hist[idx];
+        revertTransfers(msg);
         hist.splice(idx, 1);
+        if (msg.sender === 'ai' && idx > 0) {
+          const prev = hist[idx - 1];
+          if (prev && prev.sender === 'user' && !stripDirections(prev.text) && !prev.img) {
+            hist.splice(idx - 1, 1);
+          }
+        }
         saveStorage(); renderChatHistory();
       }
     }
@@ -2627,10 +2640,10 @@ ${beatsBlock}
 - 18+: Thoải mái trò chuyện và mô tả chi tiết, cảm xúc khi cần thiết theo tình huống không lãng đi hay né tránh.
 - KHÔNG TỰ SOẠN LỜI THOẠI HAY HÀNH ĐỘNG CHO NGƯỜI DÙNG
 
-[CHỈ ĐẠO DIỄN BIẾN / HƯỚNG CỐT TRUYỆN TỪ NGƯỜI CHƠI]
-- Khi người chơi gửi nội dung dạng (Diễn biến: ...) hoặc [Diễn biến: ...] hoặc miêu tả cảnh tiếp theo, đây là LỆNH ĐẠO DIỄN CHỈ ĐẠO CẢNH TIẾP THEO (người chơi chủ động miêu tả tình huống để dẫn dắt câu chuyện).
-- Các nhân vật AI PHẢI lập tức nhập vai, thực hiện hành động và đối thoại triển khai tiếp câu chuyện bám sát đúng theo hướng miêu tả đó.
-- TUYỆT ĐỐI KHÔNG coi dòng chỉ đạo diễn biến là lời nói hay hành động của người chơi.
+[CHỈ ĐẠO DIỄN BIẾN / HƯỚNG CỐT TRUYỆN ẨN TỪ NGƯỜI CHƠI]
+- Khi người chơi gửi nội dung nằm trong cặp dấu ((...)) hoặc [[...]] (hoặc dạng (Diễn biến: ...)), đây là LỆNH ĐẠO DIỄN CHỈ ĐẠO CẢNH TIẾP THEO (người chơi miêu tả tình huống để dẫn dắt câu chuyện). Phần nội dung này được người chơi ẩn khỏi màn hình hiển thị.
+- Các nhân vật AI PHẢI lập tức nhập vai, thực hiện hành động và đối thoại triển khai tiếp câu chuyện bám sát đúng theo hướng miêu tả trong cặp dấu đó.
+- TUYỆT ĐỐI KHÔNG coi nội dung trong ((...)) là lời nói hay hành động của người chơi, và TUYỆT ĐỐI KHÔNG nhắc lại hay trích dẫn lại nội dung trong ((...)).
 - VẪN TUYỆT ĐỐI TUÂN THỦ: AI KHÔNG ĐƯỢC TỰ Ý SOẠN LỜI THOẠI HAY HÀNH ĐỘNG CHO "${me.name || 'người chơi'}". Chỉ các nhân vật AI hành động, phản ứng và lên tiếng theo đúng hướng diễn biến đó!
 [TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
 - Khi người dùng xin tiền, mượn tiền hoặc đòi tiền, dựa vào tính cách nhân vật và độ thân mật để quyết định CÓ CHUYỂN TIỀN HAY KHÔNG.

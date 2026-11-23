@@ -168,7 +168,7 @@
         <button class="btn btn-pink plus-btn" onclick="togglePlusMenu()">➕</button>
         <button class="btn btn-outline" onclick="insertInputFormat('dialogue')">🗣 Lời thoại</button>
         <button class="btn btn-outline" onclick="insertInputFormat('action')">✦ Hành động</button>
-        <button class="btn btn-outline" onclick="insertInputFormat('direction')">🎬 Diễn biến</button>
+        <button class="btn btn-outline" onclick="insertInputFormat('direction')">🎬 (( )) Diễn biến</button>
         <button class="btn btn-outline" onclick="triggerAutoPlay()">⌯⌲Tiếp tục</button>
       </div>
 
@@ -198,7 +198,7 @@
       <input type="file" id="chat-img-upload-input" accept="image/*" style="display:none;" onchange="handleChatImageFile(event)">
 
       <div class="input-bar">
-        <input type="text" id="user-input" placeholder="Nhập lời thoại, hành động hoặc hướng diễn biến..." onkeypress="handleKeyPress(event)" oninput="this.scrollLeft = this.scrollWidth;">
+        <input type="text" id="user-input" placeholder='Nhập "" lời thoại, ** hành động, (( )) diễn biến ẩn...' onkeypress="handleKeyPress(event)" oninput="this.scrollLeft = this.scrollWidth;">
         <button class="btn btn-pink" onclick="sendMessage()">➤ Gửi</button>
       </div>
     </div>
