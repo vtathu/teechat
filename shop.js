@@ -923,17 +923,21 @@
       const lifeBtn = document.getElementById('tab-btn-life');
 
       if (tabName === 'chat') {
-        chatView.classList.remove('hidden'); lifeView.classList.add('hidden');
-        chatBtn.classList.add('active'); lifeBtn.classList.remove('active');
+        if (chatView) chatView.classList.remove('hidden');
+        if (lifeView) lifeView.classList.add('hidden');
+        if (chatBtn) chatBtn.classList.add('active');
+        if (lifeBtn) lifeBtn.classList.remove('active');
         setTimeout(() => {
           const container = document.getElementById('chat-history');
           if (container) container.scrollTop = container.scrollHeight;
         }, 60);
       } else {
-        chatView.classList.add('hidden'); lifeView.classList.remove('hidden');
-        chatBtn.classList.remove('active'); lifeBtn.classList.add('active');
-        renderLifeModeUI();
-        maybeTriggerRandomEvent();
+        if (chatView) chatView.classList.add('hidden');
+        if (lifeView) lifeView.classList.remove('hidden');
+        if (chatBtn) chatBtn.classList.remove('active');
+        if (lifeBtn) lifeBtn.classList.add('active');
+        if (typeof renderLifeModeUI === 'function') renderLifeModeUI();
+        if (typeof maybeTriggerRandomEvent === 'function') maybeTriggerRandomEvent();
       }
     }
 

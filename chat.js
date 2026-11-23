@@ -37,7 +37,7 @@ function stripUserVoice(text, name, story) {
   const names = nameList.map(esc).join('|');
 
   const aiNames = ((story && story.characters) || [])
-    .map(c => splitCharName(c.name).primary)
+    .map(c => (c && c.name ? splitCharName(c.name).primary : ''))
     .filter(Boolean)
     .map(n => foldVi(n));
 
@@ -63,8 +63,6 @@ function stripUserVoice(text, name, story) {
       if (names && nameList.some(n => foldVi(n) === speakerFold)) return true;
       if (aiNames.includes(speakerFold)) return false;
     }
-
-    if (/^["“][^"”]+["”]$/.test(trimmed)) return true;
 
     if (head && head.test(trimmed)) return true;
     if (act && act.test(trimmed)) return true;
@@ -793,12 +791,21 @@ Trả về ĐÚNG JSON thuần, không markdown:
       const val = input.value;
       const pos = input.selectionStart || val.length;
       let ins = '';
-      if (type === 'dialogue') ins = '""';
-      else if (type === 'action') ins = '**';
+      let delta = 1;
+      if (type === 'dialogue') {
+        ins = '""';
+        delta = 1;
+      } else if (type === 'action') {
+        ins = '**';
+        delta = 1;
+      } else if (type === 'direction') {
+        ins = '(Diễn biến: )';
+        delta = 11;
+      }
 
       input.value = val.slice(0, pos) + ins + val.slice(pos);
       input.focus();
-      input.setSelectionRange(pos + 1, pos + 1);
+      input.setSelectionRange(pos + delta, pos + delta);
     }
 
     function handleChatImageFile(event) {
@@ -1970,15 +1977,25 @@ ${out}`;
         return;
       }
 
-      // Tin dạng [nội dung] (tặng quà, voice...) hiển thị như hành động, không kèm ngoặc vuông
+      // Tin dạng [nội dung] (tặng quà, voice...) hoặc (Diễn biến: ...) hiển thị như hành động / chỉ đạo cảnh
       const trimmed = text.trim();
-      if (!imgData && /^\[[\s\S]*\]$/.test(trimmed)) {
-        const inner = trimmed.slice(1, -1).replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim(); /*aff*/
+      const isDirection = /^\(?\[?\s*(?:diễn biến|hướng phát triển|bối cảnh|cảnh tiếp theo)\s*[:：]/i.test(trimmed);
+      if (!imgData && (/^\[[\s\S]*\]$/.test(trimmed) || isDirection)) {
+        let inner = trimmed;
+        if (/^\[[\s\S]*\]$/.test(trimmed)) inner = trimmed.slice(1, -1);
+        else if (/^\([\s\S]*\)$/.test(trimmed)) inner = trimmed.slice(1, -1);
+        inner = inner.replace(/\{\{[\s\S]*?\}\}/g, '').replace(/\s*\(Lv\.\d+ - Tích lũy: \d+pts\)/g, '').replace(/\*/g, '').trim(); /*aff*/
         const actDiv = document.createElement('div');
-        actDiv.className = 'narrative-block user-action';
+        actDiv.className = isDirection ? 'narrative-block user-action direction-block' : 'narrative-block user-action';
+        if (isDirection) {
+          actDiv.style.border = '1px dashed var(--app-green)';
+          actDiv.style.alignSelf = 'center';
+          actDiv.style.textAlign = 'center';
+          actDiv.style.background = 'color-mix(in srgb, var(--app-green) 12%, var(--glass))';
+        }
         actDiv.innerText = inner;
         const wrapDiv = document.createElement('div');
-        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = 'flex-end'; wrapDiv.style.width = '100%';
+        wrapDiv.style.display = 'flex'; wrapDiv.style.flexDirection = 'column'; wrapDiv.style.alignItems = isDirection ? 'center' : 'flex-end'; wrapDiv.style.width = '100%';
         wrapDiv.appendChild(actDiv);
         const bar = document.createElement('div');
         bar.className = 'msg-action-bar';
@@ -2608,7 +2625,13 @@ ${beatsBlock}
   + Chỉ khi người chơi thêm chi tiết phá vỡ hoàn toàn logic đã thiết lập (mâu thuẫn trực tiếp với sự kiện đã xảy ra) thì mới xử lý nhẹ nhàng bằng phản ứng của nhân vật, không gay gắt sửa sai người chơi.
 - TÊN TRONG HÀNH ĐỘNG: Mỗi đoạn hành động PHẢI nêu rõ tên nhân vật đang thực hiện ngay trong câu.
 - 18+: Thoải mái trò chuyện và mô tả chi tiết, cảm xúc khi cần thiết theo tình huống không lãng đi hay né tránh.
-- KHÔNG TỰ SOẠN LỜI THOẠI CHO NGỪOI DÙNG
+- KHÔNG TỰ SOẠN LỜI THOẠI HAY HÀNH ĐỘNG CHO NGƯỜI DÙNG
+
+[CHỈ ĐẠO DIỄN BIẾN / HƯỚNG CỐT TRUYỆN TỪ NGƯỜI CHƠI]
+- Khi người chơi gửi nội dung dạng (Diễn biến: ...) hoặc [Diễn biến: ...] hoặc miêu tả cảnh tiếp theo, đây là LỆNH ĐẠO DIỄN CHỈ ĐẠO CẢNH TIẾP THEO (người chơi chủ động miêu tả tình huống để dẫn dắt câu chuyện).
+- Các nhân vật AI PHẢI lập tức nhập vai, thực hiện hành động và đối thoại triển khai tiếp câu chuyện bám sát đúng theo hướng miêu tả đó.
+- TUYỆT ĐỐI KHÔNG coi dòng chỉ đạo diễn biến là lời nói hay hành động của người chơi.
+- VẪN TUYỆT ĐỐI TUÂN THỦ: AI KHÔNG ĐƯỢC TỰ Ý SOẠN LỜI THOẠI HAY HÀNH ĐỘNG CHO "${me.name || 'người chơi'}". Chỉ các nhân vật AI hành động, phản ứng và lên tiếng theo đúng hướng diễn biến đó!
 [TÍNH NĂNG CHUYỂN TIỀN TỰ ĐỘNG CỦA NHÂN VẬT]:
 - Khi người dùng xin tiền, mượn tiền hoặc đòi tiền, dựa vào tính cách nhân vật và độ thân mật để quyết định CÓ CHUYỂN TIỀN HAY KHÔNG.
 - Nếu ĐỒNG Ý, chèn cú pháp sau vào cuối hoặc trong câu trả lời:
